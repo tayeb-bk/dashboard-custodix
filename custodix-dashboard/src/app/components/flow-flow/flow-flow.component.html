@@ -1,0 +1,139 @@
+<div class="page">
+
+  <!-- ===== PAGE HEADER ===== -->
+  <div class="page-header">
+    <div class="page-title-area">
+      <h1 class="page-title">Flow Flow</h1>
+      <p class="page-sub">Supervision en temps réel des flux financiers</p>
+    </div>
+    <div class="page-actions">
+      <div class="last-update">
+        <span class="update-dot"></span>
+        Mis à jour il y a quelques secondes
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FILTERS ===== -->
+  <div class="filters">
+    <select [(ngModel)]="selectedStatus">
+      <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
+    </select>
+
+    <select [(ngModel)]="selectedBucket">
+      <option value="auto">Auto</option>
+      <option value="hour">Hour</option>
+      <option value="day">Day</option>
+      <option value="month">Month</option>
+    </select>
+
+    <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate">
+    <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate">
+
+    <button (click)="loadTimeline()">Appliquer</button>
+  </div>
+
+  <!-- ===== KPI TIMELINE ===== -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">Évolution des flux</h2>
+    </div>
+
+    <apx-chart nonPassiveWheel
+               [series]="timelineSeries"
+      [chart]="timelineChart"
+      [xaxis]="timelineXAxis"
+      [stroke]="timelineStroke"
+      [dataLabels]="timelineDataLabels"
+      [tooltip]="timelineTooltip">
+    </apx-chart>
+
+    <div class="empty-state" *ngIf="timelineSeries[0]?.data?.length === 0">
+      <span class="empty-icon">📉</span>
+      <p>Aucune donnée pour ce filtre</p>
+    </div>
+  </div>
+
+  <!-- ===== KPI CARDS ===== -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-blue" *ngFor="let stat of statsByStatus">
+      <div class="kpi-header">
+        <span class="kpi-label">{{ stat[0] }}</span>
+        <span class="kpi-icon">📊</span>
+      </div>
+      <div class="kpi-value">{{ stat[1] }}</div>
+      <div class="kpi-bar">
+        <div class="kpi-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS PAR TYPE ===== -->
+  <div class="section" *ngIf="statsByType.length > 0">
+    <div class="section-header">
+      <h2 class="section-title">Répartition par Type</h2>
+    </div>
+    <div class="type-chips">
+      <div class="type-chip" *ngFor="let t of statsByType">
+        <span class="chip-label">{{ t[0] }}</span>
+        <span class="chip-count">{{ t[1] }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TABLE DES FLUX ===== -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">Liste des Flux</h2>
+      <span class="record-count" *ngIf="!loading">{{ flows.length }} enregistrements</span>
+    </div>
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Chargement des flux...</span>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loading">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Statut</th>
+          <th>Type</th>
+          <th>Flow Type</th>
+          <th>Expéditeur</th>
+          <th>Destinataire</th>
+          <th>Date Création</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let flow of flows" class="table-row">
+          <td class="col-id">#{{ flow.id }}</td>
+          <td>
+              <span class="status-badge" [ngClass]="{
+                'status-success': flow.status === 'SUCCESS' || flow.status === 'COMPLETED',
+                'status-error':   flow.status === 'ERROR' || flow.status === 'FAILED',
+                'status-pending': flow.status === 'PENDING' || flow.status === 'WAITING',
+                'status-processing': flow.status === 'PROCESSING' || flow.status === 'IN_PROGRESS'
+              }">
+                <span class="status-dot-inline"></span>
+                {{ flow.status }}
+              </span>
+          </td>
+          <td class="col-type">{{ flow.type }}</td>
+          <td class="col-flowtype">{{ flow.flowTypeName }}</td>
+          <td class="col-sender">{{ flow.senderIdentifier }}</td>
+          <td class="col-receiver">{{ flow.receiverIdentifier }}</td>
+          <td class="col-date">{{ flow.creationDate | date:'dd/MM/yyyy HH:mm' }}</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="flows.length === 0">
+        <span class="empty-icon">📭</span>
+        <p>Aucun flux trouvé</p>
+      </div>
+    </div>
+  </div>
+
+</div>

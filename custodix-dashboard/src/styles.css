@@ -1,0 +1,105 @@
+/* ===== GOOGLE FONTS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ===== DARK THEME (default) ===== */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #08090a;
+  --bg-secondary: #0f1012;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-hover: rgba(255, 255, 255, 0.07);
+  --bg-table-alt: rgba(255, 255, 255, 0.025);
+
+  --accent-blue: #e2e8f0;
+  --accent-blue-glow: rgba(226, 232, 240, 0.08);
+  --accent-green: #3fb950;
+  --accent-amber: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #cbd5e1;
+
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(255, 255, 255, 0.12);
+
+  --sidebar-bg: rgba(0, 0, 0, 0.55);
+  --navbar-bg: rgba(8, 9, 10, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.04);
+
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.6);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.6);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.8);
+  --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.04);
+
+  --table-header-bg: rgba(255, 255, 255, 0.03);
+  --table-row-hover: rgba(255, 255, 255, 0.04);
+  --input-bg: rgba(255, 255, 255, 0.05);
+
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255,255,255,0.08);
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: rgba(255,255,255,0.8);
+  --bg-card: rgba(255,255,255,0.7);
+  --bg-hover: rgba(0,0,0,0.04);
+  --bg-table-alt: rgba(0,0,0,0.02);
+
+  --accent-blue: #1f2328;
+  --accent-blue-glow: rgba(31, 35, 40, 0.06);
+  --accent-green: #1a7f37;
+  --accent-amber: #9a6700;
+  --accent-red: #cf222e;
+  --accent-purple: #475569;
+
+  --text-primary: #1f2328;
+  --text-secondary: #57606a;
+  --text-muted: #8c959f;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(0, 0, 0, 0.15);
+
+  --sidebar-bg: rgba(24, 26, 31, 0.95);
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: rgba(255,255,255,0.7);
+
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.10);
+  --shadow-glow: 0 0 20px rgba(0,0,0,0.06);
+
+  --table-header-bg: rgba(0,0,0,0.03);
+  --table-row-hover: rgba(0,0,0,0.02);
+  --input-bg: rgba(0,0,0,0.03);
+
+  --glass-blur: blur(16px);
+  --glass-border: rgba(0,0,0,0.07);
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

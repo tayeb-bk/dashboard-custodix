@@ -1,0 +1,94 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub">Vue d'ensemble de la supervision des flux</p>
+    </div>
+    <div class="header-date">
+      <span class="date-icon">📅</span>
+      <span>{{ today | date:'EEEE d MMMM yyyy' }}</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card" *ngFor="let kpi of kpis" [ngClass]="'kpi-' + kpi.color">
+      <div class="kpi-top">
+        <span class="kpi-icon-box">{{ kpi.icon }}</span>
+        <span class="kpi-trend" [class.up]="kpi.up" [class.down]="!kpi.up">
+          {{ kpi.up ? '↑' : '↓' }} {{ kpi.trend }}
+        </span>
+      </div>
+      <div class="kpi-value">{{ kpi.value }}</div>
+      <div class="kpi-label">{{ kpi.label }}</div>
+    </div>
+  </div>
+
+  <!-- Two columns -->
+  <div class="two-col">
+
+    <!-- Activity feed -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Activité Récente</h2>
+        <span class="live-badge">
+          <span class="live-dot"></span> Live
+        </span>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item" *ngFor="let item of recentActivity">
+          <div class="activity-status" [ngClass]="'act-' + item.status"></div>
+          <div class="activity-body">
+            <div class="activity-action">{{ item.action }}</div>
+            <div class="activity-detail">{{ item.detail }}</div>
+          </div>
+          <div class="activity-time">{{ item.time }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status donut placeholder -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Répartition des Statuts</h2>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut">
+          <svg viewBox="0 0 120 120" class="donut-svg">
+            <circle cx="60" cy="60" r="45" fill="none" stroke="var(--bg-hover)" stroke-width="14"/>
+            <circle cx="60" cy="60" r="45" fill="none" stroke="#30363d" stroke-width="14"
+              stroke-dasharray="197 85" stroke-dashoffset="0" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="45" fill="none" stroke="#10b981" stroke-width="14"
+              stroke-dasharray="85 197" stroke-dashoffset="-197" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="45" fill="none" stroke="#f59e0b" stroke-width="14"
+              stroke-dasharray="37 245" stroke-dashoffset="-282" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-total">12 847</span>
+            <span class="donut-label">Flux</span>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#30363d"></span>
+            <span class="legend-text">En traitement</span>
+            <span class="legend-val">69%</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#10b981"></span>
+            <span class="legend-text">Succès</span>
+            <span class="legend-val">29%</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#f59e0b"></span>
+            <span class="legend-text">En attente</span>
+            <span class="legend-val">13%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
