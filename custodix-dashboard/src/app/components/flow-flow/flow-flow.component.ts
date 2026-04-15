@@ -8,7 +8,11 @@ import {
   ApexXAxis,
   ApexStroke,
   ApexDataLabels,
-  ApexTooltip
+  ApexTooltip,
+  ApexPlotOptions,
+  ApexYAxis,
+  ApexGrid,
+  ApexFill
 } from "ng-apexcharts";
 import { FormsModule } from '@angular/forms';
 import { NonPassiveWheelDirective } from '../overview/non-passive-wheel.directive';
@@ -93,7 +97,49 @@ export class FlowFlowComponent implements OnInit {
         }))
       }];
     });
+    this.loadFlowType();
+  }////////////////////////////////////////
+  // ===== Chart "Flux par type" =====
+  flowTypeSeries: ApexAxisChartSeries = [{ name: 'Flux', data: [] }];
+  flowTypeChart: ApexChart = { type: 'bar', height: 220, toolbar: { show: false } };
+  flowTypePlotOptions: ApexPlotOptions = {
+    bar: { borderRadius: 6, columnWidth: '55%', distributed: true }
+  };
+  flowTypeDataLabels: ApexDataLabels = {
+    enabled: true,
+    offsetY: -10,
+    style: { colors: ['#6b7280'], fontSize: '12px', fontWeight: 600 },
+    formatter: (val) => this.kFormat(val)
+  };
+  flowTypeXAxis: ApexXAxis = {
+    categories: [],
+    labels: { style: { colors: '#94a3b8', fontSize: '12px' } }
+  };
+  flowTypeYAxis: ApexYAxis = { show: false };
+  flowTypeGrid: ApexGrid = { show: false };
+  flowTypeFill: ApexFill = {
+    colors: ['#2f6fd3', '#4f83d8', '#6b95df', '#8aa7e6', '#a6bbee', '#c0d0f6']
+  };
+  flowTypeTooltip: ApexTooltip = { y: { formatter: (val) => this.kFormat(val) } };
+
+  loadFlowType() {
+    this.flowService.getStatsByType().subscribe(data => {
+      const clean = (data || [])
+        .filter(d => d && d[0] != null && d[1] != null);
+
+      const labels = clean.map(d => d[0]);
+      const values = clean.map(d => d[1]);
+
+      this.flowTypeSeries = [{ name: 'Flux', data: values }];
+      this.flowTypeXAxis = { ...this.flowTypeXAxis, categories: labels };
+    });
   }
+
+  kFormat(v: any) {
+    if (!v) return '0';
+    return v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toString();
+  }
+  //////////////////////////////////////
 
   private initChart() {
     this.timelineChart = {

@@ -54,6 +54,40 @@
     </div>
   </div>
 
+
+
+  <!-- ===== flowtype ===== -->
+
+  <div class="flow-type-card">
+    <div class="flow-type-header">
+      <span class="flow-type-title">Flow Type</span>
+      <span class="flow-type-sub">— Top flowtype_name</span>
+    </div>
+
+    <apx-chart nonPassiveWheel class="flow-type-chart"
+               [series]="flowTypeSeries"
+               [chart]="flowTypeChart"
+               [plotOptions]="flowTypePlotOptions"
+               [dataLabels]="flowTypeDataLabels"
+               [xaxis]="flowTypeXAxis"
+               [yaxis]="flowTypeYAxis"
+               [grid]="flowTypeGrid"
+               [fill]="flowTypeFill"
+               [tooltip]="flowTypeTooltip">
+    </apx-chart>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
   <!-- ===== KPI CARDS ===== -->
   <div class="kpi-grid">
     <div class="kpi-card kpi-blue" *ngFor="let stat of statsByStatus">

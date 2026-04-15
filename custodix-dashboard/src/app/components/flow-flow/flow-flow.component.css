@@ -484,3 +484,52 @@ apx-chart {
     grid-template-columns: 1fr;
   }
 }
+
+
+
+
+
+
+
+
+
+
+.flow-type-card{
+  background:#ffffff;
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  padding:16px 18px;
+  box-shadow:0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.flow-type-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+}
+
+.flow-type-title{
+  font-weight:600;
+  color:#111827;
+  font-size:14px;
+}
+
+.flow-type-sub{
+  color:#9ca3af;
+  font-size:12px;
+}
+
+/* Chart look */
+apx-chart{
+  display:block;
+  padding:8px 4px;
+  background:transparent;
+}
+.flow-type-card .flow-type-chart {
+  background: transparent !important;
+  border: none !important;
+  padding: 8px 4px !important;
+  border-radius: 12px;
+  box-shadow: none !important;
+}

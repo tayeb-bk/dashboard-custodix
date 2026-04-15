@@ -1,0 +1,326 @@
+<div class="page">
+
+  <!-- ===== PAGE HEADER ===== -->
+  <div class="page-header">
+    <div class="page-title-area">
+      <div class="page-title-row">
+        <div class="page-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="page-title">EAI Header</h1>
+        <span class="live-badge"><span class="live-dot"></span>Live</span>
+      </div>
+      <p class="page-sub">Supervision des en-têtes de messages EAI — {{ totalElements | number }} enregistrements</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn-refresh" (click)="ngOnInit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <polyline points="23 4 23 10 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== KPI CARDS ===== -->
+  <div class="kpi-grid">
+
+    <div class="kpi-card kpi-blue" [class.loading-card]="kpiLoading">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap kpi-icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" stroke="currentColor" stroke-width="2"/>
+            <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Total Headers</span>
+          <span class="kpi-value">{{ kpiLoading ? '—' : kFormat(kpis.total) }}</span>
+          <span class="kpi-sub">dans la base Oracle</span>
+        </div>
+      </div>
+      <div class="kpi-gradient kpi-gradient-blue"></div>
+    </div>
+
+    <div class="kpi-card kpi-green" [class.loading-card]="kpiLoading">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Dernières 24h</span>
+          <span class="kpi-value kpi-value-green">{{ kpiLoading ? '—' : kFormat(kpis.last24h) }}</span>
+          <span class="kpi-sub">headers créés</span>
+        </div>
+      </div>
+      <div class="kpi-gradient kpi-gradient-green"></div>
+    </div>
+
+    <div class="kpi-card kpi-purple" [class.loading-card]="kpiLoading">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap kpi-icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Messages uniques</span>
+          <span class="kpi-value kpi-value-purple">{{ kpiLoading ? '—' : kFormat(kpis.distinctMessages) }}</span>
+          <span class="kpi-sub">MESSAGE_ID distincts</span>
+        </div>
+      </div>
+      <div class="kpi-gradient kpi-gradient-purple"></div>
+    </div>
+
+    <div class="kpi-card kpi-amber" [class.loading-card]="kpiLoading">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap kpi-icon-amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Créateurs uniques</span>
+          <span class="kpi-value kpi-value-amber">{{ kpiLoading ? '—' : kpis.distinctCreators }}</span>
+          <span class="kpi-sub">utilisateurs actifs</span>
+        </div>
+      </div>
+      <div class="kpi-gradient kpi-gradient-amber"></div>
+    </div>
+
+  </div>
+
+  <!-- ===== TIMELINE ===== -->
+  <div class="chart-card chart-card--full">
+    <div class="chart-card-header">
+      <div class="chart-title-group">
+        <span class="chart-title">Évolution temporelle des headers</span>
+        <span class="chart-sub">Nombre de headers créés par période</span>
+      </div>
+      <div class="timeline-filters">
+        <select [(ngModel)]="selectedBucket" class="filter-select">
+          <option value="auto">Granularité auto</option>
+          <option value="hour">Par heure</option>
+          <option value="day">Par jour</option>
+          <option value="month">Par mois</option>
+        </select>
+        <input type="datetime-local" [(ngModel)]="fromDate" class="filter-input" placeholder="Début">
+        <input type="datetime-local" [(ngModel)]="toDate"   class="filter-input" placeholder="Fin">
+        <input type="text" [(ngModel)]="filterHeaderName" class="filter-input" placeholder="Header name...">
+        <button class="btn-apply" (click)="loadTimeline()">Appliquer</button>
+        <button class="btn-reset" (click)="fromDate=''; toDate=''; filterHeaderName=''; filterType=''; loadTimeline()">Reset</button>
+      </div>
+    </div>
+    <div class="chart-body" *ngIf="!timelineLoading; else chartSkel">
+      <apx-chart
+        [series]="timelineSeries"
+        [chart]="timelineChart"
+        [xaxis]="timelineXAxis"
+        [yaxis]="timelineYAxis"
+        [stroke]="timelineStroke"
+        [fill]="timelineFill"
+        [dataLabels]="timelineDataLabels"
+        [tooltip]="timelineTooltip"
+        [grid]="timelineGrid">
+      </apx-chart>
+      <div class="empty-state" *ngIf="timelineSeries[0]?.data?.length === 0">
+        <span class="empty-icon">📉</span>
+        <p>Aucune donnée pour ce filtre</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ROW 2: Donut + Horizontal Bar ===== -->
+  <div class="charts-row">
+
+    <!-- Donut — TYPE_ -->
+    <div class="chart-card chart-card--half">
+      <div class="chart-card-header">
+        <div class="chart-title-group">
+          <span class="chart-title">Répartition par Type</span>
+          <span class="chart-sub">Distribution du champ TYPE_</span>
+        </div>
+      </div>
+      <div class="chart-body" *ngIf="!donutLoading; else chartSkel">
+        <apx-chart
+          [series]="donutSeries"
+          [chart]="donutChart"
+          [labels]="donutLabels"
+          [legend]="donutLegend"
+          [tooltip]="donutTooltip">
+        </apx-chart>
+      </div>
+    </div>
+
+    <!-- Horizontal Bar — Top HEADERNAME_ -->
+    <div class="chart-card chart-card--half">
+      <div class="chart-card-header">
+        <div class="chart-title-group">
+          <span class="chart-title">Top 10 — Header Names</span>
+          <span class="chart-sub">Headers les plus fréquents</span>
+        </div>
+      </div>
+      <div class="chart-body" *ngIf="!headerNameLoading; else chartSkel">
+        <apx-chart
+          [series]="headerNameSeries"
+          [chart]="headerNameChart"
+          [plotOptions]="headerNamePlot"
+          [xaxis]="headerNameXAxis"
+          [yaxis]="headerNameYAxis"
+          [dataLabels]="headerNameDataLabels"
+          [grid]="headerNameGrid"
+          [tooltip]="headerNameTooltip">
+        </apx-chart>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== ROW 3: HeaderType Bar + Top Creators ===== -->
+  <div class="charts-row">
+
+    <!-- Bar — HEADERTYPE_ -->
+    <div class="chart-card chart-card--half">
+      <div class="chart-card-header">
+        <div class="chart-title-group">
+          <span class="chart-title">Distribution par Header Type</span>
+          <span class="chart-sub">Répartition du champ HEADERTYPE_</span>
+        </div>
+      </div>
+      <div class="chart-body" *ngIf="!headerTypeLoading; else chartSkel">
+        <apx-chart
+          [series]="headerTypeSeries"
+          [chart]="headerTypeChart"
+          [plotOptions]="headerTypePlot"
+          [xaxis]="headerTypeXAxis"
+          [dataLabels]="headerTypeDataLabels"
+          [grid]="headerTypeGrid"
+          [tooltip]="headerTypeTooltip">
+        </apx-chart>
+      </div>
+    </div>
+
+    <!-- Top Creators -->
+    <div class="chart-card chart-card--half">
+      <div class="chart-card-header">
+        <div class="chart-title-group">
+          <span class="chart-title">Top Créateurs</span>
+          <span class="chart-sub">Utilisateurs les plus actifs (CREATORUSERID_)</span>
+        </div>
+      </div>
+      <div class="chart-body creators-body" *ngIf="!creatorsLoading; else chartSkel">
+        <div class="creator-row" *ngFor="let c of creators; let i = index">
+          <div class="creator-rank">{{ i + 1 }}</div>
+          <div class="creator-info">
+            <div class="creator-name-row">
+              <span class="creator-name">{{ c.name }}</span>
+              <span class="creator-count">{{ kFormat(c.count) }}</span>
+            </div>
+            <div class="creator-bar-bg">
+              <div class="creator-bar-fill" [style.width.%]="c.pct"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== TABLE PAGINÉE ===== -->
+  <div class="chart-card chart-card--full">
+    <div class="chart-card-header" style="flex-wrap: nowrap;">
+      <div class="chart-title-group">
+        <span class="chart-title">Liste des Headers EAI</span>
+        <span class="chart-sub">{{ totalElements | number }} enregistrements — page {{ currentPage + 1 }} / {{ totalPages }}</span>
+      </div>
+      <div class="timeline-filters">
+        <input type="datetime-local" [(ngModel)]="tableFromDate" class="filter-input" placeholder="Début">
+        <input type="datetime-local" [(ngModel)]="tableToDate"   class="filter-input" placeholder="Fin">
+        <input type="text" [(ngModel)]="tableHeaderName" class="filter-input" placeholder="Header name...">
+        <input type="text" [(ngModel)]="tableType" class="filter-input" placeholder="Type..." style="width: 100px;">
+        <button class="btn-apply" (click)="applyTableFilters()">Appliquer</button>
+        <button class="btn-reset" (click)="resetTableFilters()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="table-loading" *ngIf="tableLoading">
+      <div class="spinner-lg"></div>
+      <span>Chargement...</span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap" *ngIf="!tableLoading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Header Name</th>
+            <th>Header Type</th>
+            <th>Type</th>
+            <th>Créateur</th>
+            <th>Message ID</th>
+            <th>Date création</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rows" class="table-row">
+            <td class="col-id">#{{ row.id }}</td>
+            <td><span class="name-chip">{{ row.headerName }}</span></td>
+            <td class="col-muted">{{ cleanType(row.headerType) }}</td>
+            <td>
+              <span class="type-badge">{{ cleanType(row.type) }}</span>
+            </td>
+            <td class="col-creator">{{ row.creatorUserId }}</td>
+            <td class="col-muted">{{ row.messageId }}</td>
+            <td class="col-date">{{ row.creationDate | date: 'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="rows.length === 0">
+        <span class="empty-icon">📭</span>
+        <p>Aucun enregistrement</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="!tableLoading && totalPages > 1">
+      <button class="page-btn" (click)="prevPage()" [disabled]="currentPage === 0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <polyline points="15 18 9 12 15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="page-btn" *ngFor="let p of pages"
+              [class.page-btn--active]="p === currentPage"
+              (click)="goPage(p)">{{ p + 1 }}</button>
+      <button class="page-btn" (click)="nextPage()" [disabled]="currentPage >= totalPages - 1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="page-info">{{ currentPage * pageSize + 1 }}–{{ min((currentPage + 1) * pageSize, totalElements) }} sur {{ totalElements | number }}</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Skeleton template ===== -->
+<ng-template #chartSkel>
+  <div class="chart-skeleton">
+    <div class="skel-bar" *ngFor="let i of [1,2,3,4,5]" [style.height.px]="30 + i * 12"></div>
+  </div>
+</ng-template>
