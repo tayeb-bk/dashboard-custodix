@@ -38,11 +38,14 @@ SELECT COUNT(*) FROM DBA_TABLES WHERE OWNER = 'UCUSTOI0'
 RÈGLES ORACLE (TRÈS IMPORTANT) :
 - Schéma propriétaire : UCUSTOI0
 - Tables existantes : FLOW_FLOW, EAI_HEADER, FLOW_FLOWLOG.
-- Toujours mettre le nom des tables en MAJUSCULE.
-- Les colonnes se terminent en général par un underscore (ex: STATUS_, ID_, AMOUNT1_).
+- Préfixe toujours les tables métier avec le schéma (ex: UCUSTOI0.FLOW_FLOW).
+- N'utilise la condition `WHERE owner = 'UCUSTOI0'` QUE pour lire `dba_tables` ou `dba_tab_columns`. Ne l'utilise JAMAIS sur les tables de données (comme FLOW_FLOW).
+- N'écris JAMAIS les types de données (ex: VARCHAR2, NUMBER) dans la clause SELECT ou FROM de la requête SQL.
+- Les colonnes se terminent en général par un underscore (ex: STATUS_, ID_, AMOUNT1_, TYPE_).
 - Pour avoir le total de tables : SELECT COUNT(*) FROM dba_tables WHERE owner = 'UCUSTOI0'
 - Pour lister ou compter les paramètres/colonnes d'une table : SELECT column_name, data_type FROM dba_tab_columns WHERE owner = 'UCUSTOI0' AND table_name = 'VOTRE_TABLE'
 - Pour avoir les tables avec la plus grande taille ou le plus de lignes : SELECT table_name, num_rows FROM dba_tables WHERE owner = 'UCUSTOI0' ORDER BY num_rows DESC FETCH FIRST 20 ROWS ONLY
+- Ne demande JAMAIS la taille avec la colonne `bytes` ou `size` (elles n'existent pas ici), utilise l'indicateur `num_rows` à la place.
 
 Tables trouvées dans le contexte :
 {context}
