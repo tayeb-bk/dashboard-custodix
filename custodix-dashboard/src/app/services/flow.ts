@@ -23,6 +23,17 @@ export class Flow {
     return this.http.get<any[]>(`${this.apiUrl}/stats/type`);
   }
 
+  getFinancialVolumeByStatus(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/stats/volume-by-status`);
+  }
+
+  getTopRoutes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/stats/top-routes`);
+  }
+
+  getLeadTimeTrends(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/stats/lead-time-trends`);
+  }
 
   getTimeline(params: {
     status: string;

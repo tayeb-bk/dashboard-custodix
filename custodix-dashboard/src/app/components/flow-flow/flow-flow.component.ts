@@ -4,6 +4,7 @@ import { Flow } from '../../services/flow';
 import { NgApexchartsModule } from "ng-apexcharts";
 import {
   ApexAxisChartSeries,
+  ApexNonAxisChartSeries,
   ApexChart,
   ApexXAxis,
   ApexStroke,
@@ -12,7 +13,9 @@ import {
   ApexPlotOptions,
   ApexYAxis,
   ApexGrid,
-  ApexFill
+  ApexFill,
+  ApexLegend,
+  ApexResponsive
 } from "ng-apexcharts";
 import { FormsModule } from '@angular/forms';
 import { NonPassiveWheelDirective } from '../overview/non-passive-wheel.directive';
@@ -40,11 +43,11 @@ export class FlowFlowComponent implements OnInit {
 
   // Filters
   statusList: string[] = [
-    'Processed','Sent','SubWorkflowInTechnicalError','WaitProcessing','Initial','Init',
-    'WaitToBeSent','InTechnicalError','NoContractFound','InitiationError','Rejected',
-    'InitiationFailed','InProcess','WaitAction','MarkedForSuspension','SubWorkflowInProcess',
-    'InBusinessError','PutInQueueFailed','Blocked','Initiated','Acked','SentAndWaitingAck',
-    'Nacked','Canceled'
+    'Processed', 'Sent', 'SubWorkflowInTechnicalError', 'WaitProcessing', 'Initial', 'Init',
+    'WaitToBeSent', 'InTechnicalError', 'NoContractFound', 'InitiationError', 'Rejected',
+    'InitiationFailed', 'InProcess', 'WaitAction', 'MarkedForSuspension', 'SubWorkflowInProcess',
+    'InBusinessError', 'PutInQueueFailed', 'Blocked', 'Initiated', 'Acked', 'SentAndWaitingAck',
+    'Nacked', 'Canceled'
   ];
 
   selectedStatus = 'Processed';
@@ -53,7 +56,7 @@ export class FlowFlowComponent implements OnInit {
   toDate = '';
   maxDate = '';
 
-  constructor(private flowService: Flow) {}
+  constructor(private flowService: Flow) { }
 
   ngOnInit(): void {
     this.maxDate = this.toLocalInputValue(new Date());
@@ -75,6 +78,11 @@ export class FlowFlowComponent implements OnInit {
     this.flowService.getStatsByType().subscribe(data => {
       this.statsByType = data;
     });
+
+    // ===== Nouveaux KPIs =====
+    this.flowService.getFinancialVolumeByStatus().subscribe(data => this.loadVolumeChart(data));
+    this.flowService.getTopRoutes().subscribe(data => this.loadTopRoutesChart(data));
+    this.flowService.getLeadTimeTrends().subscribe(data => this.loadLeadTimeChart(data));
 
     this.loadTimeline();
   }
@@ -141,6 +149,126 @@ export class FlowFlowComponent implements OnInit {
   }
   //////////////////////////////////////
 
+  // ===== NOUVEAU KPI 1 : Volume Financier par Statut (Donut) =====
+  volumeSeries: ApexNonAxisChartSeries = [];
+  volumeLabels: string[] = [];
+  volumeChart: ApexChart = {
+    type: 'donut',
+    height: 300,
+    events: {
+      dataPointSelection: (_event: any, _chartContext: any, config: any) => {
+        const statusClicked = config.w.config.labels[config.dataPointIndex];
+        if (statusClicked && statusClicked !== this.selectedStatus) {
+          this.selectedStatus = statusClicked;
+          this.loadTimeline();
+        }
+      }
+    }
+  };
+  volumeLegend: ApexLegend = {
+    position: 'bottom',
+    fontSize: '12px',
+    labels: { colors: '#64748b' },
+    markers: { size: 6, shape: 'circle' as any }
+  };
+  volumeResponsive: ApexResponsive[] = [
+    { breakpoint: 480, options: { chart: { height: 260 }, legend: { position: 'bottom' } } }
+  ];
+  volumeColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
+
+  loadVolumeChart(data: any[]) {
+    // backend retourne [status, SUM(amount1), COUNT(f)]
+    // Si amount1 est null en DB, on utilise COUNT (d[2]) comme métrique
+    const clean = (data || []).filter(d => d && d[0] != null);
+    this.volumeLabels = clean.map(d => String(d[0]));
+    this.volumeSeries = clean.map(d => {
+      const amount = d[1] != null ? Number(d[1]) : null;
+      const count  = d[2] != null ? Number(d[2]) : 0;
+      return amount !== null && amount > 0 ? amount : count;
+    });
+  }
+
+  // ===== NOUVEAU KPI 2 : Top 5 Routes (Barre Horizontale) =====
+  topRoutesSeries: ApexAxisChartSeries = [{ name: 'Volume', data: [] }];
+  topRoutesChart: ApexChart = { type: 'bar', height: 300, toolbar: { show: false } };
+  topRoutesXAxis: ApexXAxis = {
+    categories: [],
+    labels: { style: { colors: '#64748b', fontSize: '11px' } }
+  };
+  topRoutesPlotOptions: ApexPlotOptions = {
+    bar: { horizontal: true, borderRadius: 6, distributed: true, barHeight: '60%' }
+  };
+  topRoutesDataLabels: ApexDataLabels = {
+    enabled: true,
+    style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 },
+    formatter: (val: any) => this.kFormat(val)
+  };
+  topRoutesFill: ApexFill = {
+    colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe']
+  };
+  topRoutesTooltip: ApexTooltip = {
+    y: { formatter: (val: any) => val.toLocaleString('fr-FR') + ' €' }
+  };
+
+  loadTopRoutesChart(data: any[]) {
+    // backend: [senderIdentifier, receiverIdentifier, routeId, SUM(amount1), COUNT(f)]
+    // d[0] et d[1] peuvent être null → on utilise d[2] (routeId) comme label
+    // d[3] = null (amount1 vide en DB) → on utilise d[4] (COUNT) comme valeur
+    const clean = (data || [])
+      .filter(d => d && (d[2] != null || d[0] != null)) // au moins un identifiant
+      .map(d => ({
+        label: d[2] || `${d[0] || '?'} → ${d[1] || '?'}`,
+        value: d[4] != null ? Number(d[4]) : 0
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    this.topRoutesXAxis = { ...this.topRoutesXAxis, categories: clean.map(d => d.label) };
+    this.topRoutesSeries = [{ name: 'Nombre de flux', data: clean.map(d => d.value) }];
+  }
+
+  // ===== NOUVEAU KPI 3 : Lead Time Trends (Area) =====
+  leadTimeSeries: ApexAxisChartSeries = [{ name: 'Lead Time Moyen (min)', data: [] }];
+  leadTimeChart: ApexChart = {
+    type: 'area',
+    height: 260,
+    toolbar: {
+      show: true,
+      tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true }
+    },
+    zoom: { enabled: true, type: 'x' },
+    selection: { enabled: true, type: 'x' }
+  };
+  leadTimeXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8', fontSize: '11px' } } };
+  leadTimeStroke: ApexStroke = { curve: 'smooth', width: 3 };
+  leadTimeDataLabels: ApexDataLabels = { enabled: false };
+  leadTimeYAxis: ApexYAxis = {
+    labels: {
+      formatter: (val: number) => val != null ? val.toFixed(1) + ' min' : ''
+    }
+  };
+  leadTimeFill: ApexFill = {
+    type: 'gradient',
+    gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] }
+  };
+  leadTimeTooltip: ApexTooltip = {
+    x: { format: 'dd/MM/yyyy' },
+    y: { formatter: (val: any) => val.toFixed(1) + ' min' }
+  };
+
+  loadLeadTimeChart(data: any[]) {
+    const seriesData = (data || []).filter(d => d && d[0] && d[1] != null).map(d => ({
+      x: new Date(d[0]).getTime(),
+      y: parseFloat(Number(d[1]).toFixed(2))
+    }));
+    // Nouveau référentiel d'objet pour forcer la détection de changement Angular
+    this.leadTimeSeries = [{ name: 'Lead Time Moyen (min)', data: [...seriesData] }];
+  }
+
+  reloadLeadTime() {
+    this.flowService.getLeadTimeTrends().subscribe(data => this.loadLeadTimeChart(data));
+  }
+
   private initChart() {
     this.timelineChart = {
       type: 'area',
@@ -156,6 +284,6 @@ export class FlowFlowComponent implements OnInit {
 
   private toLocalInputValue(date: Date): string {
     const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 }

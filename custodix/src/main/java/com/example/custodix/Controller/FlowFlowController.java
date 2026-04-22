@@ -35,28 +35,47 @@ public class FlowFlowController {
 
     /// //////////////////////////////////1errr
     private String autoBucket(LocalDateTime from, LocalDateTime to) {
-        if (from == null || to == null) return "day";
+        if (from == null || to == null)
+            return "day";
         long hours = Duration.between(from, to).toHours();
-        if (hours <= 48) return "hour";
-        if (hours <= 90 * 24) return "day";
+        if (hours <= 48)
+            return "hour";
+        if (hours <= 90 * 24)
+            return "day";
         return "month";
     }
 
     @GetMapping("/kpi/timeline")
     public List<TimelinePointDTO> timeline(@RequestParam String status,
-                                           @RequestParam(required = false) String from,
-                                           @RequestParam(required = false) String to,
-                                           @RequestParam(required = false, defaultValue = "auto") String bucket,
-                                           @RequestParam(required = false) String type,
-                                           @RequestParam(required = false) String flowType,
-                                           @RequestParam(required = false) String routeId,
-                                           @RequestParam(required = false) String sender,
-                                           @RequestParam(required = false) String receiver) {
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "auto") String bucket,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String flowType,
+            @RequestParam(required = false) String routeId,
+            @RequestParam(required = false) String sender,
+            @RequestParam(required = false) String receiver) {
 
         LocalDateTime fromDate = (from == null ? null : LocalDateTime.parse(from));
         LocalDateTime toDate = (to == null ? null : LocalDateTime.parse(to));
         String b = bucket.equals("auto") ? autoBucket(fromDate, toDate) : bucket;
 
         return service.getTimeline(status, fromDate, toDate, b, type, flowType, routeId, sender, receiver);
+    }
+
+    /// ////////////////////////// Nouveaux KPIs
+    @GetMapping("/stats/volume-by-status")
+    public List<Object[]> getVolumeByStatus() {
+        return service.getVolumeByStatus();
+    }
+
+    @GetMapping("/stats/top-routes")
+    public List<Object[]> getTop5Routes() {
+        return service.getTop5Routes();
+    }
+
+    @GetMapping("/stats/lead-time-trends")
+    public List<Object[]> getLeadTimeTrends() {
+        return service.getLeadTimeTrends();
     }
 }

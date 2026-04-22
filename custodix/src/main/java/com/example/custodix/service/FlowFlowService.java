@@ -30,11 +30,10 @@ public class FlowFlowService {
         return repository.countByFlowType();
     }
 
-
-/// //////////////////////////1errrr
+    /// //////////////////////////1errrr
 
     public List<TimelinePointDTO> getTimeline(String status, LocalDateTime from, LocalDateTime to, String bucket,
-                                              String type, String flowType, String routeId, String sender, String receiver) {
+            String type, String flowType, String routeId, String sender, String receiver) {
 
         List<Object[]> rows = switch (bucket) {
             case "hour" -> repository.timelineHour(status, from, to, type, flowType, routeId, sender, receiver);
@@ -54,5 +53,21 @@ public class FlowFlowService {
                     return new TimelinePointDTO(bucketValue, ((Number) r[1]).longValue());
                 })
                 .toList();
+    }
+
+    /// ////////////////////////// Nouveaux KPIs
+
+    public List<Object[]> getVolumeByStatus() {
+        return repository.getFinancialVolumeByStatus();
+    }
+
+    public List<Object[]> getTop5Routes() {
+        return repository.getTopRoutesByVolume().stream()
+                .limit(5)
+                .toList();
+    }
+
+    public List<Object[]> getLeadTimeTrends() {
+        return repository.getAverageProcessingTimePerDay();
     }
 }

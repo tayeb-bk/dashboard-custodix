@@ -39,13 +39,8 @@
       <h2 class="section-title">Évolution des flux</h2>
     </div>
 
-    <apx-chart nonPassiveWheel
-               [series]="timelineSeries"
-      [chart]="timelineChart"
-      [xaxis]="timelineXAxis"
-      [stroke]="timelineStroke"
-      [dataLabels]="timelineDataLabels"
-      [tooltip]="timelineTooltip">
+    <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
+      [stroke]="timelineStroke" [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip">
     </apx-chart>
 
     <div class="empty-state" *ngIf="timelineSeries[0]?.data?.length === 0">
@@ -54,26 +49,102 @@
     </div>
   </div>
 
+  <!-- ===== NOUVEAUX KPIs : Volume + Top Routes (2 colonnes) ===== -->
+  <div class="kpi-charts-row">
 
+    <!-- 1. Volume Financier par Statut (Donut) -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-icon volume-icon">💰</div>
+        <div>
+          <h3 class="chart-card-title">Volume Financier</h3>
+          <p class="chart-card-sub">Cliquez sur un statut pour filtrer la timeline</p>
+        </div>
+      </div>
+      <div class="chart-card-body">
+        <apx-chart *ngIf="volumeSeries.length > 0"
+          nonPassiveWheel
+          class="flow-type-chart"
+          [series]="volumeSeries"
+          [chart]="volumeChart"
+          [labels]="volumeLabels"
+          [legend]="volumeLegend"
+          [responsive]="volumeResponsive"
+          [colors]="volumeColors">
+        </apx-chart>
+        <div class="empty-state-mini" *ngIf="volumeSeries.length === 0">
+          <span>📊</span> Chargement...
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Top 5 Routes -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-icon routes-icon">🛤️</div>
+        <div>
+          <h3 class="chart-card-title">Top 5 Routes</h3>
+          <p class="chart-card-sub">Routes générant le plus de volume (€)</p>
+        </div>
+      </div>
+      <div class="chart-card-body">
+        <apx-chart
+          nonPassiveWheel
+          class="flow-type-chart"
+          [series]="topRoutesSeries"
+          [chart]="topRoutesChart"
+          [xaxis]="topRoutesXAxis"
+          [plotOptions]="topRoutesPlotOptions"
+          [dataLabels]="topRoutesDataLabels"
+          [fill]="topRoutesFill"
+          [tooltip]="topRoutesTooltip">
+        </apx-chart>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 3. Lead Time Trends (Pleine largeur) -->
+  <div class="chart-card chart-card-wide">
+    <div class="chart-card-header">
+      <div class="chart-card-icon leadtime-icon">⏱️</div>
+      <div style="flex: 1;">
+        <h3 class="chart-card-title">Temps de Traitement Moyen</h3>
+        <p class="chart-card-sub">Évolution journalière du lead time (en minutes)</p>
+      </div>
+      <button class="refresh-btn" (click)="reloadLeadTime()" title="Actualiser">
+        🔄 Actualiser
+      </button>
+    </div>
+    <div class="chart-card-body">
+      <apx-chart
+        *ngIf="leadTimeSeries[0]?.data?.length"
+        nonPassiveWheel
+        [series]="leadTimeSeries"
+        [chart]="leadTimeChart"
+        [xaxis]="leadTimeXAxis"
+        [yaxis]="leadTimeYAxis"
+        [stroke]="leadTimeStroke"
+        [dataLabels]="leadTimeDataLabels"
+        [fill]="leadTimeFill"
+        [tooltip]="leadTimeTooltip">
+      </apx-chart>
+      <div class="empty-state-mini" *ngIf="!leadTimeSeries[0]?.data?.length">
+        <span>⏳</span> Aucune donnée de lead time disponible
+      </div>
+    </div>
+  </div>
 
   <!-- ===== flowtype ===== -->
-
-  <div class="flow-type-card">
+  <div class="flow-type-card" style="margin-bottom: 28px;">
     <div class="flow-type-header">
       <span class="flow-type-title">Flow Type</span>
       <span class="flow-type-sub">— Top flowtype_name</span>
     </div>
 
-    <apx-chart nonPassiveWheel class="flow-type-chart"
-               [series]="flowTypeSeries"
-               [chart]="flowTypeChart"
-               [plotOptions]="flowTypePlotOptions"
-               [dataLabels]="flowTypeDataLabels"
-               [xaxis]="flowTypeXAxis"
-               [yaxis]="flowTypeYAxis"
-               [grid]="flowTypeGrid"
-               [fill]="flowTypeFill"
-               [tooltip]="flowTypeTooltip">
+    <apx-chart nonPassiveWheel class="flow-type-chart" [series]="flowTypeSeries" [chart]="flowTypeChart"
+      [plotOptions]="flowTypePlotOptions" [dataLabels]="flowTypeDataLabels" [xaxis]="flowTypeXAxis"
+      [yaxis]="flowTypeYAxis" [grid]="flowTypeGrid" [fill]="flowTypeFill" [tooltip]="flowTypeTooltip">
     </apx-chart>
   </div>
 
@@ -130,20 +201,20 @@
     <div class="table-wrapper" *ngIf="!loading">
       <table class="data-table">
         <thead>
-        <tr>
-          <th>ID</th>
-          <th>Statut</th>
-          <th>Type</th>
-          <th>Flow Type</th>
-          <th>Expéditeur</th>
-          <th>Destinataire</th>
-          <th>Date Création</th>
-        </tr>
+          <tr>
+            <th>ID</th>
+            <th>Statut</th>
+            <th>Type</th>
+            <th>Flow Type</th>
+            <th>Expéditeur</th>
+            <th>Destinataire</th>
+            <th>Date Création</th>
+          </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let flow of flows" class="table-row">
-          <td class="col-id">#{{ flow.id }}</td>
-          <td>
+          <tr *ngFor="let flow of flows" class="table-row">
+            <td class="col-id">#{{ flow.id }}</td>
+            <td>
               <span class="status-badge" [ngClass]="{
                 'status-success': flow.status === 'SUCCESS' || flow.status === 'COMPLETED',
                 'status-error':   flow.status === 'ERROR' || flow.status === 'FAILED',
@@ -153,13 +224,13 @@
                 <span class="status-dot-inline"></span>
                 {{ flow.status }}
               </span>
-          </td>
-          <td class="col-type">{{ flow.type }}</td>
-          <td class="col-flowtype">{{ flow.flowTypeName }}</td>
-          <td class="col-sender">{{ flow.senderIdentifier }}</td>
-          <td class="col-receiver">{{ flow.receiverIdentifier }}</td>
-          <td class="col-date">{{ flow.creationDate | date:'dd/MM/yyyy HH:mm' }}</td>
-        </tr>
+            </td>
+            <td class="col-type">{{ flow.type }}</td>
+            <td class="col-flowtype">{{ flow.flowTypeName }}</td>
+            <td class="col-sender">{{ flow.senderIdentifier }}</td>
+            <td class="col-receiver">{{ flow.receiverIdentifier }}</td>
+            <td class="col-date">{{ flow.creationDate | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
         </tbody>
       </table>
 
