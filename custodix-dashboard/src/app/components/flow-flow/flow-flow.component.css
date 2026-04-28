@@ -270,7 +270,9 @@
   border-radius: 14px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(99, 102, 241, 0.08);
   padding: 0;
-  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
   /* Animation */
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
@@ -1736,4 +1738,126 @@ apx-chart {
 .info-btn-mini:hover {
   background: rgba(99, 102, 241, 0.2);
   transform: scale(1.1);
+}
+
+/* ===== LEAD TIME BADGES ===== */
+.lead-summary-badges {
+  display: flex;
+  gap: 12px;
+  margin-right: 15px;
+}
+
+.l-badge {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 10px;
+  min-width: 80px;
+  transition: all 0.2s;
+}
+
+.l-badge-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.l-badge-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.l-good {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.l-good .l-badge-val { color: #10b981; }
+
+.l-bad {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.l-bad .l-badge-val { color: #ef4444; }
+
+.refresh-btn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  transform: rotate(180deg);
+}
+
+/* ===== VIEW TOGGLE BUTTON ===== */
+.view-toggle-btn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.view-toggle-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  transform: translateY(-1px);
+}
+
+.view-toggle-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== SCROLL BODY IMPROVEMENTS ===== */
+.scroll-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.scroll-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-body::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.scroll-body:hover::-webkit-scrollbar-thumb,
+.scroll-body::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent-blue);
 }

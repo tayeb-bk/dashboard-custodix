@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Flow } from '../../services/flow';
 import { NgApexchartsModule } from "ng-apexcharts";
@@ -57,6 +57,9 @@ export class FlowFlowComponent implements OnInit {
   // ===== KPI Summary =====
   kpiSummary: { total: number; bloques: number; tauxErreur: number; leadTime: number } | null = null;
   slaBadge: { label: string; css: string } = { label: '—', css: 'ok' };
+  currentPeriodAvg: number = 0;
+  selectedPointValue: number | null = null;
+  selectedPointDate: string | null = null;
 
   // Popover explicatif pour chaque KPI card
   activeKpiCard: string | null = null;
@@ -109,6 +112,20 @@ export class FlowFlowComponent implements OnInit {
       what: 'Identification des 5 routes les plus actives ou critiques selon le mode choisi (Volume, Erreurs ou Délai).',
       how: 'Analyse des chemins Sender ➜ Receiver via les IDs de route. Les sparklines montrent la tendance sur 24h.',
       action: 'Cliquez sur une carte de route pour filtrer instantanément la timeline et analyser son comportement spécifique.'
+    },
+    flowtype: {
+      title: 'Répartition par Type de Flux',
+      icon: '🔀',
+      what: 'Analyse volumétrique des flux financiers regroupés par leur nature technique (FlowType).',
+      how: 'Agrégation automatique des flux par type. Les noms techniques sont simplifiés pour une meilleure lisibilité.',
+      action: 'Détecter une suractivité inhabituelle sur un canal spécifique ou optimiser la gestion des types de flux dominants.'
+    },
+    leadtime_trends: {
+      title: 'Performance & Respect SLA',
+      icon: '⏱️',
+      what: 'Analyse de la réactivité bout-en-bout de la plateforme (Délai moyen de traitement quotidien).',
+      how: 'Calcul du temps écoulé entre la création et l\'état final. La ligne rouge (30 min) représente notre engagement de qualité contractuel (SLA).',
+      action: 'Garantir la fluidité des échanges et prouver le respect des contrats de service. Un délai stable est le signe d\'une infrastructure saine.'
     }
   };
 
@@ -157,20 +174,50 @@ export class FlowFlowComponent implements OnInit {
     this.loadTimeline();
   }
 
-  // ===== Flow Type Chart =====
-  flowTypeSeries: ApexAxisChartSeries = [{ name: 'Flux', data: [] }];
-  flowTypeChart: ApexChart = { type: 'bar', height: 220, toolbar: { show: false } };
-  flowTypePlotOptions: ApexPlotOptions = { bar: { borderRadius: 6, columnWidth: '55%', distributed: true } };
-  flowTypeDataLabels: ApexDataLabels = {
-    enabled: true, offsetY: -10,
-    style: { colors: ['#6b7280'], fontSize: '12px', fontWeight: 600 },
-    formatter: (val) => this.kFormat(val)
+  // ===== Flow Type Chart (Horizontal Bars) =====
+  flowTypeSeries: any[] = [];
+  showAllFlowTypes = false;
+  flowTypeChart: any = {
+    type: 'bar', height: 450, toolbar: { show: false },
+    zoom: { enabled: false }, // Crucial : désactiver le zoom pour libérer la molette
+    pan: { enabled: false }   // Crucial : désactiver le pan
   };
-  flowTypeXAxis: ApexXAxis = { categories: [], labels: { style: { colors: '#94a3b8', fontSize: '12px' } } };
-  flowTypeYAxis: ApexYAxis = { show: false };
-  flowTypeGrid: ApexGrid = { show: false };
-  flowTypeFill: ApexFill = { colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#06b6d4', '#10b981', '#f59e0b'] };
-  flowTypeTooltip: ApexTooltip = { y: { formatter: (val) => this.kFormat(val) } };
+  flowTypePlotOptions: any = {
+    bar: {
+      horizontal: true,
+      borderRadius: 4,
+      barHeight: '70%',
+      distributed: true, // Une couleur différente par barre
+      dataLabels: { position: 'top' }
+    }
+  };
+  flowTypeDataLabels: any = {
+    enabled: true,
+    textAnchor: 'start',
+    style: { colors: ['#fff'], fontSize: '11px', fontWeight: 600 },
+    formatter: (val: any, opt: any) => opt.w.globals.labels[opt.dataPointIndex],
+    offsetX: 10
+  };
+  flowTypeXAxis: any = {
+    categories: [],
+    labels: { style: { colors: '#64748b' }, formatter: (val: any) => this.kFormat(val) },
+    axisBorder: { show: false }
+  };
+  flowTypeYAxis: any = {
+    labels: {
+      show: true,
+      style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 500 }
+    }
+  };
+  flowTypeFill: any = {
+    type: 'solid',
+    opacity: 0.85,
+    colors: ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#f43f5e', '#14b8a6', '#64748b']
+  };
+  flowTypeTooltip: any = {
+    theme: 'dark',
+    y: { formatter: (val: any) => val.toLocaleString('fr-FR') + ' flux' }
+  };
 
   // ===== Volume Donut =====
   volumeSeries: ApexNonAxisChartSeries = [];
@@ -236,7 +283,7 @@ export class FlowFlowComponent implements OnInit {
 
   selectOtherStatus(item: { label: string, value: number, percentage: number }) {
     this.selectedOtherStatus = item.label;
-    
+
     // Mettre à jour le label central du donut
     this.volumePlotOptions = {
       ...this.volumePlotOptions,
@@ -287,11 +334,11 @@ export class FlowFlowComponent implements OnInit {
   routeMode: 'volume' | 'amount' | 'errors' | 'leadtime' = 'volume';
   topRoutesData: any[] = [];
   topRoutesSeries: ApexAxisChartSeries = [{ name: 'Nombre de flux', data: [] }];
-  
+
   sparklineChart: ApexChart = { type: 'area', height: 35, sparkline: { enabled: true } };
   sparklineStroke: ApexStroke = { curve: 'smooth', width: 2 };
   sparklineTooltip: ApexTooltip = { fixed: { enabled: false } };
-  topRoutesChart: ApexChart = { 
+  topRoutesChart: ApexChart = {
     type: 'bar', height: 260, toolbar: { show: false },
     events: {
       dataPointSelection: (event, chartContext, config) => {
@@ -302,8 +349,8 @@ export class FlowFlowComponent implements OnInit {
   };
   topRoutesLegend: ApexLegend = { show: false };
   topRoutesYAxis: ApexYAxis = { labels: { show: false } };
-  topRoutesXAxis: ApexXAxis = { 
-    categories: [], 
+  topRoutesXAxis: ApexXAxis = {
+    categories: [],
     labels: { show: false }, // Masquer les labels répétitifs car on a les cards
     axisBorder: { show: false },
     axisTicks: { show: false }
@@ -313,7 +360,7 @@ export class FlowFlowComponent implements OnInit {
     enabled: true, style: { colors: ['#fff'], fontSize: '11px', fontWeight: 700 },
     formatter: (val: any) => this.kFormat(val)
   };
-  topRoutesFill: ApexFill = { colors: ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'] };
+  topRoutesFill: ApexFill = { colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'] };
   topRoutesTooltip: ApexTooltip = { y: { formatter: (val: any) => val.toLocaleString('fr-FR') + ' flux' } };
 
   // ===== Lead Time =====
@@ -321,7 +368,27 @@ export class FlowFlowComponent implements OnInit {
   leadTimeChart: ApexChart = {
     type: 'area', height: 260,
     toolbar: { show: true, tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
-    zoom: { enabled: true, type: 'x' }
+    zoom: { enabled: true, type: 'x' },
+    events: {
+      mouseMove: (event, chartContext, config) => {
+        const idx = config.dataPointIndex;
+        if (idx !== -1 && this.leadTimeSeries[0]?.data?.[idx]) {
+          const point: any = this.leadTimeSeries[0].data[idx];
+          this.selectedPointValue = point.y;
+          this.selectedPointDate = new Date(point.x).toLocaleDateString('fr-FR');
+          this.cd.detectChanges(); // Forcer la mise à jour de la vue
+        }
+      },
+      mouseLeave: () => {
+        this.selectedPointValue = null;
+        this.selectedPointDate = null;
+        this.cd.detectChanges();
+      }
+    }
+  };
+  leadTimeMarkers: any = {
+    size: 0,
+    hover: { size: 6, sizeOffset: 3 }
   };
   leadTimeXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8', fontSize: '11px' } } };
   leadTimeStroke: ApexStroke = { curve: 'smooth', width: 3 };
@@ -345,12 +412,12 @@ export class FlowFlowComponent implements OnInit {
   tableTotalPages = 0;
 
   // Filtres du tableau (indépendants des filtres timeline)
-  tableFilterStatus   = '';
-  tableFilterType     = '';
+  tableFilterStatus = '';
+  tableFilterType = '';
   tableFilterFlowType = '';
-  tableFilterFrom     = '';
-  tableFilterTo       = '';
-  tableFilterScore    = ''; // 'critique' | 'vigilance' | 'ok' | ''
+  tableFilterFrom = '';
+  tableFilterTo = '';
+  tableFilterScore = ''; // 'critique' | 'vigilance' | 'ok' | ''
 
   // Listes pour les selects du tableau
   allTypesList: string[] = [];
@@ -361,7 +428,7 @@ export class FlowFlowComponent implements OnInit {
   selectedFlowScore: { score: number; label: string; level: string; breakdown: any[] } | null = null;
   detailPanelOpen = false;
 
-  constructor(private flowService: Flow) {}
+  constructor(private flowService: Flow, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.maxDate = this.toLocalInputValue(new Date());
@@ -371,9 +438,9 @@ export class FlowFlowComponent implements OnInit {
     this.flowService.getKpiSummary().subscribe(data => {
       if (data && data[0]) {
         const row = data[0];
-        const total    = Number(row[0]) || 0;
-        const bloques  = Number(row[1]) || 0;
-        const taux     = Number(row[2]) || 0;
+        const total = Number(row[0]) || 0;
+        const bloques = Number(row[1]) || 0;
+        const taux = Number(row[2]) || 0;
         const leadTime = Number(row[3]) || 0;
         this.kpiSummary = { total, bloques, tauxErreur: taux, leadTime };
         this.slaBadge = leadTime <= SLA_THRESHOLD_MIN
@@ -415,15 +482,16 @@ export class FlowFlowComponent implements OnInit {
 
     const params: any = { status: this.selectedStatus, bucket: this.selectedBucket };
     if (this.fromDate) params.from = this.fromDate;
-    if (this.toDate)   params.to   = this.toDate;
+    if (this.toDate) params.to = this.toDate;
     if (this.selectedRouteId) params.routeId = this.selectedRouteId;
 
     this.flowService.getTimeline(params).subscribe(data => {
       const points = (data || []).map(d => ({ x: new Date(d.bucket).getTime(), y: d.total }));
-      const avg    = points.length ? Math.round(points.reduce((s, p) => s + p.y, 0) / points.length) : 0;
+      const avg = points.length ? Math.round(points.reduce((s, p) => s + p.y, 0) / points.length) : 0;
       this.timelineSeries = [{ name: 'Flux', data: points }];
       this.timelineAnnotations = {
-        yaxis: [{ y: avg, borderColor: '#94a3b8', borderWidth: 1, strokeDashArray: 4,
+        yaxis: [{
+          y: avg, borderColor: '#94a3b8', borderWidth: 1, strokeDashArray: 4,
           label: { text: `Moy. ${avg.toLocaleString('fr-FR')}`, style: { color: '#64748b', background: 'rgba(148,163,184,0.1)', fontSize: '11px' } }
         }]
       };
@@ -433,30 +501,63 @@ export class FlowFlowComponent implements OnInit {
 
   loadFlowType() {
     this.flowService.getStatsByType().subscribe(data => {
-      const clean = (data || []).filter(d => d && d[0] != null && d[1] != null);
-      this.flowTypeSeries = [{ name: 'Flux', data: clean.map(d => d[1]) }];
-      this.flowTypeXAxis  = { ...this.flowTypeXAxis, categories: clean.map(d => d[0]) };
-      this.allFlowTypesList = clean.map(d => d[0]).filter(Boolean);
+      let raw = (data || []).filter(d => d && d[0] != null && d[1] != null)
+        .sort((a, b) => b[1] - a[1]);
+
+      let finalData: any[] = [];
+
+      if (this.showAllFlowTypes) {
+        finalData = raw;
+      } else {
+        // Regroupement "Autres" pour les types < 1% du total
+        const total = raw.reduce((sum, d) => sum + d[1], 0);
+        const threshold = total * 0.01; // 1%
+
+        const top = raw.filter(d => d[1] >= threshold).slice(0, 8);
+        const others = raw.filter(d => d[1] < threshold || !top.includes(d));
+
+        finalData = [...top];
+        if (others.length > 0) {
+          const othersSum = others.reduce((sum, d) => sum + d[1], 0);
+          finalData.push(['Autres Types', othersSum]);
+        }
+      }
+
+      const labels = finalData.map(d => this.formatType(d[0]));
+      const values = finalData.map(d => d[1]);
+
+      this.flowTypeSeries = [{ name: 'Flux', data: values }];
+      this.flowTypeXAxis = { ...this.flowTypeXAxis, categories: labels };
+      this.allFlowTypesList = raw.map(d => d[0]).filter(Boolean);
+
+      // Ajuster la hauteur du contenu interne
+      const chartHeight = Math.max(300, finalData.length * 40 + 60);
+      this.flowTypeChart = { ...this.flowTypeChart, height: chartHeight };
     });
+  }
+
+  toggleFlowTypeView() {
+    this.showAllFlowTypes = !this.showAllFlowTypes;
+    this.loadFlowType();
   }
 
   loadVolumeChart(data: any[]) {
     const raw = (data || []).filter(d => d && d[0] != null);
-    
+
     // Top 3 à garder
     const topLabels = ['Processed', 'Blocked', 'Sent'];
     const seriesMap: Record<string, number> = {};
     const otherDetails: { label: string, value: number }[] = [];
-    
+
     let totalOther = 0;
     let totalAll = 0;
 
     raw.forEach(d => {
       const label = String(d[0]);
       const amount = d[1] != null ? Number(d[1]) : null;
-      const count  = d[2] != null ? Number(d[2]) : 0;
+      const count = d[2] != null ? Number(d[2]) : 0;
       const value = amount !== null && amount > 0 ? amount : count;
-      
+
       totalAll += value;
 
       if (topLabels.includes(label)) {
@@ -493,7 +594,7 @@ export class FlowFlowComponent implements OnInit {
       finalLabels.push('Autre');
       finalSeries.push(totalOther);
       finalColors.push(colorMap['Autre']);
-      
+
       // Détails de "Autre" triés par importance
       this.volumeOtherDetails = otherDetails
         .sort((a, b) => b.value - a.value)
@@ -555,10 +656,10 @@ export class FlowFlowComponent implements OnInit {
       return d.count;
     });
 
-    this.topRoutesXAxis  = { ...this.topRoutesXAxis, categories };
-    this.topRoutesSeries = [{ 
-      name: this.routeMode === 'amount' ? 'Montant (€)' : this.routeMode === 'errors' ? 'Erreurs' : this.routeMode === 'leadtime' ? 'Lead Time (min)' : 'Volume', 
-      data: seriesData 
+    this.topRoutesXAxis = { ...this.topRoutesXAxis, categories };
+    this.topRoutesSeries = [{
+      name: this.routeMode === 'amount' ? 'Montant (€)' : this.routeMode === 'errors' ? 'Erreurs' : this.routeMode === 'leadtime' ? 'Lead Time (min)' : 'Volume',
+      data: seriesData
     }];
   }
 
@@ -580,10 +681,31 @@ export class FlowFlowComponent implements OnInit {
     const seriesData = (data || []).filter(d => d && d[0] && d[1] != null)
       .map(d => ({ x: new Date(d[0]).getTime(), y: parseFloat(Number(d[1]).toFixed(2)) }));
     this.leadTimeSeries = [{ name: 'Lead Time Moy. (min)', data: [...seriesData] }];
+
+    // Calcul de la moyenne sur la période affichée
+    if (seriesData.length > 0) {
+      const sum = seriesData.reduce((acc, point) => acc + point.y, 0);
+      this.currentPeriodAvg = sum / seriesData.length;
+    } else {
+      this.currentPeriodAvg = 0;
+    }
   }
 
   reloadLeadTime() {
     this.flowService.getLeadTimeTrends().subscribe(data => this.loadLeadTimeChart(data));
+
+    // Rafraîchir aussi le résumé KPI global pour la cohérence
+    this.flowService.getKpiSummary().subscribe(data => {
+      if (data && data[0]) {
+        const row = data[0];
+        this.kpiSummary = {
+          total: Number(row[0]),
+          bloques: Number(row[1]),
+          tauxErreur: Number(row[2]),
+          leadTime: Number(row[3])
+        };
+      }
+    });
   }
 
   // ===== Tableau Paginé =====
@@ -594,26 +716,26 @@ export class FlowFlowComponent implements OnInit {
       page: this.tablePage,
       size: this.tableSize
     };
-    if (this.tableFilterStatus)   params.status   = this.tableFilterStatus;
-    if (this.tableFilterType)     params.type      = this.tableFilterType;
-    if (this.tableFilterFlowType) params.flowType  = this.tableFilterFlowType;
-    if (this.tableFilterFrom)     params.from      = this.tableFilterFrom;
-    if (this.tableFilterTo)       params.to        = this.tableFilterTo;
-    if (this.tableFilterScore)    params.scoreLevel = this.tableFilterScore;
+    if (this.tableFilterStatus) params.status = this.tableFilterStatus;
+    if (this.tableFilterType) params.type = this.tableFilterType;
+    if (this.tableFilterFlowType) params.flowType = this.tableFilterFlowType;
+    if (this.tableFilterFrom) params.from = this.tableFilterFrom;
+    if (this.tableFilterTo) params.to = this.tableFilterTo;
+    if (this.tableFilterScore) params.scoreLevel = this.tableFilterScore;
 
     this.flowService.getFlowsPaginated(params).subscribe({
       next: (page: any) => {
         let content = page.content || [];
 
-        this.tableFlows         = content;
+        this.tableFlows = content;
         this.tableTotalElements = page.totalElements || 0;
-        this.tableTotalPages    = page.totalPages    || 0;
-        this.tableLoading       = false;
+        this.tableTotalPages = page.totalPages || 0;
+        this.tableLoading = false;
       },
-      error: (err) => { 
+      error: (err) => {
         console.error("Erreur de pagination:", err);
-        this.tableLoading = false; 
-        this.tableFlows = []; 
+        this.tableLoading = false;
+        this.tableFlows = [];
       }
     });
   }
@@ -626,11 +748,11 @@ export class FlowFlowComponent implements OnInit {
 
   resetTableFilters() {
     this.tableFilterStatus = '';
-    this.tableFilterType   = '';
+    this.tableFilterType = '';
     this.tableFilterFlowType = '';
-    this.tableFilterFrom   = '';
-    this.tableFilterTo     = '';
-    this.tableFilterScore  = '';
+    this.tableFilterFrom = '';
+    this.tableFilterTo = '';
+    this.tableFilterScore = '';
     this.tablePage = 0;
     this.loadTablePage();
     this.closeDetail();
@@ -640,18 +762,18 @@ export class FlowFlowComponent implements OnInit {
   nextTablePage() { if (this.tablePage < this.tableTotalPages - 1) { this.tablePage++; this.loadTablePage(); } }
 
   get tablePageStart() { return this.tablePage * this.tableSize + 1; }
-  get tablePageEnd()   { return Math.min((this.tablePage + 1) * this.tableSize, this.tableTotalElements); }
+  get tablePageEnd() { return Math.min((this.tablePage + 1) * this.tableSize, this.tableTotalElements); }
 
   // ===== Carte Détail =====
   openDetail(flow: any) {
-    this.selectedFlow      = flow;
+    this.selectedFlow = flow;
     this.selectedFlowScore = this.getCriticalityScoreDetailed(flow);
-    this.detailPanelOpen   = true;
+    this.detailPanelOpen = true;
   }
 
   closeDetail() {
-    this.detailPanelOpen   = false;
-    this.selectedFlow      = null;
+    this.detailPanelOpen = false;
+    this.selectedFlow = null;
     this.selectedFlowScore = null;
   }
 
@@ -699,14 +821,14 @@ export class FlowFlowComponent implements OnInit {
 
   // ===== Helpers =====
   getStatusCss(status: string): string {
-    const ok      = ['Processed', 'Sent', 'Acked', 'SentAndWaitingAck', 'Initiated', 'Completed'];
-    const error   = ['InTechnicalError', 'Blocked', 'Rejected', 'InBusinessError', 'InitiationFailed', 'Nacked', 'PutInQueueFailed', 'Canceled', 'SubWorkflowInTechnicalError'];
+    const ok = ['Processed', 'Sent', 'Acked', 'SentAndWaitingAck', 'Initiated', 'Completed'];
+    const error = ['InTechnicalError', 'Blocked', 'Rejected', 'InBusinessError', 'InitiationFailed', 'Nacked', 'PutInQueueFailed', 'Canceled', 'SubWorkflowInTechnicalError'];
     const warning = ['WaitAction', 'WaitProcessing', 'InitiationError', 'NoContractFound', 'MarkedForSuspension', 'SubWorkflowInProcess'];
-    const proc    = ['InProcess', 'WaitToBeSent', 'Init', 'Initial'];
-    if (ok.includes(status))      return 'status-success';
-    if (error.includes(status))   return 'status-error';
+    const proc = ['InProcess', 'WaitToBeSent', 'Init', 'Initial'];
+    if (ok.includes(status)) return 'status-success';
+    if (error.includes(status)) return 'status-error';
     if (warning.includes(status)) return 'status-warning';
-    if (proc.includes(status))    return 'status-processing';
+    if (proc.includes(status)) return 'status-processing';
     return 'status-default';
   }
 
@@ -735,11 +857,11 @@ export class FlowFlowComponent implements OnInit {
   }
 
   private initChart() {
-    this.timelineChart       = { type: 'area', height: 260, toolbar: { show: false } };
-    this.timelineXAxis       = { type: 'datetime', labels: { style: { colors: '#94a3b8' } } };
-    this.timelineStroke      = { curve: 'smooth', width: 3 };
-    this.timelineDataLabels  = { enabled: false };
-    this.timelineTooltip     = { x: { format: 'dd/MM/yyyy HH:mm' } };
+    this.timelineChart = { type: 'area', height: 260, toolbar: { show: false } };
+    this.timelineXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8' } } };
+    this.timelineStroke = { curve: 'smooth', width: 3 };
+    this.timelineDataLabels = { enabled: false };
+    this.timelineTooltip = { x: { format: 'dd/MM/yyyy HH:mm' } };
     this.timelineAnnotations = { yaxis: [] };
   }
 

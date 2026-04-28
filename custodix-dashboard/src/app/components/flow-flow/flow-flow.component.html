@@ -23,7 +23,8 @@
         <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
           Total Flux
           <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('total', $event)">
-            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <button
+              style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
             <!-- Popover -->
             <div class="kpi-popover" [class.open]="activeKpiCard === 'total'" (click)="$event.stopPropagation()">
               <div class="kpi-pop-header">
@@ -31,9 +32,15 @@
                 <strong class="kpi-pop-title">{{ kpiInfo['total'].title }}</strong>
                 <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
               </div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['total'].what }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['total'].how }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['total'].action }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                <p>{{ kpiInfo['total'].what }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                <p>{{ kpiInfo['total'].how }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                <p>{{ kpiInfo['total'].action }}</p>
+              </div>
             </div>
           </div>
         </span>
@@ -49,16 +56,23 @@
         <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
           Flux Bloqués
           <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('bloques', $event)">
-            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <button
+              style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
             <div class="kpi-popover" [class.open]="activeKpiCard === 'bloques'" (click)="$event.stopPropagation()">
               <div class="kpi-pop-header">
                 <span class="kpi-pop-icon">{{ kpiInfo['bloques'].icon }}</span>
                 <strong class="kpi-pop-title">{{ kpiInfo['bloques'].title }}</strong>
                 <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
               </div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['bloques'].what }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['bloques'].how }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['bloques'].action }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                <p>{{ kpiInfo['bloques'].what }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                <p>{{ kpiInfo['bloques'].how }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                <p>{{ kpiInfo['bloques'].action }}</p>
+              </div>
             </div>
           </div>
         </span>
@@ -73,24 +87,30 @@
     </div>
 
     <!-- Taux d'Erreur -->
-    <div class="metric-card"
-      [class.green]="kpiSummary.tauxErreur <= 5"
+    <div class="metric-card" [class.green]="kpiSummary.tauxErreur <= 5"
       [class.amber]="kpiSummary.tauxErreur > 5 && kpiSummary.tauxErreur <= 15"
       [class.red-alert]="kpiSummary.tauxErreur > 15">
       <div class="metric-top">
         <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
           Taux d'Erreur
           <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('taux', $event)">
-            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <button
+              style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
             <div class="kpi-popover" [class.open]="activeKpiCard === 'taux'" (click)="$event.stopPropagation()">
               <div class="kpi-pop-header">
                 <span class="kpi-pop-icon">{{ kpiInfo['taux'].icon }}</span>
                 <strong class="kpi-pop-title">{{ kpiInfo['taux'].title }}</strong>
                 <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
               </div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['taux'].what }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['taux'].how }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['taux'].action }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                <p>{{ kpiInfo['taux'].what }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                <p>{{ kpiInfo['taux'].how }}</p>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                <p>{{ kpiInfo['taux'].action }}</p>
+              </div>
             </div>
           </div>
         </span>
@@ -98,39 +118,46 @@
       </div>
       <div class="metric-value">{{ kpiSummary.tauxErreur | number:'1.1-1' }}%</div>
       <div class="metric-footer">
-        {{ kpiSummary.tauxErreur <= 5 ? 'Plateforme saine' : kpiSummary.tauxErreur <= 15 ? 'À surveiller' : 'Intervention urgente' }}
+        {{ kpiSummary.tauxErreur <= 5 ? 'Plateforme saine' : kpiSummary.tauxErreur <=15 ? 'À surveiller'
+          : 'Intervention urgente' }} </div>
       </div>
-    </div>
 
-    <!-- Lead Time Moyen -->
-    <div class="metric-card"
-      [class.green]="kpiSummary.leadTime <= 30"
-      [class.amber]="kpiSummary.leadTime > 30 && kpiSummary.leadTime <= 60"
-      [class.red-alert]="kpiSummary.leadTime > 60">
-      <div class="metric-top">
-        <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
-          Lead Time Moy.
-          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('leadtime', $event)">
-            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
-            <div class="kpi-popover" [class.open]="activeKpiCard === 'leadtime'" (click)="$event.stopPropagation()">
-              <div class="kpi-pop-header">
-                <span class="kpi-pop-icon">{{ kpiInfo['leadtime'].icon }}</span>
-                <strong class="kpi-pop-title">{{ kpiInfo['leadtime'].title }}</strong>
-                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+      <!-- Lead Time Moyen -->
+      <div class="metric-card" [class.green]="kpiSummary.leadTime <= 30"
+        [class.amber]="kpiSummary.leadTime > 30 && kpiSummary.leadTime <= 60"
+        [class.red-alert]="kpiSummary.leadTime > 60">
+        <div class="metric-top">
+          <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
+            Lead Time Moy.
+            <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('leadtime', $event)">
+              <button
+                style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+              <div class="kpi-popover" [class.open]="activeKpiCard === 'leadtime'" (click)="$event.stopPropagation()">
+                <div class="kpi-pop-header">
+                  <span class="kpi-pop-icon">{{ kpiInfo['leadtime'].icon }}</span>
+                  <strong class="kpi-pop-title">{{ kpiInfo['leadtime'].title }}</strong>
+                  <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                  <p>{{ kpiInfo['leadtime'].what }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                  <p>{{ kpiInfo['leadtime'].how }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                  <p>{{ kpiInfo['leadtime'].action }}</p>
+                </div>
               </div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['leadtime'].what }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['leadtime'].how }}</p></div>
-              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['leadtime'].action }}</p></div>
             </div>
-          </div>
-        </span>
-        <div class="metric-icon green">⏱️</div>
+          </span>
+          <div class="metric-icon green">⏱️</div>
+        </div>
+        <div class="metric-value">{{ kpiSummary.leadTime | number:'1.0-1' }}<small
+            style="font-size:14px;font-weight:500"> min</small></div>
+        <div class="metric-footer">
+          <span class="sla-badge" [class]="slaBadge.css">{{ slaBadge.label }}</span>
+        </div>
       </div>
-      <div class="metric-value">{{ kpiSummary.leadTime | number:'1.0-1' }}<small style="font-size:14px;font-weight:500"> min</small></div>
-      <div class="metric-footer">
-        <span class="sla-badge" [class]="slaBadge.css">{{ slaBadge.label }}</span>
-      </div>
-    </div>
 
     </div>
 
@@ -150,27 +177,37 @@
           </h2>
           <!-- Bouton Popover -->
           <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('timeline', $event)">
-            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <button
+              style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
             <!-- POPOVER -->
-            <div class="kpi-popover" style="width: 320px; left: 0; top: 30px;" [class.open]="activeKpiCard === 'timeline'" (click)="$event.stopPropagation()">
+            <div class="kpi-popover" style="width: 320px; left: 0; top: 30px;"
+              [class.open]="activeKpiCard === 'timeline'" (click)="$event.stopPropagation()">
               <div class="kpi-pop-header">
                 <span class="kpi-pop-icon">{{ kpiInfo['timeline'].icon }}</span>
                 <span class="kpi-pop-title">{{ kpiInfo['timeline'].title }}</span>
                 <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
               </div>
               <div class="kpi-pop-body">
-                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span><p>{{ kpiInfo['timeline'].what }}</p></div>
-                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span><p>{{ kpiInfo['timeline'].how }}</p></div>
-                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['timeline'].action }}</p></div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span>
+                  <p>{{ kpiInfo['timeline'].what }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span>
+                  <p>{{ kpiInfo['timeline'].how }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                  <p>{{ kpiInfo['timeline'].action }}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <p class="chart-card-sub" style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Analyse temporelle du volume par statut sélectionné</p>
+        <p class="chart-card-sub" style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Analyse
+          temporelle du volume par statut sélectionné</p>
       </div>
 
       <!-- ===== FILTRES TIMELINE (Plats sous le titre) ===== -->
-      <div class="filters" style="box-shadow: none; padding: 0; border: none; background: transparent; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+      <div class="filters"
+        style="box-shadow: none; padding: 0; border: none; background: transparent; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
         <select [(ngModel)]="selectedStatus" style="height: 38px;">
           <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
         </select>
@@ -183,8 +220,12 @@
         <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate" title="Début" style="height: 38px;">
         <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate" title="Fin" style="height: 38px;">
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button (click)="loadTimeline()" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;">Appliquer</button>
-          <button (click)="resetTimelineFilters()" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); color: #6366f1; border: none; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.2)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">Reset</button>
+          <button (click)="loadTimeline()"
+            style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;">Appliquer</button>
+          <button (click)="resetTimelineFilters()"
+            style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); color: #6366f1; border: none; cursor: pointer; transition: all 0.2s;"
+            onmouseover="this.style.background='rgba(99,102,241,0.2)'"
+            onmouseout="this.style.background='rgba(99,102,241,0.1)'">Reset</button>
         </div>
       </div>
       <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
@@ -207,18 +248,26 @@
               <h3 class="chart-card-title">Volume par Statut</h3>
               <!-- Bouton Popover -->
               <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('volume', $event)">
-                <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 18px; height: 18px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+                <button
+                  style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 18px; height: 18px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
                 <!-- POPOVER -->
-                <div class="kpi-popover" style="width: 280px; left: 0; top: 25px;" [class.open]="activeKpiCard === 'volume'" (click)="$event.stopPropagation()">
+                <div class="kpi-popover" style="width: 280px; left: 0; top: 25px;"
+                  [class.open]="activeKpiCard === 'volume'" (click)="$event.stopPropagation()">
                   <div class="kpi-pop-header">
                     <span class="kpi-pop-icon">{{ kpiInfo['volume'].icon }}</span>
                     <span class="kpi-pop-title">{{ kpiInfo['volume'].title }}</span>
                     <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                   </div>
                   <div class="kpi-pop-body">
-                    <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span><p>{{ kpiInfo['volume'].what }}</p></div>
-                    <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span><p>{{ kpiInfo['volume'].how }}</p></div>
-                    <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['volume'].action }}</p></div>
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span>
+                      <p>{{ kpiInfo['volume'].what }}</p>
+                    </div>
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span>
+                      <p>{{ kpiInfo['volume'].how }}</p>
+                    </div>
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                      <p>{{ kpiInfo['volume'].action }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -231,24 +280,24 @@
             [labels]="volumeLabels" [legend]="volumeLegend" [responsive]="volumeResponsive" [colors]="volumeColors"
             [plotOptions]="volumePlotOptions" [stroke]="volumeStroke" [fill]="volumeFill">
           </apx-chart>
-          
+
           <!-- Carte Détails "Autre" -->
           <div class="detail-other-card" [class.open]="showVolumeOther" *ngIf="volumeOtherDetails.length > 0">
             <div class="other-card-header">
               <div style="display: flex; flex-direction: column;">
                 <span style="font-size: 13px; font-weight: 700;">Détail des statuts "Autre"</span>
-                <small style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Sélectionnez pour isoler le pourcentage</small>
+                <small style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Sélectionnez pour isoler le
+                  pourcentage</small>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button class="btn-reset-donut" *ngIf="selectedOtherStatus" (click)="resetVolumeDonutLabel()" title="Réinitialiser le graphique">🔄</button>
+                <button class="btn-reset-donut" *ngIf="selectedOtherStatus" (click)="resetVolumeDonutLabel()"
+                  title="Réinitialiser le graphique">🔄</button>
                 <button class="close-other" (click)="showVolumeOther = false">✕</button>
               </div>
             </div>
             <div class="other-card-list">
-              <div class="other-item" 
-                   *ngFor="let item of volumeOtherDetails" 
-                   [class.active]="selectedOtherStatus === item.label"
-                   (click)="selectOtherStatus(item)">
+              <div class="other-item" *ngFor="let item of volumeOtherDetails"
+                [class.active]="selectedOtherStatus === item.label" (click)="selectOtherStatus(item)">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <div class="active-dot" *ngIf="selectedOtherStatus === item.label"></div>
                   <span class="other-label">{{ item.label }}</span>
@@ -280,15 +329,22 @@
               <div style="position: relative; display: inline-block;">
                 <button class="info-btn-mini" (click)="toggleKpiCard('routes', $event)">i</button>
                 <!-- Popover Info Routes -->
-                <div class="kpi-popover" [class.open]="activeKpiCard === 'routes'" (click)="$event.stopPropagation()" style="left: 0; top: 30px; width: 280px;">
+                <div class="kpi-popover" [class.open]="activeKpiCard === 'routes'" (click)="$event.stopPropagation()"
+                  style="left: 0; top: 30px; width: 280px;">
                   <div class="kpi-pop-header">
                     <span class="kpi-pop-icon">{{ kpiInfo['routes'].icon }}</span>
                     <strong class="kpi-pop-title">{{ kpiInfo['routes'].title }}</strong>
                     <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                   </div>
-                  <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['routes'].what }}</p></div>
-                  <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['routes'].how }}</p></div>
-                  <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['routes'].action }}</p></div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                    <p>{{ kpiInfo['routes'].what }}</p>
+                  </div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                    <p>{{ kpiInfo['routes'].how }}</p>
+                  </div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                    <p>{{ kpiInfo['routes'].action }}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -297,25 +353,26 @@
 
           <!-- Switch de Mode -->
           <div class="route-mode-switch">
-            <button [class.active]="routeMode === 'volume'" (click)="changeRouteMode('volume')">Volume</button>
-            <button [class.active]="routeMode === 'errors'" (click)="changeRouteMode('errors')">Erreurs</button>
-            <button [class.active]="routeMode === 'leadtime'" (click)="changeRouteMode('leadtime')">Délai</button>
+            <button [class.active]="routeMode === 'volume'" (click)="changeRouteMode('volume')"
+              title="Identifie les routes les plus chargées (flux totaux)">Volume</button>
+            <button [class.active]="routeMode === 'errors'" (click)="changeRouteMode('errors')"
+              title="Met en évidence les routes rencontrant le plus de problèmes techniques ou métier">Erreurs</button>
+            <button [class.active]="routeMode === 'leadtime'" (click)="changeRouteMode('leadtime')"
+              title="Identifie les goulots d'étranglement (routes les plus lentes)">Délai</button>
           </div>
         </div>
         <div class="chart-card-body scroll-body" style="padding-top: 15px;">
           <div class="chart-container" style="height: 250px; margin-bottom: 20px;">
-            <apx-chart nonPassiveWheel [series]="topRoutesSeries" [chart]="topRoutesChart" [xaxis]="topRoutesXAxis" [yaxis]="topRoutesYAxis"
-              [plotOptions]="topRoutesPlotOptions" [dataLabels]="topRoutesDataLabels" [fill]="topRoutesFill"
-              [tooltip]="topRoutesTooltip" [legend]="topRoutesLegend">
+            <apx-chart nonPassiveWheel [series]="topRoutesSeries" [chart]="topRoutesChart" [xaxis]="topRoutesXAxis"
+              [yaxis]="topRoutesYAxis" [plotOptions]="topRoutesPlotOptions" [dataLabels]="topRoutesDataLabels"
+              [fill]="topRoutesFill" [tooltip]="topRoutesTooltip" [legend]="topRoutesLegend">
             </apx-chart>
           </div>
 
           <!-- Liste détaillée -->
           <div class="route-list">
-            <div class="route-item-card" 
-                 *ngFor="let route of topRoutesData; let i = index"
-                 [class.active-filter]="selectedRouteId === route.routeId"
-                 (click)="selectRoute(route.routeId)">
+            <div class="route-item-card" *ngFor="let route of topRoutesData; let i = index"
+              [class.active-filter]="selectedRouteId === route.routeId" (click)="selectRoute(route.routeId)">
               <div class="route-item-header">
                 <span class="route-id-badge" [class.badge-active]="selectedRouteId === route.routeId">
                   #{{ route.routeId }}
@@ -329,7 +386,9 @@
               </div>
               <div class="route-item-body">
                 <div class="route-spark">
-                  <apx-chart [series]="route.sparklineSeries" [chart]="sparklineChart" [stroke]="sparklineStroke" [tooltip]="sparklineTooltip" [colors]="[routeMode === 'errors' ? '#ef4444' : '#3b82f6']"></apx-chart>
+                  <apx-chart [series]="route.sparklineSeries" [chart]="sparklineChart" [stroke]="sparklineStroke"
+                    [tooltip]="sparklineTooltip"
+                    [colors]="[routeMode === 'errors' ? '#ef4444' : '#3b82f6']"></apx-chart>
                 </div>
                 <div class="route-metric-box">
                   <ng-container [ngSwitch]="routeMode">
@@ -354,7 +413,8 @@
               </div>
               <!-- Barre de santé -->
               <div class="route-health-bar">
-                <div class="health-fill" [style.width.%]="route.errors > 0 ? 60 : 100" [class.danger]="route.errors > 0"></div>
+                <div class="health-fill" [style.width.%]="route.errors > 0 ? 60 : 100"
+                  [class.danger]="route.errors > 0"></div>
               </div>
             </div>
           </div>
@@ -365,37 +425,107 @@
 
     <!-- ===== LEAD TIME ===== -->
     <div class="chart-card chart-card-wide">
-      <div class="chart-card-header">
+      <div class="chart-card-header" [class.has-popover]="activeKpiCard === 'leadtime_trends'">
         <div class="chart-card-icon leadtime-icon">⏱️</div>
         <div style="flex:1;">
-          <h3 class="chart-card-title">Temps de Traitement Moyen / Jour</h3>
-          <p class="chart-card-sub">Ligne rouge = seuil SLA (30 min)</p>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 class="chart-card-title">Performance Opérationnelle & Respect SLA</h3>
+            <div style="position: relative; display: inline-block;">
+              <button class="info-btn-mini" (click)="toggleKpiCard('leadtime_trends', $event)">i</button>
+              <!-- Popover Info LeadTime -->
+              <div class="kpi-popover" [class.open]="activeKpiCard === 'leadtime_trends'"
+                (click)="$event.stopPropagation()" style="left: 0; top: 30px; width: 320px;">
+                <div class="kpi-pop-header">
+                  <span class="kpi-pop-icon">{{ kpiInfo['leadtime_trends']?.icon }}</span>
+                  <strong class="kpi-pop-title">{{ kpiInfo['leadtime_trends']?.title }}</strong>
+                  <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                  <p>{{ kpiInfo['leadtime_trends']?.what }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                  <p>{{ kpiInfo['leadtime_trends']?.how }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Objectif</span>
+                  <p>{{ kpiInfo['leadtime_trends']?.action }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="chart-card-sub">Objectif : Maintenir la courbe sous le seuil SLA de 30 minutes</p>
         </div>
-        <button class="refresh-btn" (click)="reloadLeadTime()">🔄 Actualiser</button>
+
+        <!-- Badges de résumé -->
+        <div class="lead-summary-badges">
+          <div class="l-badge" [class.l-bad]="(selectedPointValue ?? currentPeriodAvg) > 30"
+            [class.l-good]="(selectedPointValue ?? currentPeriodAvg) <= 30 && (selectedPointValue ?? currentPeriodAvg) > 0">
+            <span class="l-badge-label">{{ selectedPointValue !== null ? 'Statut Jour' : 'Statut Période' }}</span>
+            <span class="l-badge-val">{{ (selectedPointValue ?? currentPeriodAvg) === 0 ? '—' : ((selectedPointValue ??
+              currentPeriodAvg) > 30 ? 'DÉGRADÉ' : 'OPTIMAL') }}</span>
+          </div>
+          <div class="l-badge" (click)="selectedPointValue = null; selectedPointDate = null" style="cursor: pointer;"
+            title="Cliquez pour réinitialiser à la moyenne">
+            <span class="l-badge-label">{{ selectedPointDate ? selectedPointDate : 'Moyenne Période' }}</span>
+            <span class="l-badge-val">{{ (selectedPointValue ?? currentPeriodAvg) === 0 ? '—' : ((selectedPointValue ??
+              currentPeriodAvg) | number:'1.1-1') + ' min' }}</span>
+          </div>
+        </div>
+
+        <button class="refresh-btn" (click)="reloadLeadTime()">🔄</button>
       </div>
       <div class="chart-card-body">
         <apx-chart *ngIf="leadTimeSeries[0]?.data?.length" nonPassiveWheel [series]="leadTimeSeries"
           [chart]="leadTimeChart" [xaxis]="leadTimeXAxis" [yaxis]="leadTimeYAxis" [stroke]="leadTimeStroke"
           [dataLabels]="leadTimeDataLabels" [fill]="leadTimeFill" [tooltip]="leadTimeTooltip"
-          [annotations]="leadTimeAnnotations">
+          [annotations]="leadTimeAnnotations" [markers]="leadTimeMarkers">
         </apx-chart>
         <div class="empty-state-mini" *ngIf="!leadTimeSeries[0]?.data?.length"><span>⏳</span> Aucune donnée</div>
       </div>
     </div>
 
-    <!-- ===== FLOW TYPE ===== -->
+    <!-- ===== FLOW TYPE (Treemap) ===== -->
     <div class="chart-card chart-card-wide">
-      <div class="chart-card-header">
+      <div class="chart-card-header" [class.has-popover]="activeKpiCard === 'flowtype'">
         <div class="chart-card-icon flowtype-icon">🔀</div>
-        <div>
-          <h3 class="chart-card-title">Activité par Type de Flux</h3>
-          <p class="chart-card-sub">Volume de flux par flowtype_name</p>
+        <div style="flex:1;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 class="chart-card-title">Répartition par Type de Flux</h3>
+            <div style="display: flex; align-items: center; gap: 4px; position: relative;">
+              <button class="info-btn-mini" (click)="toggleKpiCard('flowtype', $event)">i</button>
+
+              <!-- Bouton de bascule Vue Simple / Vue Complète -->
+              <button class="view-toggle-btn" (click)="toggleFlowTypeView()"
+                [title]="showAllFlowTypes ? 'Voir le Top 10' : 'Voir tous les types'">
+                {{ showAllFlowTypes ? '📊 Top' : '📂 Tout' }}
+              </button>
+
+              <!-- Popover Info FlowType -->
+              <div class="kpi-popover" [class.open]="activeKpiCard === 'flowtype'" (click)="$event.stopPropagation()"
+                style="left: 0; top: 30px; width: 300px;">
+                <div class="kpi-pop-header">
+                  <span class="kpi-pop-icon">{{ kpiInfo['flowtype']?.icon }}</span>
+                  <strong class="kpi-pop-title">{{ kpiInfo['flowtype']?.title }}</strong>
+                  <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span>
+                  <p>{{ kpiInfo['flowtype']?.what }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span>
+                  <p>{{ kpiInfo['flowtype']?.how }}</p>
+                </div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span>
+                  <p>{{ kpiInfo['flowtype']?.action }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="chart-card-sub">Volume de flux par catégorie technique simplifiée</p>
         </div>
       </div>
-      <div class="chart-card-body">
-        <apx-chart nonPassiveWheel [series]="flowTypeSeries" [chart]="flowTypeChart" [plotOptions]="flowTypePlotOptions"
-          [dataLabels]="flowTypeDataLabels" [xaxis]="flowTypeXAxis" [yaxis]="flowTypeYAxis" [grid]="flowTypeGrid"
-          [fill]="flowTypeFill" [tooltip]="flowTypeTooltip">
+      <div class="chart-card-body scroll-body" style="height: 400px;">
+        <apx-chart *ngIf="flowTypeSeries.length > 0" nonPassiveWheel [series]="flowTypeSeries" [chart]="flowTypeChart"
+          [plotOptions]="flowTypePlotOptions" [dataLabels]="flowTypeDataLabels" [xaxis]="flowTypeXAxis"
+          [yaxis]="flowTypeYAxis" [tooltip]="flowTypeTooltip" [fill]="flowTypeFill">
         </apx-chart>
       </div>
     </div>
