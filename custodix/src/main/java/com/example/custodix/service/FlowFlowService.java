@@ -4,6 +4,9 @@ import com.example.custodix.Repository.FlowFlowRepository;
 import com.example.custodix.dto.TimelinePointDTO;
 import com.example.custodix.entity.FlowFlow;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,9 +18,9 @@ public class FlowFlowService {
     @Autowired
     private FlowFlowRepository repository;
 
-    // Liste des 20 premiers flux
+    // Liste des 50 premiers flux
     public List<FlowFlow> getAllFlows() {
-        return repository.findAll().stream().limit(20).toList();
+        return repository.findAll().stream().limit(50).toList();
     }
 
     // Statistiques par statut
@@ -28,6 +31,10 @@ public class FlowFlowService {
     // Statistiques par type
     public List<Object[]> getStatsByType() {
         return repository.countByFlowType();
+    }
+
+    public List<Object[]> getStatsByRealType() {
+        return repository.countByRealType();
     }
 
     /// //////////////////////////1errrr
@@ -62,12 +69,33 @@ public class FlowFlowService {
     }
 
     public List<Object[]> getTop5Routes() {
-        return repository.getTopRoutesByVolume().stream()
+        return repository.getTopRoutesWithStats().stream()
                 .limit(5)
                 .toList();
     }
 
     public List<Object[]> getLeadTimeTrends() {
         return repository.getAverageProcessingTimePerDay();
+    }
+
+    public List<Object[]> getKpiSummary() {
+        return repository.getKpiSummary();
+    }
+
+    // Pagination filtrée — accès à toutes les données avec filtres
+    public Page<FlowFlow> getFlowsPaginated(int page, int size,
+            String status, String type, String flowType,
+            LocalDateTime from, LocalDateTime to, String scoreLevel) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "creationDate"));
+        LocalDateTime yesterday = LocalDateTime.now().minusHours(24);
+        
+        return repository.findAllFiltered(
+                (status   != null && status.isBlank())   ? null : status,
+                (type     != null && type.isBlank())     ? null : type,
+                (flowType != null && flowType.isBlank()) ? null : flowType,
+                from, to, 
+                (scoreLevel != null && scoreLevel.isBlank()) ? null : scoreLevel,
+                yesterday,
+                pageRequest);
     }
 }

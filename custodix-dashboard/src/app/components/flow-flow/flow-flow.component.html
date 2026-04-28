@@ -4,241 +4,642 @@
   <div class="page-header">
     <div class="page-title-area">
       <h1 class="page-title">Flow Flow</h1>
-      <p class="page-sub">Supervision en temps réel des flux financiers</p>
+      <p class="page-sub">Supervision des flux financiers en temps réel</p>
     </div>
     <div class="page-actions">
       <div class="last-update">
         <span class="update-dot"></span>
-        Mis à jour il y a quelques secondes
+        Données en direct
       </div>
     </div>
   </div>
 
-  <!-- ===== FILTERS ===== -->
-  <div class="filters">
-    <select [(ngModel)]="selectedStatus">
-      <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
-    </select>
+  <!-- ===== 4 KPI CARDS MÉTIER ===== -->
+  <div class="kpi-metrics-grid" *ngIf="kpiSummary" (click)="closeKpiCard()">
 
-    <select [(ngModel)]="selectedBucket">
-      <option value="auto">Auto</option>
-      <option value="hour">Hour</option>
-      <option value="day">Day</option>
-      <option value="month">Month</option>
-    </select>
-
-    <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate">
-    <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate">
-
-    <button (click)="loadTimeline()">Appliquer</button>
-  </div>
-
-  <!-- ===== KPI TIMELINE ===== -->
-  <div class="section">
-    <div class="section-header">
-      <h2 class="section-title">Évolution des flux</h2>
+    <!-- Total Flux -->
+    <div class="metric-card blue">
+      <div class="metric-top">
+        <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
+          Total Flux
+          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('total', $event)">
+            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <!-- Popover -->
+            <div class="kpi-popover" [class.open]="activeKpiCard === 'total'" (click)="$event.stopPropagation()">
+              <div class="kpi-pop-header">
+                <span class="kpi-pop-icon">{{ kpiInfo['total'].icon }}</span>
+                <strong class="kpi-pop-title">{{ kpiInfo['total'].title }}</strong>
+                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['total'].what }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['total'].how }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['total'].action }}</p></div>
+            </div>
+          </div>
+        </span>
+        <div class="metric-icon blue">📊</div>
+      </div>
+      <div class="metric-value">{{ kpiSummary.total | number }}</div>
+      <div class="metric-footer">Enregistrés dans la base</div>
     </div>
 
-    <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
-      [stroke]="timelineStroke" [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip">
-    </apx-chart>
-
-    <div class="empty-state" *ngIf="timelineSeries[0]?.data?.length === 0">
-      <span class="empty-icon">📉</span>
-      <p>Aucune donnée pour ce filtre</p>
+    <!-- Flux Bloqués -->
+    <div class="metric-card" [class.red]="kpiSummary.bloques === 0" [class.red-alert]="kpiSummary.bloques > 0">
+      <div class="metric-top">
+        <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
+          Flux Bloqués
+          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('bloques', $event)">
+            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <div class="kpi-popover" [class.open]="activeKpiCard === 'bloques'" (click)="$event.stopPropagation()">
+              <div class="kpi-pop-header">
+                <span class="kpi-pop-icon">{{ kpiInfo['bloques'].icon }}</span>
+                <strong class="kpi-pop-title">{{ kpiInfo['bloques'].title }}</strong>
+                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['bloques'].what }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['bloques'].how }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['bloques'].action }}</p></div>
+            </div>
+          </div>
+        </span>
+        <div class="metric-icon red">🚨</div>
+      </div>
+      <div class="metric-value">{{ kpiSummary.bloques | number }}</div>
+      <div class="metric-footer">
+        <span class="metric-badge" [class.alert]="kpiSummary.bloques > 0" [class.ok]="kpiSummary.bloques === 0">
+          {{ kpiSummary.bloques > 0 ? 'Action requise' : 'Aucun blocage' }}
+        </span>
+      </div>
     </div>
-  </div>
 
-  <!-- ===== NOUVEAUX KPIs : Volume + Top Routes (2 colonnes) ===== -->
-  <div class="kpi-charts-row">
+    <!-- Taux d'Erreur -->
+    <div class="metric-card"
+      [class.green]="kpiSummary.tauxErreur <= 5"
+      [class.amber]="kpiSummary.tauxErreur > 5 && kpiSummary.tauxErreur <= 15"
+      [class.red-alert]="kpiSummary.tauxErreur > 15">
+      <div class="metric-top">
+        <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
+          Taux d'Erreur
+          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('taux', $event)">
+            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <div class="kpi-popover" [class.open]="activeKpiCard === 'taux'" (click)="$event.stopPropagation()">
+              <div class="kpi-pop-header">
+                <span class="kpi-pop-icon">{{ kpiInfo['taux'].icon }}</span>
+                <strong class="kpi-pop-title">{{ kpiInfo['taux'].title }}</strong>
+                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['taux'].what }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['taux'].how }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['taux'].action }}</p></div>
+            </div>
+          </div>
+        </span>
+        <div class="metric-icon amber">⚠️</div>
+      </div>
+      <div class="metric-value">{{ kpiSummary.tauxErreur | number:'1.1-1' }}%</div>
+      <div class="metric-footer">
+        {{ kpiSummary.tauxErreur <= 5 ? 'Plateforme saine' : kpiSummary.tauxErreur <= 15 ? 'À surveiller' : 'Intervention urgente' }}
+      </div>
+    </div>
 
-    <!-- 1. Volume Financier par Statut (Donut) -->
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <div class="chart-card-icon volume-icon">💰</div>
-        <div>
-          <h3 class="chart-card-title">Volume Financier</h3>
-          <p class="chart-card-sub">Cliquez sur un statut pour filtrer la timeline</p>
+    <!-- Lead Time Moyen -->
+    <div class="metric-card"
+      [class.green]="kpiSummary.leadTime <= 30"
+      [class.amber]="kpiSummary.leadTime > 30 && kpiSummary.leadTime <= 60"
+      [class.red-alert]="kpiSummary.leadTime > 60">
+      <div class="metric-top">
+        <span class="metric-label" style="display: flex; align-items: center; gap: 8px;">
+          Lead Time Moy.
+          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('leadtime', $event)">
+            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <div class="kpi-popover" [class.open]="activeKpiCard === 'leadtime'" (click)="$event.stopPropagation()">
+              <div class="kpi-pop-header">
+                <span class="kpi-pop-icon">{{ kpiInfo['leadtime'].icon }}</span>
+                <strong class="kpi-pop-title">{{ kpiInfo['leadtime'].title }}</strong>
+                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['leadtime'].what }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['leadtime'].how }}</p></div>
+              <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['leadtime'].action }}</p></div>
+            </div>
+          </div>
+        </span>
+        <div class="metric-icon green">⏱️</div>
+      </div>
+      <div class="metric-value">{{ kpiSummary.leadTime | number:'1.0-1' }}<small style="font-size:14px;font-weight:500"> min</small></div>
+      <div class="metric-footer">
+        <span class="sla-badge" [class]="slaBadge.css">{{ slaBadge.label }}</span>
+      </div>
+    </div>
+
+    </div>
+
+    <div class="kpi-metrics-grid" *ngIf="!kpiSummary">
+      <div class="metric-card blue" *ngFor="let i of [1,2,3,4]">
+        <div class="metric-top"><span class="metric-label">Chargement…</span></div>
+        <div class="metric-value" style="color:#e2e8f0">—</div>
+      </div>
+    </div>
+
+    <!-- ===== TIMELINE ===== -->
+    <div class="section">
+      <div class="section-header" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2 class="section-title" style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);">
+            Évolution des flux — {{ selectedStatus }}
+          </h2>
+          <!-- Bouton Popover -->
+          <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('timeline', $event)">
+            <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+            <!-- POPOVER -->
+            <div class="kpi-popover" style="width: 320px; left: 0; top: 30px;" [class.open]="activeKpiCard === 'timeline'" (click)="$event.stopPropagation()">
+              <div class="kpi-pop-header">
+                <span class="kpi-pop-icon">{{ kpiInfo['timeline'].icon }}</span>
+                <span class="kpi-pop-title">{{ kpiInfo['timeline'].title }}</span>
+                <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+              </div>
+              <div class="kpi-pop-body">
+                <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span><p>{{ kpiInfo['timeline'].what }}</p></div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span><p>{{ kpiInfo['timeline'].how }}</p></div>
+                <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['timeline'].action }}</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="chart-card-sub" style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Analyse temporelle du volume par statut sélectionné</p>
+      </div>
+
+      <!-- ===== FILTRES TIMELINE (Plats sous le titre) ===== -->
+      <div class="filters" style="box-shadow: none; padding: 0; border: none; background: transparent; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <select [(ngModel)]="selectedStatus" style="height: 38px;">
+          <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
+        </select>
+        <select [(ngModel)]="selectedBucket" style="height: 38px;">
+          <option value="auto">Auto</option>
+          <option value="hour">Heure</option>
+          <option value="day">Jour</option>
+          <option value="month">Mois</option>
+        </select>
+        <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate" title="Début" style="height: 38px;">
+        <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate" title="Fin" style="height: 38px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button (click)="loadTimeline()" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;">Appliquer</button>
+          <button (click)="resetTimelineFilters()" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); color: #6366f1; border: none; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.2)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">Reset</button>
         </div>
       </div>
-      <div class="chart-card-body">
-        <apx-chart *ngIf="volumeSeries.length > 0"
-          nonPassiveWheel
-          class="flow-type-chart"
-          [series]="volumeSeries"
-          [chart]="volumeChart"
-          [labels]="volumeLabels"
-          [legend]="volumeLegend"
-          [responsive]="volumeResponsive"
-          [colors]="volumeColors">
-        </apx-chart>
-        <div class="empty-state-mini" *ngIf="volumeSeries.length === 0">
-          <span>📊</span> Chargement...
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. Top 5 Routes -->
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <div class="chart-card-icon routes-icon">🛤️</div>
-        <div>
-          <h3 class="chart-card-title">Top 5 Routes</h3>
-          <p class="chart-card-sub">Routes générant le plus de volume (€)</p>
-        </div>
-      </div>
-      <div class="chart-card-body">
-        <apx-chart
-          nonPassiveWheel
-          class="flow-type-chart"
-          [series]="topRoutesSeries"
-          [chart]="topRoutesChart"
-          [xaxis]="topRoutesXAxis"
-          [plotOptions]="topRoutesPlotOptions"
-          [dataLabels]="topRoutesDataLabels"
-          [fill]="topRoutesFill"
-          [tooltip]="topRoutesTooltip">
-        </apx-chart>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 3. Lead Time Trends (Pleine largeur) -->
-  <div class="chart-card chart-card-wide">
-    <div class="chart-card-header">
-      <div class="chart-card-icon leadtime-icon">⏱️</div>
-      <div style="flex: 1;">
-        <h3 class="chart-card-title">Temps de Traitement Moyen</h3>
-        <p class="chart-card-sub">Évolution journalière du lead time (en minutes)</p>
-      </div>
-      <button class="refresh-btn" (click)="reloadLeadTime()" title="Actualiser">
-        🔄 Actualiser
-      </button>
-    </div>
-    <div class="chart-card-body">
-      <apx-chart
-        *ngIf="leadTimeSeries[0]?.data?.length"
-        nonPassiveWheel
-        [series]="leadTimeSeries"
-        [chart]="leadTimeChart"
-        [xaxis]="leadTimeXAxis"
-        [yaxis]="leadTimeYAxis"
-        [stroke]="leadTimeStroke"
-        [dataLabels]="leadTimeDataLabels"
-        [fill]="leadTimeFill"
-        [tooltip]="leadTimeTooltip">
+      <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
+        [stroke]="timelineStroke" [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip"
+        [colors]="timelineColors" [annotations]="timelineAnnotations">
       </apx-chart>
-      <div class="empty-state-mini" *ngIf="!leadTimeSeries[0]?.data?.length">
-        <span>⏳</span> Aucune donnée de lead time disponible
+      <div class="empty-state" *ngIf="timelineSeries[0]?.data?.length === 0">
+        <span class="empty-icon">📉</span>
+        <p>Aucune donnée pour ce filtre</p>
       </div>
     </div>
-  </div>
 
-  <!-- ===== flowtype ===== -->
-  <div class="flow-type-card" style="margin-bottom: 28px;">
-    <div class="flow-type-header">
-      <span class="flow-type-title">Flow Type</span>
-      <span class="flow-type-sub">— Top flowtype_name</span>
-    </div>
+    <!-- ===== VOLUME + ROUTES ===== -->
+    <div class="kpi-charts-row">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-icon volume-icon">💰</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 class="chart-card-title">Volume par Statut</h3>
+              <!-- Bouton Popover -->
+              <div class="kpi-clickable" style="position: relative;" (click)="toggleKpiCard('volume', $event)">
+                <button style="background: rgba(99,102,241,0.1); color: #6366f1; border: none; border-radius: 50%; width: 18px; height: 18px; font-weight: bold; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace;">i</button>
+                <!-- POPOVER -->
+                <div class="kpi-popover" style="width: 280px; left: 0; top: 25px;" [class.open]="activeKpiCard === 'volume'" (click)="$event.stopPropagation()">
+                  <div class="kpi-pop-header">
+                    <span class="kpi-pop-icon">{{ kpiInfo['volume'].icon }}</span>
+                    <span class="kpi-pop-title">{{ kpiInfo['volume'].title }}</span>
+                    <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+                  </div>
+                  <div class="kpi-pop-body">
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi ?</span><p>{{ kpiInfo['volume'].what }}</p></div>
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment ?</span><p>{{ kpiInfo['volume'].how }}</p></div>
+                    <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['volume'].action }}</p></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="chart-card-sub">Cliquez pour filtrer la timeline</p>
+          </div>
+        </div>
+        <div class="chart-card-body scroll-body" style="position: relative;">
+          <apx-chart *ngIf="volumeSeries.length > 0" nonPassiveWheel [series]="volumeSeries" [chart]="volumeChart"
+            [labels]="volumeLabels" [legend]="volumeLegend" [responsive]="volumeResponsive" [colors]="volumeColors"
+            [plotOptions]="volumePlotOptions" [stroke]="volumeStroke" [fill]="volumeFill">
+          </apx-chart>
+          
+          <!-- Carte Détails "Autre" -->
+          <div class="detail-other-card" [class.open]="showVolumeOther" *ngIf="volumeOtherDetails.length > 0">
+            <div class="other-card-header">
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 13px; font-weight: 700;">Détail des statuts "Autre"</span>
+                <small style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Sélectionnez pour isoler le pourcentage</small>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-reset-donut" *ngIf="selectedOtherStatus" (click)="resetVolumeDonutLabel()" title="Réinitialiser le graphique">🔄</button>
+                <button class="close-other" (click)="showVolumeOther = false">✕</button>
+              </div>
+            </div>
+            <div class="other-card-list">
+              <div class="other-item" 
+                   *ngFor="let item of volumeOtherDetails" 
+                   [class.active]="selectedOtherStatus === item.label"
+                   (click)="selectOtherStatus(item)">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="active-dot" *ngIf="selectedOtherStatus === item.label"></div>
+                  <span class="other-label">{{ item.label }}</span>
+                </div>
+                <div class="other-stats">
+                  <span class="other-val">{{ item.value | number }}</span>
+                  <span class="other-pct" [class.pct-active]="selectedOtherStatus === item.label">
+                    {{ item.percentage | number:'1.1-1' }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="other-card-footer" *ngIf="selectedOtherStatus">
+              Statut <strong>{{ selectedOtherStatus }}</strong> isolé sur le graphique
+            </div>
+          </div>
 
-    <apx-chart nonPassiveWheel class="flow-type-chart" [series]="flowTypeSeries" [chart]="flowTypeChart"
-      [plotOptions]="flowTypePlotOptions" [dataLabels]="flowTypeDataLabels" [xaxis]="flowTypeXAxis"
-      [yaxis]="flowTypeYAxis" [grid]="flowTypeGrid" [fill]="flowTypeFill" [tooltip]="flowTypeTooltip">
-    </apx-chart>
-  </div>
-
-
-
-
-
-
-
-
-
-
-
-
-  <!-- ===== KPI CARDS ===== -->
-  <div class="kpi-grid">
-    <div class="kpi-card kpi-blue" *ngFor="let stat of statsByStatus">
-      <div class="kpi-header">
-        <span class="kpi-label">{{ stat[0] }}</span>
-        <span class="kpi-icon">📊</span>
+          <div class="empty-state-mini" *ngIf="volumeSeries.length === 0"><span>📊</span> Chargement...</div>
+        </div>
       </div>
-      <div class="kpi-value">{{ stat[1] }}</div>
-      <div class="kpi-bar">
-        <div class="kpi-bar-fill"></div>
+
+      <div class="chart-card" [class.has-popover]="activeKpiCard === 'routes'">
+        <div class="chart-card-header" style="flex-wrap: wrap; gap: 10px;">
+          <div class="chart-card-icon routes-icon">🛤️</div>
+          <div style="flex: 1; min-width: 150px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- FORCE UPDATE MARKER -->
+              <h3 class="chart-card-title">Top 5 Routes (Interactive)</h3>
+              <div style="position: relative; display: inline-block;">
+                <button class="info-btn-mini" (click)="toggleKpiCard('routes', $event)">i</button>
+                <!-- Popover Info Routes -->
+                <div class="kpi-popover" [class.open]="activeKpiCard === 'routes'" (click)="$event.stopPropagation()" style="left: 0; top: 30px; width: 280px;">
+                  <div class="kpi-pop-header">
+                    <span class="kpi-pop-icon">{{ kpiInfo['routes'].icon }}</span>
+                    <strong class="kpi-pop-title">{{ kpiInfo['routes'].title }}</strong>
+                    <button class="kpi-pop-close" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
+                  </div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">📌 Quoi</span><p>{{ kpiInfo['routes'].what }}</p></div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">🧮 Comment</span><p>{{ kpiInfo['routes'].how }}</p></div>
+                  <div class="kpi-pop-row"><span class="kpi-pop-key">🎯 Action</span><p>{{ kpiInfo['routes'].action }}</p></div>
+                </div>
+              </div>
+            </div>
+            <p class="chart-card-sub">Analyse multi-dimensionnelle des chemins</p>
+          </div>
+
+          <!-- Switch de Mode -->
+          <div class="route-mode-switch">
+            <button [class.active]="routeMode === 'volume'" (click)="changeRouteMode('volume')">Volume</button>
+            <button [class.active]="routeMode === 'errors'" (click)="changeRouteMode('errors')">Erreurs</button>
+            <button [class.active]="routeMode === 'leadtime'" (click)="changeRouteMode('leadtime')">Délai</button>
+          </div>
+        </div>
+        <div class="chart-card-body scroll-body" style="padding-top: 15px;">
+          <div class="chart-container" style="height: 250px; margin-bottom: 20px;">
+            <apx-chart nonPassiveWheel [series]="topRoutesSeries" [chart]="topRoutesChart" [xaxis]="topRoutesXAxis" [yaxis]="topRoutesYAxis"
+              [plotOptions]="topRoutesPlotOptions" [dataLabels]="topRoutesDataLabels" [fill]="topRoutesFill"
+              [tooltip]="topRoutesTooltip" [legend]="topRoutesLegend">
+            </apx-chart>
+          </div>
+
+          <!-- Liste détaillée -->
+          <div class="route-list">
+            <div class="route-item-card" 
+                 *ngFor="let route of topRoutesData; let i = index"
+                 [class.active-filter]="selectedRouteId === route.routeId"
+                 (click)="selectRoute(route.routeId)">
+              <div class="route-item-header">
+                <span class="route-id-badge" [class.badge-active]="selectedRouteId === route.routeId">
+                  #{{ route.routeId }}
+                </span>
+                <div class="route-flux">
+                  <span class="flux-participant">{{ route.sender !== 'Inconnu' ? route.sender : route.routeId }}</span>
+                  <span class="flux-arrow">➜</span>
+                  <span class="flux-participant">{{ route.receiver !== 'Inconnu' ? route.receiver : 'Système' }}</span>
+                </div>
+                <div class="filter-indicator" *ngIf="selectedRouteId === route.routeId">🎯 Filtré</div>
+              </div>
+              <div class="route-item-body">
+                <div class="route-spark">
+                  <apx-chart [series]="route.sparklineSeries" [chart]="sparklineChart" [stroke]="sparklineStroke" [tooltip]="sparklineTooltip" [colors]="[routeMode === 'errors' ? '#ef4444' : '#3b82f6']"></apx-chart>
+                </div>
+                <div class="route-metric-box">
+                  <ng-container [ngSwitch]="routeMode">
+                    <div *ngSwitchCase="'volume'" class="route-metric">
+                      <span class="metric-val">{{ route.count | number }}</span>
+                      <span class="metric-label">flux</span>
+                    </div>
+                    <div *ngSwitchCase="'amount'" class="route-metric">
+                      <span class="metric-val">{{ kFormat(route.amount) }}</span>
+                      <span class="metric-label">€</span>
+                    </div>
+                    <div *ngSwitchCase="'errors'" class="route-metric error">
+                      <span class="metric-val">{{ route.errors }}</span>
+                      <span class="metric-label">err.</span>
+                    </div>
+                    <div *ngSwitchCase="'leadtime'" class="route-metric">
+                      <span class="metric-val">{{ route.leadTime | number:'1.1-1' }}</span>
+                      <span class="metric-label">min</span>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+              <!-- Barre de santé -->
+              <div class="route-health-bar">
+                <div class="health-fill" [style.width.%]="route.errors > 0 ? 60 : 100" [class.danger]="route.errors > 0"></div>
+              </div>
+            </div>
+          </div>
+          <div class="empty-state-mini" *ngIf="topRoutesData.length === 0"><span>🛤️</span> Chargement...</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ===== STATS PAR TYPE ===== -->
-  <div class="section" *ngIf="statsByType.length > 0">
-    <div class="section-header">
-      <h2 class="section-title">Répartition par Type</h2>
-    </div>
-    <div class="type-chips">
-      <div class="type-chip" *ngFor="let t of statsByType">
-        <span class="chip-label">{{ t[0] }}</span>
-        <span class="chip-count">{{ t[1] }}</span>
+    <!-- ===== LEAD TIME ===== -->
+    <div class="chart-card chart-card-wide">
+      <div class="chart-card-header">
+        <div class="chart-card-icon leadtime-icon">⏱️</div>
+        <div style="flex:1;">
+          <h3 class="chart-card-title">Temps de Traitement Moyen / Jour</h3>
+          <p class="chart-card-sub">Ligne rouge = seuil SLA (30 min)</p>
+        </div>
+        <button class="refresh-btn" (click)="reloadLeadTime()">🔄 Actualiser</button>
+      </div>
+      <div class="chart-card-body">
+        <apx-chart *ngIf="leadTimeSeries[0]?.data?.length" nonPassiveWheel [series]="leadTimeSeries"
+          [chart]="leadTimeChart" [xaxis]="leadTimeXAxis" [yaxis]="leadTimeYAxis" [stroke]="leadTimeStroke"
+          [dataLabels]="leadTimeDataLabels" [fill]="leadTimeFill" [tooltip]="leadTimeTooltip"
+          [annotations]="leadTimeAnnotations">
+        </apx-chart>
+        <div class="empty-state-mini" *ngIf="!leadTimeSeries[0]?.data?.length"><span>⏳</span> Aucune donnée</div>
       </div>
     </div>
-  </div>
 
-  <!-- ===== TABLE DES FLUX ===== -->
-  <div class="section">
-    <div class="section-header">
-      <h2 class="section-title">Liste des Flux</h2>
-      <span class="record-count" *ngIf="!loading">{{ flows.length }} enregistrements</span>
-    </div>
-
-    <div class="loading-state" *ngIf="loading">
-      <div class="spinner"></div>
-      <span>Chargement des flux...</span>
-    </div>
-
-    <div class="table-wrapper" *ngIf="!loading">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Statut</th>
-            <th>Type</th>
-            <th>Flow Type</th>
-            <th>Expéditeur</th>
-            <th>Destinataire</th>
-            <th>Date Création</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let flow of flows" class="table-row">
-            <td class="col-id">#{{ flow.id }}</td>
-            <td>
-              <span class="status-badge" [ngClass]="{
-                'status-success': flow.status === 'SUCCESS' || flow.status === 'COMPLETED',
-                'status-error':   flow.status === 'ERROR' || flow.status === 'FAILED',
-                'status-pending': flow.status === 'PENDING' || flow.status === 'WAITING',
-                'status-processing': flow.status === 'PROCESSING' || flow.status === 'IN_PROGRESS'
-              }">
-                <span class="status-dot-inline"></span>
-                {{ flow.status }}
-              </span>
-            </td>
-            <td class="col-type">{{ flow.type }}</td>
-            <td class="col-flowtype">{{ flow.flowTypeName }}</td>
-            <td class="col-sender">{{ flow.senderIdentifier }}</td>
-            <td class="col-receiver">{{ flow.receiverIdentifier }}</td>
-            <td class="col-date">{{ flow.creationDate | date:'dd/MM/yyyy HH:mm' }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="empty-state" *ngIf="flows.length === 0">
-        <span class="empty-icon">📭</span>
-        <p>Aucun flux trouvé</p>
+    <!-- ===== FLOW TYPE ===== -->
+    <div class="chart-card chart-card-wide">
+      <div class="chart-card-header">
+        <div class="chart-card-icon flowtype-icon">🔀</div>
+        <div>
+          <h3 class="chart-card-title">Activité par Type de Flux</h3>
+          <p class="chart-card-sub">Volume de flux par flowtype_name</p>
+        </div>
+      </div>
+      <div class="chart-card-body">
+        <apx-chart nonPassiveWheel [series]="flowTypeSeries" [chart]="flowTypeChart" [plotOptions]="flowTypePlotOptions"
+          [dataLabels]="flowTypeDataLabels" [xaxis]="flowTypeXAxis" [yaxis]="flowTypeYAxis" [grid]="flowTypeGrid"
+          [fill]="flowTypeFill" [tooltip]="flowTypeTooltip">
+        </apx-chart>
       </div>
     </div>
+
+    <!-- ===================================================================== -->
+    <!-- ===== TABLEAU FLUX — SCORING IA + FILTRES COMPLETS ===== -->
+    <!-- ===================================================================== -->
+    <div class="table-section">
+
+      <!-- En-tête du tableau -->
+      <div class="table-section-header">
+        <div class="table-title-group">
+          <h2 class="section-title">Flux — Score IA de criticité</h2>
+          <span class="record-total">{{ tableTotalElements | number }} flux au total</span>
+        </div>
+      </div>
+
+      <!-- Barre de filtres complète du tableau -->
+      <div class="table-filters">
+        <div class="table-filter-group">
+          <label class="filter-label">Statut</label>
+          <select [(ngModel)]="tableFilterStatus" class="filter-select">
+            <option value="">Tous</option>
+            <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Score IA</label>
+          <select [(ngModel)]="tableFilterScore" class="filter-select">
+            <option value="">Tous</option>
+            <option value="critique">🔴 CRITIQUE</option>
+            <option value="vigilance">🟡 VIGILANCE</option>
+            <option value="ok">🟢 OK</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Type</label>
+          <select [(ngModel)]="tableFilterType" class="filter-select">
+            <option value="">Tous</option>
+            <option *ngFor="let t of allTypesList" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Flow Type</label>
+          <select [(ngModel)]="tableFilterFlowType" class="filter-select">
+            <option value="">Tous</option>
+            <option *ngFor="let ft of allFlowTypesList" [value]="ft">{{ ft }}</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Début</label>
+          <input type="datetime-local" [(ngModel)]="tableFilterFrom" [max]="maxDate" class="filter-input">
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Fin</label>
+          <input type="datetime-local" [(ngModel)]="tableFilterTo" [max]="maxDate" class="filter-input">
+        </div>
+
+        <div class="table-filter-actions">
+          <button class="btn-apply" (click)="applyTableFilters()">🔍 Filtrer</button>
+          <button class="btn-reset" (click)="resetTableFilters()">✕ Reset</button>
+        </div>
+      </div>
+
+      <!-- Zone de chargement -->
+      <div class="loading-state" *ngIf="tableLoading">
+        <div class="spinner"></div>
+        <span>Chargement des flux...</span>
+      </div>
+
+      <!-- Tableau avec double scroll -->
+      <div class="scroll-table-container" *ngIf="!tableLoading">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Statut</th>
+              <th>Score IA</th>
+              <th>Type</th>
+              <th>Flow Type</th>
+              <th>Expéditeur</th>
+              <th>Destinataire</th>
+              <th>Route</th>
+              <th>Date Création</th>
+              <th>Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let flow of tableFlows" class="table-row"
+              [class.row-critique]="getCriticalityScore(flow).level === 'critique'"
+              [class.row-selected]="selectedFlow?.id === flow.id">
+              <td class="col-id">#{{ flow.id }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusCss(flow.status)">
+                  <span class="status-dot-inline"></span>{{ flow.status }}
+                </span>
+              </td>
+              <td>
+                <ng-container [ngSwitch]="getCriticalityScore(flow).level">
+                  <span *ngSwitchCase="'critique'" class="badge-critique">🔴 CRITIQUE</span>
+                  <span *ngSwitchCase="'vigilance'" class="badge-vigilance">🟡 VIGILANCE</span>
+                  <span *ngSwitchDefault class="badge-ok">🟢 OK</span>
+                </ng-container>
+              </td>
+              <td class="col-type" [title]="flow.type">{{ formatType(flow.type) }}</td>
+              <td class="col-flowtype">{{ flow.flowTypeName || '—' }}</td>
+              <td class="col-truncate">{{ flow.senderIdentifier || '—' }}</td>
+              <td class="col-truncate">{{ flow.receiverIdentifier || '—' }}</td>
+              <td class="col-truncate">{{ flow.routeId || '—' }}</td>
+              <td class="col-date">{{ flow.creationDate | date:'dd/MM/yy HH:mm' }}</td>
+              <td>
+                <button class="btn-detail" (click)="openDetail(flow)" title="Voir détails">
+                  <span>👁</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="empty-state" *ngIf="tableFlows.length === 0">
+          <span class="empty-icon">📭</span>
+          <p>Aucun flux correspond aux filtres sélectionnés</p>
+        </div>
+      </div>
+
+      <!-- Pagination backend -->
+      <div class="pagination" *ngIf="!tableLoading && tableTotalPages > 1">
+        <span class="pagination-info">
+          {{ tablePageStart | number }}–{{ tablePageEnd | number }} sur {{ tableTotalElements | number }}
+          (Page {{ tablePage + 1 }}/{{ tableTotalPages }})
+        </span>
+        <div class="pagination-controls">
+          <button (click)="prevTablePage()" [disabled]="tablePage === 0">← Précédent</button>
+          <button (click)="nextTablePage()" [disabled]="tablePage >= tableTotalPages - 1">Suivant →</button>
+        </div>
+      </div>
+
+    </div>
+    <!-- FIN TABLEAU -->
+
   </div>
 
-</div>
+  <!-- ===== OVERLAY FOND ===== -->
+  <div class="detail-overlay" [class.open]="detailPanelOpen" (click)="closeDetail()"></div>
+
+  <!-- ===== PANNEAU DÉTAIL (slide-in droite) ===== -->
+  <div class="detail-panel" [class.open]="detailPanelOpen" *ngIf="selectedFlow && selectedFlowScore">
+
+    <!-- En-tête du panneau -->
+    <div class="detail-header">
+      <div class="detail-title-row">
+        <span class="detail-id">#{{ selectedFlow.id }}</span>
+        <span class="status-badge" [ngClass]="getStatusCss(selectedFlow.status)">
+          <span class="status-dot-inline"></span>{{ selectedFlow.status }}
+        </span>
+      </div>
+      <button class="detail-close" (click)="closeDetail()">✕</button>
+    </div>
+
+    <!-- Score IA en grand -->
+    <div class="detail-score-banner" [class.banner-critique]="selectedFlowScore.level === 'critique'"
+      [class.banner-vigilance]="selectedFlowScore.level === 'vigilance'"
+      [class.banner-ok]="selectedFlowScore.level === 'ok'">
+      <div class="detail-score-main">
+        <span class="detail-score-emoji">
+          {{ selectedFlowScore.level === 'critique' ? '🔴' : selectedFlowScore.level === 'vigilance' ? '🟡' : '🟢' }}
+        </span>
+        <div>
+          <div class="detail-score-label">Score IA : {{ selectedFlowScore.score }} / 80 pts</div>
+          <div class="detail-score-level">Niveau {{ selectedFlowScore.label }}</div>
+        </div>
+      </div>
+      <!-- Barre de score -->
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" [style.width.%]="(selectedFlowScore.score / 80) * 100"
+          [class.fill-critique]="selectedFlowScore.level === 'critique'"
+          [class.fill-vigilance]="selectedFlowScore.level === 'vigilance'"
+          [class.fill-ok]="selectedFlowScore.level === 'ok'">
+        </div>
+      </div>
+    </div>
+
+    <!-- Décomposition du score -->
+    <div class="detail-section">
+      <h4 class="detail-section-title">📐 Calcul du Score</h4>
+      <div class="score-rules">
+        <div *ngFor="let rule of selectedFlowScore.breakdown" class="score-rule" [class.rule-applied]="rule.applied"
+          [class.rule-skipped]="!rule.applied">
+          <div class="rule-header">
+            <span class="rule-icon">{{ rule.applied ? '✅' : '⬜' }}</span>
+            <span class="rule-name">{{ rule.rule }}</span>
+            <span class="rule-points" [class.points-active]="rule.applied">
+              {{ rule.applied ? '+' + rule.points : '0' }} pts
+            </span>
+          </div>
+          <p class="rule-desc">{{ rule.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informations du flux -->
+    <div class="detail-section">
+      <h4 class="detail-section-title">📋 Détails du Flux</h4>
+      <div class="detail-fields">
+        <div class="detail-field">
+          <span class="field-key">Type</span>
+          <span class="field-val">{{ selectedFlow.type || '—' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Flow Type</span>
+          <span class="field-val">{{ selectedFlow.flowTypeName || '—' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Route</span>
+          <span class="field-val">{{ selectedFlow.routeId || '—' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Expéditeur</span>
+          <span class="field-val">{{ selectedFlow.senderIdentifier || '—' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Destinataire</span>
+          <span class="field-val">{{ selectedFlow.receiverIdentifier || '—' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Montant</span>
+          <span class="field-val">{{ selectedFlow.amount1 != null ? (selectedFlow.amount1 | number:'1.2-2') + ' €' : '—'
+            }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Création</span>
+          <span class="field-val">{{ selectedFlow.creationDate | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+        <div class="detail-field">
+          <span class="field-key">Mise à jour</span>
+          <span class="field-val">{{ selectedFlow.updateDate ? (selectedFlow.updateDate | date:'dd/MM/yyyy HH:mm:ss') :
+            '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>

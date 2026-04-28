@@ -7,8 +7,14 @@ from langchain_core.prompts import PromptTemplate
 class RagService:
     def __init__(self):
         print("Initialisation du Service RAG...")
-        self.llm = Ollama(model="llama3")
+        # Température à 0 pour éviter la créativité inutile (plus rapide)
+        # Gardé simple sans keep_alive car cela fait parfois planter Ollama en local (Runner terminated)
+        self.llm = Ollama(model="llama3", temperature=0)
         self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        
+        # Initialisation de notre mémoire Cache
+        self.sql_cache = {}
+        self.format_cache = {}
         
         if os.path.exists("./chroma_index"):
             print("Chargement de Chroma Index...")
@@ -56,6 +62,12 @@ Réponse (Un seul bloc) :"""
         self.prompt = PromptTemplate(template=template, input_variables=["context", "question"])
 
     def generate_sql(self, question: str) -> str:
+        # Vérifier si la question est dans le cache SQL
+        cache_key = question.strip().lower()
+        if cache_key in self.sql_cache:
+            print(f"⚡ [CACHE HIT] Requête SQL trouvée en mémoire pour : '{question}'")
+            return self.sql_cache[cache_key]
+
         if not self.index_loaded:
             return "Erreur : Index Chroma manquant. Lancez l'ingestion Oracle."
             
@@ -88,9 +100,23 @@ Réponse (Un seul bloc) :"""
             
         # Si rien d'autre, on considère que c'est un message textuel
         response_clean = response.replace("GREETINGS:", "").replace("```text", "").replace("```", "").strip()
-        return "GREETINGS: " + response_clean
+        final_result = "GREETINGS: " + response_clean
+
+        # Sauvegarder dans le cache avant de retourner
+        self.sql_cache[cache_key] = final_result
+        return final_result
 
     def format_answer(self, question: str, query: str, results: list) -> str:
+        # Création d'une clé de cache unique basée sur la question ET les résultats
+        import json, hashlib
+        cache_string = f"{question.strip().lower()}_{json.dumps(results, sort_keys=True)}"
+        cache_key = hashlib.md5(cache_string.encode()).hexdigest()
+
+        # Vérifier si on a déjà formaté cette réponse
+        if cache_key in self.format_cache:
+            print(f"⚡ [CACHE HIT] Réponse humaine trouvée en mémoire pour : '{question}'")
+            return self.format_cache[cache_key]
+
         prompt = f"""Tu es l'agent IA Custodix. L'utilisateur a demandé : "{question}"
 La base de données Oracle a répondu (données brutes JSON) : {results}
 
@@ -99,4 +125,8 @@ Ne donne AUCUNE explication technique, ne parle pas de la requête SQL ou JSON.
 Si la réponse est une liste complexe, introduis-la simplement (ex: 'Voici la liste demandée :').
 Réponse humaine :"""
         response = self.llm.invoke(prompt)
-        return response.strip()
+        final_response = response.strip()
+        
+        # Sauvegarder dans le cache
+        self.format_cache[cache_key] = final_response
+        return final_response

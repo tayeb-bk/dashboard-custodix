@@ -3,6 +3,7 @@ package com.example.custodix.Controller;
 import com.example.custodix.dto.TimelinePointDTO;
 import com.example.custodix.entity.FlowFlow;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import com.example.custodix.service.FlowFlowService;
 
@@ -29,8 +30,13 @@ public class FlowFlowController {
     }
 
     @GetMapping("/stats/type")
-    public List<Object[]> statsByType() {
+    public List<Object[]> getStatsByType() {
         return service.getStatsByType();
+    }
+
+    @GetMapping("/stats/real-type")
+    public List<Object[]> getStatsByRealType() {
+        return service.getStatsByRealType();
     }
 
     /// //////////////////////////////////1errr
@@ -77,5 +83,27 @@ public class FlowFlowController {
     @GetMapping("/stats/lead-time-trends")
     public List<Object[]> getLeadTimeTrends() {
         return service.getLeadTimeTrends();
+    }
+
+    @GetMapping("/kpi/summary")
+    public List<Object[]> getKpiSummary() {
+        return service.getKpiSummary();
+    }
+
+    // Endpoint paginé avec filtres complets
+    @GetMapping("/paginated")
+    public Page<FlowFlow> getFlowsPaginated(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false)    String status,
+            @RequestParam(required = false)    String type,
+            @RequestParam(required = false)    String flowType,
+            @RequestParam(required = false)    String from,
+            @RequestParam(required = false)    String to,
+            @RequestParam(required = false)    String scoreLevel) {
+
+        LocalDateTime fromDate = (from != null && !from.isBlank()) ? LocalDateTime.parse(from) : null;
+        LocalDateTime toDate   = (to   != null && !to.isBlank())   ? LocalDateTime.parse(to)   : null;
+        return service.getFlowsPaginated(page, size, status, type, flowType, fromDate, toDate, scoreLevel);
     }
 }

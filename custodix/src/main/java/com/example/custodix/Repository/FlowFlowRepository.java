@@ -1,6 +1,8 @@
 package com.example.custodix.Repository;
 
 import com.example.custodix.entity.FlowFlow;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,11 +14,36 @@ import java.util.List;
 @Repository
 public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
 
+  // Pagination filtrée avec intégration du calcul de Score IA métier en SQL
+  @Query("SELECT f FROM FlowFlow f WHERE " +
+         "(:status IS NULL OR f.status = :status) AND " +
+         "(:type IS NULL OR f.type = :type) AND " +
+         "(:flowType IS NULL OR f.flowTypeName = :flowType) AND " +
+         "(:startDate IS NULL OR f.creationDate >= :startDate) AND " +
+         "(:endDate IS NULL OR f.creationDate <= :endDate) AND " +
+         "(:scoreLevel IS NULL OR " +
+         "  (:scoreLevel = 'critique'  AND (f.status IN ('InTechnicalError', 'Blocked', 'InBusinessError', 'Rejected', 'InitiationFailed', 'Nacked', 'SubWorkflowInTechnicalError') OR (f.status IN ('WaitAction', 'WaitProcessing', 'InitiationError', 'NoContractFound', 'MarkedForSuspension') AND f.creationDate < :yesterday))) OR " +
+         "  (:scoreLevel = 'vigilance' AND ((f.status IN ('WaitAction', 'WaitProcessing', 'InitiationError', 'NoContractFound', 'MarkedForSuspension') AND f.creationDate >= :yesterday) OR (f.status NOT IN ('Processed', 'Sent', 'Acked', 'SentAndWaitingAck', 'Initiated', 'Completed', 'Canceled', 'InTechnicalError', 'Blocked', 'InBusinessError', 'Rejected', 'InitiationFailed', 'Nacked', 'SubWorkflowInTechnicalError', 'WaitAction', 'WaitProcessing', 'InitiationError', 'NoContractFound', 'MarkedForSuspension') AND f.creationDate < :yesterday))) OR " +
+         "  (:scoreLevel = 'ok'        AND (f.status IN ('Processed', 'Sent', 'Acked', 'SentAndWaitingAck', 'Initiated', 'Completed', 'Canceled') OR (f.status NOT IN ('Processed', 'Sent', 'Acked', 'SentAndWaitingAck', 'Initiated', 'Completed', 'Canceled', 'InTechnicalError', 'Blocked', 'InBusinessError', 'Rejected', 'InitiationFailed', 'Nacked', 'SubWorkflowInTechnicalError', 'WaitAction', 'WaitProcessing', 'InitiationError', 'NoContractFound', 'MarkedForSuspension') AND f.creationDate >= :yesterday))) " +
+         ")")
+  Page<FlowFlow> findAllFiltered(
+         @Param("status")     String status,
+         @Param("type")       String type,
+         @Param("flowType")   String flowType,
+         @Param("startDate")  LocalDateTime startDate,
+         @Param("endDate")    LocalDateTime endDate,
+         @Param("scoreLevel") String scoreLevel,
+         @Param("yesterday")  LocalDateTime yesterday,
+         Pageable pageable);
+
   @Query("SELECT f.status, COUNT(f) FROM FlowFlow f GROUP BY f.status")
   List<Object[]> countByStatus();
 
   @Query("SELECT f.flowTypeName, COUNT(f) FROM FlowFlow f GROUP BY f.flowTypeName")
   List<Object[]> countByFlowType();
+
+  @Query("SELECT f.type, COUNT(f) FROM FlowFlow f GROUP BY f.type")
+  List<Object[]> countByRealType();
 
   // HOUR
   @Query(value = """
@@ -106,11 +133,31 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
                  "ORDER BY dateDay", nativeQuery = true)
   List<Object[]> getAverageProcessingTimePerDay();
 
-  // KPI 3 : Top Routes by Volume
-  @Query("SELECT f.senderIdentifier, f.receiverIdentifier, f.routeId, SUM(f.amount1), COUNT(f) " +
-         "FROM FlowFlow f " +
-         "GROUP BY f.senderIdentifier, f.receiverIdentifier, f.routeId " +
-         "ORDER BY SUM(f.amount1) DESC")
-  List<Object[]> getTopRoutesByVolume();
+  // KPI 3 : Top Routes with multi-dimensional stats
+  @Query(value = 
+    "SELECT " +
+    "  SENDER_IDENTIFIER_ as sender, " +
+    "  RECEIVER_IDENTIFIER_ as receiver, " +
+    "  ROUTE_ROUTEID_ as routeId, " +
+    "  SUM(AMOUNT1_) as totalAmount, " +
+    "  COUNT(*) as totalCount, " +
+    "  SUM(CASE WHEN STATUS_ IN ('InTechnicalError','Blocked','Rejected','InBusinessError','InitiationError','InitiationFailed','Nacked') THEN 1 ELSE 0 END) as errorCount, " +
+    "  AVG(CASE WHEN UPDATEDATE_ IS NOT NULL THEN (CAST(UPDATEDATE_ AS DATE) - CAST(CREATIONDATE_ AS DATE)) * 24 * 60 END) as avgLeadTime " +
+    "FROM UCUSTOI0.FLOW_FLOW " +
+    "GROUP BY SENDER_IDENTIFIER_, RECEIVER_IDENTIFIER_, ROUTE_ROUTEID_ " +
+    "ORDER BY totalCount DESC", nativeQuery = true)
+  List<Object[]> getTopRoutesWithStats();
+
+  // KPI Summary : 4 métriques métier clés en une seule requête
+  // Retourne Object[0]=total, [1]=bloqués, [2]=taux_erreur%, [3]=lead_time_moyen_minutes
+  @Query(value =
+    "SELECT " +
+    "  COUNT(*), " +
+    "  SUM(CASE WHEN STATUS_ IN ('InTechnicalError','Blocked','Rejected','InBusinessError','InitiationError','InitiationFailed','Nacked') THEN 1 ELSE 0 END), " +
+    "  ROUND(SUM(CASE WHEN STATUS_ IN ('InTechnicalError','Blocked','Rejected','InBusinessError','InitiationError','InitiationFailed','Nacked') THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2), " +
+    "  ROUND(AVG(CASE WHEN UPDATEDATE_ IS NOT NULL THEN (CAST(UPDATEDATE_ AS DATE) - CAST(CREATIONDATE_ AS DATE)) * 24 * 60 END), 2) " +
+    "FROM UCUSTOI0.FLOW_FLOW",
+    nativeQuery = true)
+  List<Object[]> getKpiSummary();
 
 }
