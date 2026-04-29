@@ -699,13 +699,13 @@
           {{ selectedFlowScore.level === 'critique' ? '🔴' : selectedFlowScore.level === 'vigilance' ? '🟡' : '🟢' }}
         </span>
         <div>
-          <div class="detail-score-label">Score IA : {{ selectedFlowScore.score }} / 80 pts</div>
+          <div class="detail-score-label">Score IA : {{ selectedFlowScore.score }} / 100 pts</div>
           <div class="detail-score-level">Niveau {{ selectedFlowScore.label }}</div>
         </div>
       </div>
       <!-- Barre de score -->
       <div class="score-bar-bg">
-        <div class="score-bar-fill" [style.width.%]="(selectedFlowScore.score / 80) * 100"
+        <div class="score-bar-fill" [style.width.%]="(selectedFlowScore.score / 100) * 100"
           [class.fill-critique]="selectedFlowScore.level === 'critique'"
           [class.fill-vigilance]="selectedFlowScore.level === 'vigilance'"
           [class.fill-ok]="selectedFlowScore.level === 'ok'">
@@ -716,6 +716,10 @@
     <!-- Décomposition du score -->
     <div class="detail-section">
       <h4 class="detail-section-title">📐 Calcul du Score</h4>
+      <p style="font-size: 12px; color: #64748b; margin-top: -8px; margin-bottom: 16px; line-height: 1.4;">
+        L'IA évalue la criticité d'un flux sur une échelle de 100 points en analysant sa situation technique (erreurs), 
+        son temps de traitement (bloqué > 24h) et son impact métier (type de message sensible).
+      </p>
       <div class="score-rules">
         <div *ngFor="let rule of selectedFlowScore.breakdown" class="score-rule" [class.rule-applied]="rule.applied"
           [class.rule-skipped]="!rule.applied">

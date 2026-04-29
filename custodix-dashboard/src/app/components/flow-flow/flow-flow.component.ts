@@ -24,7 +24,7 @@ import { NonPassiveWheelDirective } from '../overview/non-passive-wheel.directiv
 const SLA_THRESHOLD_MIN = 30;
 
 // Règles du scoring IA (exportées pour affichage dans la carte détail)
-export const SCORING_RULES = [
+export const SCORING_RULES: Array<{ label: string; statuses: string[]; flowTypes?: string[]; points: number; description: string }> = [
   {
     label: 'Statut critique',
     statuses: ['InTechnicalError', 'Blocked', 'InBusinessError', 'Rejected', 'InitiationFailed', 'Nacked', 'SubWorkflowInTechnicalError'],
@@ -42,6 +42,18 @@ export const SCORING_RULES = [
     statuses: [],
     points: 20,
     description: 'Flux créé il y a plus de 24h sans atteindre un statut final — risque de blocage silencieux'
+  },
+  {
+    label: 'Type de flux sensible (Swift/Generali)',
+    statuses: [],
+    flowTypes: [
+      'FT_MT502', 'FT_MT546', 'FT_MT509', 'FT_MT544', 
+      'FT_MT545', 'FT_MT547', 'FT_MT515', 'GENERALI_MT535_FT', 
+      'GENERALI_MT566_FT', 'GENERALI_MX515_FT', 'GENERALI_MT515_FT', 
+      'MT54x'
+    ],
+    points: 20,
+    description: 'Flux de type Swift (MT/MX) ou Generali identifié comme sensible, nécessitant une priorité plus élevée'
   }
 ];
 
@@ -813,6 +825,18 @@ export class FlowFlowComponent implements OnInit {
     }
     breakdown.push({ rule: SCORING_RULES[2].label, points: SCORING_RULES[2].points, applied: ageOld, description: SCORING_RULES[2].description });
     if (ageOld) score += SCORING_RULES[2].points;
+
+    // Règle 4 : Type de flux (Sensible)
+    const sensitiveFlowTypes = SCORING_RULES[3].flowTypes;
+    const isSensitiveType = !!flow.flowTypeName && (sensitiveFlowTypes?.includes(flow.flowTypeName) ?? false);
+    
+    breakdown.push({ 
+      rule: SCORING_RULES[3].label, 
+      points: SCORING_RULES[3].points, 
+      applied: isSensitiveType, 
+      description: SCORING_RULES[3].description 
+    });
+    if (isSensitiveType) score += SCORING_RULES[3].points;
 
     const level = score >= 50 ? 'critique' : score >= 20 ? 'vigilance' : 'ok';
     const label = score >= 50 ? 'CRITIQUE' : score >= 20 ? 'VIGILANCE' : 'OK';
