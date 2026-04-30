@@ -161,7 +161,7 @@ export class FlowFlowComponent implements OnInit {
   timelineDataLabels!: ApexDataLabels;
   timelineTooltip!: ApexTooltip;
   timelineAnnotations!: ApexAnnotations;
-  timelineColors: string[] = ['#6366f1'];
+  timelineColors: string[] = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#f43f5e', '#14b8a6', '#64748b', '#ec4899', '#3b82f6'];
 
   // ===== Filtres Timeline =====
   statusList: string[] = [
@@ -177,12 +177,15 @@ export class FlowFlowComponent implements OnInit {
   toDate = '';
   maxDate = '';
   selectedRouteId: string | null = null;
+  selectedSender: string = '';
+  timelineSenders: string[] = [];
 
   resetTimelineFilters() {
     this.selectedBucket = 'auto';
     this.fromDate = '';
     this.toDate = '';
     this.selectedRouteId = null;
+    this.selectedSender = '';
     this.loadTimeline();
   }
 
@@ -484,23 +487,82 @@ export class FlowFlowComponent implements OnInit {
 
   // ===== Timeline =====
   loadTimeline() {
-    const statusColorMap: Record<string, string> = {
-      Processed: '#10b981', Sent: '#10b981', Acked: '#10b981',
-      InTechnicalError: '#ef4444', Blocked: '#ef4444', Rejected: '#ef4444',
-      InBusinessError: '#ef4444', Nacked: '#ef4444', InitiationFailed: '#ef4444',
-      WaitAction: '#f59e0b', WaitProcessing: '#f59e0b', InitiationError: '#f59e0b',
-    };
-    this.timelineColors = [statusColorMap[this.selectedStatus] || '#6366f1'];
-
     const params: any = { status: this.selectedStatus, bucket: this.selectedBucket };
     if (this.fromDate) params.from = this.fromDate;
     if (this.toDate) params.to = this.toDate;
     if (this.selectedRouteId) params.routeId = this.selectedRouteId;
+    if (this.selectedSender) params.sender = this.selectedSender;
 
     this.flowService.getTimeline(params).subscribe(data => {
-      const points = (data || []).map(d => ({ x: new Date(d.bucket).getTime(), y: d.total }));
-      const avg = points.length ? Math.round(points.reduce((s, p) => s + p.y, 0) / points.length) : 0;
-      this.timelineSeries = [{ name: 'Flux', data: points }];
+      const rawData = data || [];
+      
+      // Extraction des dates uniques pour le padding
+      const allDates = Array.from(new Set(rawData.map(d => new Date(d.bucket).getTime()))).sort((a, b) => a - b);
+      
+      // Extraction des expéditeurs uniques et regroupement
+      const sendersMap = new Map<string, { x: number, y: number }[]>();
+      
+      // Mettre à jour la liste des expéditeurs pour le filtre (uniquement s'il n'y a pas de filtre expéditeur actif)
+      if (!this.selectedSender) {
+        this.timelineSenders = Array.from(new Set(rawData.map(d => d.category || 'Inconnu'))).sort();
+      }
+
+      rawData.forEach(d => {
+        const sender = d.category || 'Inconnu';
+        if (!sendersMap.has(sender)) {
+          // Initialiser avec des 0 pour toutes les dates pour éviter les bugs du stacked area d'ApexCharts
+          const emptyPadding = allDates.map(date => ({ x: date, y: 0 }));
+          sendersMap.set(sender, emptyPadding);
+        }
+        
+        const timestamp = new Date(d.bucket).getTime();
+        const senderData = sendersMap.get(sender);
+        if (senderData) {
+          const point = senderData.find(p => p.x === timestamp);
+          if (point) point.y = d.total;
+        }
+      });
+
+      // Si top > 10 senders, on regroupe les petits dans "Autres" pour la lisibilité
+      let finalSeries: any[] = [];
+      if (sendersMap.size > 10 && !this.selectedSender) {
+        const sortedSenders = Array.from(sendersMap.entries()).map(([name, data]) => {
+          return { name, data, sum: data.reduce((acc, p) => acc + p.y, 0) };
+        }).sort((a, b) => b.sum - a.sum);
+
+        const top10 = sortedSenders.slice(0, 9);
+        const others = sortedSenders.slice(9);
+
+        finalSeries = top10.map(s => ({ name: s.name, data: s.data }));
+        
+        if (others.length > 0) {
+          const othersData = allDates.map(date => {
+            const sumForDate = others.reduce((acc, s) => {
+              const p = s.data.find(dp => dp.x === date);
+              return acc + (p ? p.y : 0);
+            }, 0);
+            return { x: date, y: sumForDate };
+          });
+          finalSeries.push({ name: 'Autres', data: othersData });
+        }
+      } else {
+        finalSeries = Array.from(sendersMap.entries()).map(([name, data]) => ({ name, data }));
+      }
+
+      // Si aucune donnée, insérer une série vide
+      if (finalSeries.length === 0) {
+        finalSeries = [{ name: 'Flux', data: [] }];
+      }
+
+      this.timelineSeries = finalSeries;
+
+      // Calcul de la moyenne globale pour l'annotation
+      let avg = 0;
+      if (allDates.length > 0) {
+        const totalSum = rawData.reduce((acc, p) => acc + p.total, 0);
+        avg = Math.round(totalSum / allDates.length);
+      }
+      
       this.timelineAnnotations = {
         yaxis: [{
           y: avg, borderColor: '#94a3b8', borderWidth: 1, strokeDashArray: 4,
@@ -881,7 +943,7 @@ export class FlowFlowComponent implements OnInit {
   }
 
   private initChart() {
-    this.timelineChart = { type: 'area', height: 260, toolbar: { show: false } };
+    this.timelineChart = { type: 'area', stacked: true, height: 260, toolbar: { show: false } };
     this.timelineXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8' } } };
     this.timelineStroke = { curve: 'smooth', width: 3 };
     this.timelineDataLabels = { enabled: false };

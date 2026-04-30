@@ -1,6 +1,6 @@
 .ai-chat-page {
   padding: 1.5rem;
-  height: calc(100vh - 64px); /* Hauteur de l'écran moins la navbar */
+  height: 100%; /* S'adapte à la zone .content (qui a un padding-bottom) */
   display: flex;
   justify-content: center;
   align-items: center;

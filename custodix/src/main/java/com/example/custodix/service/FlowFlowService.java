@@ -57,7 +57,8 @@ public class FlowFlowService {
                     } else {
                         bucketValue = (LocalDateTime) bucketObj;
                     }
-                    return new TimelinePointDTO(bucketValue, ((Number) r[1]).longValue());
+                    String category = r.length > 2 && r[2] != null ? r[2].toString() : "Inconnu";
+                    return new TimelinePointDTO(bucketValue, ((Number) r[1]).longValue(), category);
                 })
                 .toList();
     }

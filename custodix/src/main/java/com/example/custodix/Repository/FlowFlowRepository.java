@@ -47,7 +47,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
 
   // HOUR
   @Query(value = """
-      SELECT TRUNC(CREATIONDATE_, 'HH24') AS bucket, COUNT(*) AS total
+      SELECT TRUNC(CREATIONDATE_, 'HH24') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
       WHERE STATUS_ = :status
         AND (:fromDate IS NULL OR CREATIONDATE_ >= :fromDate)
@@ -57,7 +57,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
         AND (:routeId IS NULL OR ROUTE_ROUTEID_ = :routeId)
         AND (:sender IS NULL OR SENDER_IDENTIFIER_ = :sender)
         AND (:receiver IS NULL OR RECEIVER_IDENTIFIER_ = :receiver)
-      GROUP BY TRUNC(CREATIONDATE_, 'HH24')
+      GROUP BY TRUNC(CREATIONDATE_, 'HH24'), SENDER_IDENTIFIER_
       ORDER BY bucket
       """, nativeQuery = true)
   List<Object[]> timelineHour(@Param("status") String status,
@@ -71,7 +71,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
 
   // DAY
   @Query(value = """
-      SELECT TRUNC(CREATIONDATE_, 'DD') AS bucket, COUNT(*) AS total
+      SELECT TRUNC(CREATIONDATE_, 'DD') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
       WHERE STATUS_ = :status
         AND (:fromDate IS NULL OR CREATIONDATE_ >= :fromDate)
@@ -81,7 +81,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
         AND (:routeId IS NULL OR ROUTE_ROUTEID_ = :routeId)
         AND (:sender IS NULL OR SENDER_IDENTIFIER_ = :sender)
         AND (:receiver IS NULL OR RECEIVER_IDENTIFIER_ = :receiver)
-      GROUP BY TRUNC(CREATIONDATE_, 'DD')
+      GROUP BY TRUNC(CREATIONDATE_, 'DD'), SENDER_IDENTIFIER_
       ORDER BY bucket
       """, nativeQuery = true)
   List<Object[]> timelineDay(@Param("status") String status,
@@ -95,7 +95,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
 
   // MONTH
   @Query(value = """
-      SELECT TRUNC(CREATIONDATE_, 'MM') AS bucket, COUNT(*) AS total
+      SELECT TRUNC(CREATIONDATE_, 'MM') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
       WHERE STATUS_ = :status
         AND (:fromDate IS NULL OR CREATIONDATE_ >= :fromDate)
@@ -105,7 +105,7 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
         AND (:routeId IS NULL OR ROUTE_ROUTEID_ = :routeId)
         AND (:sender IS NULL OR SENDER_IDENTIFIER_ = :sender)
         AND (:receiver IS NULL OR RECEIVER_IDENTIFIER_ = :receiver)
-      GROUP BY TRUNC(CREATIONDATE_, 'MM')
+      GROUP BY TRUNC(CREATIONDATE_, 'MM'), SENDER_IDENTIFIER_
       ORDER BY bucket
       """, nativeQuery = true)
   List<Object[]> timelineMonth(@Param("status") String status,

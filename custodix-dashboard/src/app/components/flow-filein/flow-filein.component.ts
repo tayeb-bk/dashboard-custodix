@@ -26,12 +26,12 @@ export class FlowFileInComponent implements OnInit {
   timelineFilter = { from: '', to: '', workflow: '', contrat: '', bucket: 'auto' };
   timelineSeries: ApexAxisChartSeries = [];
   timelineChart: ApexChart = { type: 'area', height: 230, toolbar: { show: false }, animations: { enabled: true, speed: 600 } };
-  timelineXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } };
-  timelineYAxis: ApexYAxis = { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } };
+  timelineXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#64748b', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } };
+  timelineYAxis: ApexYAxis = { labels: { style: { colors: '#64748b', fontSize: '11px' } } };
   timelineStroke: ApexStroke = { curve: 'smooth', width: 2 };
   timelineFill: ApexFill = { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] } };
-  timelineGrid: ApexGrid = { borderColor: '#1e293b', strokeDashArray: 4 };
-  timelineTooltip: ApexTooltip = { theme: 'dark', x: { format: 'dd MMM yyyy HH:mm' } };
+  timelineGrid: ApexGrid = { borderColor: 'rgba(148, 163, 184, 0.2)', strokeDashArray: 4 };
+  timelineTooltip: ApexTooltip = { theme: 'light', x: { format: 'dd MMM yyyy HH:mm' } };
   timelineColors = ['#6366f1'];
 
   // ===== Heatmap =====
@@ -39,14 +39,14 @@ export class FlowFileInComponent implements OnInit {
   heatmapChart: ApexChart = { type: 'heatmap', height: 260, toolbar: { show: false } };
   heatmapPlotOptions: ApexPlotOptions = {
     heatmap: {
-      shadeIntensity: 0.8, radius: 3,
+      shadeIntensity: 0.5, radius: 4,
       colorScale: {
         ranges: [
-          { from: 0,    to: 0,     color: '#0f172a', name: 'Aucun' },
-          { from: 1,    to: 50,    color: '#1e3a5f', name: 'Faible' },
-          { from: 51,   to: 300,   color: '#3b82f6', name: 'Moyen' },
-          { from: 301,  to: 2000,  color: '#6366f1', name: 'Élevé' },
-          { from: 2001, to: 99999, color: '#a855f7', name: 'Très élevé' }
+          { from: 0,    to: 0,     color: '#f8fafc', name: 'Aucun' },
+          { from: 1,    to: 50,    color: '#c7d2fe', name: 'Faible' },
+          { from: 51,   to: 300,   color: '#818cf8', name: 'Moyen' },
+          { from: 301,  to: 2000,  color: '#4f46e5', name: 'Élevé' },
+          { from: 2001, to: 99999, color: '#9333ea', name: 'Très élevé' }
         ]
       }
     }
@@ -57,19 +57,19 @@ export class FlowFileInComponent implements OnInit {
                  '10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h'],
     labels: { style: { colors: '#64748b', fontSize: '10px' } }
   };
-  heatmapTooltip: ApexTooltip = { theme: 'dark' };
+  heatmapTooltip: ApexTooltip = { theme: 'light' };
 
   // ===== Anomalies Timeline =====
   anomaliesSeries: ApexAxisChartSeries = [];
   anomaliesChart: ApexChart = { type: 'area', height: 260, toolbar: { show: false }, animations: { enabled: true, speed: 500 } };
-  anomaliesXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#94a3b8', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } };
-  anomaliesYAxis: ApexYAxis = { labels: { style: { colors: '#94a3b8', fontSize: '11px' } } };
+  anomaliesXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#64748b', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } };
+  anomaliesYAxis: ApexYAxis = { labels: { style: { colors: '#64748b', fontSize: '11px' } } };
   anomaliesStroke: ApexStroke = { curve: 'smooth', width: [2, 2, 2] };
   anomaliesFill: ApexFill = { type: 'gradient', gradient: { shadeIntensity: 0.5, opacityFrom: 0.2, opacityTo: 0.02 } };
   anomaliesColors = ['#6366f1', '#f43f5e', '#f59e0b'];
-  anomaliesGrid: ApexGrid = { borderColor: '#1e293b', strokeDashArray: 4 };
-  anomaliesTooltip: ApexTooltip = { theme: 'dark', x: { format: 'MMM yyyy' } };
-  anomaliesLegend: ApexLegend = { position: 'top', labels: { colors: '#94a3b8' } };
+  anomaliesGrid: ApexGrid = { borderColor: 'rgba(148, 163, 184, 0.2)', strokeDashArray: 4 };
+  anomaliesTooltip: ApexTooltip = { theme: 'light', x: { format: 'MMM yyyy' } };
+  anomaliesLegend: ApexLegend = { position: 'top', labels: { colors: '#64748b' } };
 
   // ===== Top Workflows =====
   topWorkflows: any[] = [];
@@ -80,8 +80,8 @@ export class FlowFileInComponent implements OnInit {
   contractChart: ApexChart = { type: 'donut', height: 280, animations: { enabled: true } };
   contractLabels: string[] = [];
   contractColors = ['#6366f1','#a855f7','#06b6d4','#10b981','#f59e0b','#f43f5e','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
-  contractLegend: ApexLegend = { position: 'bottom', labels: { colors: '#94a3b8' }, fontSize: '11px' };
-  contractTooltip: ApexTooltip = { theme: 'dark' };
+  contractLegend: ApexLegend = { position: 'bottom', labels: { colors: '#64748b' }, fontSize: '11px' };
+  contractTooltip: ApexTooltip = { theme: 'light' };
   contractResponsive: ApexResponsive[] = [{ breakpoint: 480, options: { chart: { height: 220 } } }];
 
   // ===== Table =====

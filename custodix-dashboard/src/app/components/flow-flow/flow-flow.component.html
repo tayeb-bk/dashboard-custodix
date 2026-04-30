@@ -205,27 +205,47 @@
           temporelle du volume par statut sélectionné</p>
       </div>
 
-      <!-- ===== FILTRES TIMELINE (Plats sous le titre) ===== -->
-      <div class="filters"
-        style="box-shadow: none; padding: 0; border: none; background: transparent; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-        <select [(ngModel)]="selectedStatus" style="height: 38px;">
-          <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
-        </select>
-        <select [(ngModel)]="selectedBucket" style="height: 38px;">
-          <option value="auto">Auto</option>
-          <option value="hour">Heure</option>
-          <option value="day">Jour</option>
-          <option value="month">Mois</option>
-        </select>
-        <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate" title="Début" style="height: 38px;">
-        <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate" title="Fin" style="height: 38px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <button (click)="loadTimeline()"
-            style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;">Appliquer</button>
-          <button (click)="resetTimelineFilters()"
-            style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.1); color: #6366f1; border: none; cursor: pointer; transition: all 0.2s;"
-            onmouseover="this.style.background='rgba(99,102,241,0.2)'"
-            onmouseout="this.style.background='rgba(99,102,241,0.1)'">Reset</button>
+      <!-- ===== FILTRES TIMELINE ===== -->
+      <div class="filters" style="box-shadow: none; padding: 0; border: none; background: transparent; margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+        
+        <div class="table-filter-group">
+          <label class="filter-label">Statut</label>
+          <select [(ngModel)]="selectedStatus" class="filter-select">
+            <option *ngFor="let s of statusList" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Expéditeur</label>
+          <select [(ngModel)]="selectedSender" class="filter-select" style="min-width: 160px;">
+            <option value="">Tous les Expéditeurs</option>
+            <option *ngFor="let sender of timelineSenders" [value]="sender">{{ sender }}</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Granularité</label>
+          <select [(ngModel)]="selectedBucket" class="filter-select">
+            <option value="auto">Auto</option>
+            <option value="hour">Heure</option>
+            <option value="day">Jour</option>
+            <option value="month">Mois</option>
+          </select>
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Date Début</label>
+          <input type="datetime-local" [(ngModel)]="fromDate" [max]="maxDate" class="filter-input">
+        </div>
+
+        <div class="table-filter-group">
+          <label class="filter-label">Date Fin</label>
+          <input type="datetime-local" [(ngModel)]="toDate" [max]="maxDate" class="filter-input">
+        </div>
+
+        <div class="table-filter-actions" style="margin-left: auto;">
+          <button class="btn-apply" (click)="loadTimeline()">Appliquer</button>
+          <button class="btn-reset" (click)="resetTimelineFilters()">Reset</button>
         </div>
       </div>
       <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
