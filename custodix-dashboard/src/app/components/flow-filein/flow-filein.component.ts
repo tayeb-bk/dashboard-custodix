@@ -23,17 +23,35 @@ export class FlowFileInComponent implements OnInit {
   kpi: any = null;
   kpiFilter = { contrat: '' };
 
-  // ===== Timeline =====
+  // ===== Timeline enrichie (Bande de Normalité) =====
   timelineFilter = { from: '', to: '', workflow: '', contrat: '', bucket: 'auto' };
   timelineSeries: ApexAxisChartSeries = [];
-  timelineChart: ApexChart = { type: 'area', height: 230, toolbar: { show: false }, animations: { enabled: true, speed: 600 } };
-  timelineXAxis: ApexXAxis = { type: 'datetime', labels: { style: { colors: '#64748b', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } };
-  timelineYAxis: ApexYAxis = { labels: { style: { colors: '#64748b', fontSize: '11px' } } };
-  timelineStroke: ApexStroke = { curve: 'smooth', width: 2 };
-  timelineFill: ApexFill = { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] } };
-  timelineGrid: ApexGrid = { borderColor: 'rgba(148, 163, 184, 0.2)', strokeDashArray: 4 };
-  timelineTooltip: ApexTooltip = { theme: 'light', x: { format: 'dd MMM yyyy HH:mm' } };
-  timelineColors = ['#6366f1'];
+  timelineChart: ApexChart = {
+    type: 'rangeArea', height: 300,
+    toolbar: { show: false },
+    animations: { enabled: true, speed: 700 }
+  };
+  timelineXAxis: ApexXAxis = {
+    type: 'datetime',
+    labels: { style: { colors: '#94a3b8', fontSize: '10px' }, datetimeFormatter: { day: 'dd MMM' } },
+    axisBorder: { show: false }, axisTicks: { show: false }
+  };
+  timelineYAxis: ApexYAxis = { labels: { style: { colors: '#94a3b8', fontSize: '10px' } } };
+  timelineStroke: ApexStroke = { curve: 'smooth', width: [0, 2.5, 1.5] };
+  timelineDataLabels: ApexDataLabels = { enabled: false };
+  timelineMarkers: any = { size: [0, 3, 0], hover: { size: 5 } };
+  timelineFill: ApexFill = { opacity: [0.15, 0.9, 0.8] };
+  timelineGrid: ApexGrid = { borderColor: 'rgba(148, 163, 184, 0.08)', strokeDashArray: 4 };
+  timelineTooltip: ApexTooltip = {
+    theme: 'light', shared: true,
+    y: { formatter: (v: number) => v != null ? v.toLocaleString('fr-FR') + ' fichiers' : '-' }
+  };
+  timelineColors = ['#818cf8', '#6366f1', '#a855f7'];
+  timelineLegend: ApexLegend = {
+    show: true, position: 'top',
+    labels: { colors: '#94a3b8' }, fontSize: '11px',
+    markers: { size: 10 }
+  };
 
   // ===== Heatmap =====
   heatmapSeries: ApexAxisChartSeries = [];
@@ -154,10 +172,10 @@ export class FlowFileInComponent implements OnInit {
       action: 'Un contrat SLA identifié permet de prioriser le traitement. Filtrer par contrat dans le tableau pour voir les fichiers à traiter en priorité.'
     },
     timeline: {
-      icon: '📈', title: 'Volume de Réception',
-      what: 'Évolution temporelle du nombre de fichiers reçus. Permet de détecter les pics ou les creux d\'activité.',
-      how: 'Agrégation des fichiers par heure, jour ou mois (auto-sélection selon la plage choisie). Filtrable par workflow ou contrat.',
-      action: 'Un creux anormal indique que des expéditeurs ont arrêté d\'envoyer. Comparer avec la période précédente pour confirmer.'
+      icon: '📈', title: 'Surveillance Active du Volume de Réception',
+      what: 'Graphique de surveillance qui compare le volume réel de fichiers reçus à un intervalle de normalité calculé automatiquement.',
+      how: 'La zone violette = Moyenne +/- 1 ecart-type sur une fenetre glissante de 7 jours. La courbe bleue = volume reel du jour. La ligne mauve = tendance moyenne.',
+      action: 'Si la courbe bleue sort vers le bas de la zone → chute anormale (expéditeur en panne ?). Si elle sort vers le haut → pic suspect (attaque ? doublon massif ?). Agir immédiatement.'
     },
     heatmap: {
       icon: '🔥', title: 'Heatmap d\'Activité',
@@ -212,19 +230,35 @@ export class FlowFileInComponent implements OnInit {
   }
 
   loadTimeline(): void {
-    const p: any = { bucket: this.timelineFilter.bucket };
-    if (this.timelineFilter.from) p.from = this.timelineFilter.from + ':00';
-    if (this.timelineFilter.to) p.to = this.timelineFilter.to + ':00';
-    if (this.timelineFilter.workflow) p.workflow = this.timelineFilter.workflow;
-    if (this.timelineFilter.contrat) p.contrat = this.timelineFilter.contrat;
-    this.svc.getTimeline(p).subscribe(rows => {
-      this.timelineSeries = [{
-        name: 'Fichiers reçus',
-        data: rows.map(r => [new Date(r.bucket).getTime(), r.total])
-      }];
+    const p: any = {};
+    if (this.timelineFilter.from)     p.from     = this.timelineFilter.from + ':00';
+    if (this.timelineFilter.to)       p.to       = this.timelineFilter.to   + ':00';
+    if (this.timelineFilter.workflow) p.workflow  = this.timelineFilter.workflow;
+    if (this.timelineFilter.contrat)  p.contrat   = this.timelineFilter.contrat;
+
+    this.svc.getTimelineBaseline(p).subscribe((rows: any[]) => {
+      this.timelineSeries = [
+        {
+          name: 'Zone normale (+/- 1s)',
+          type: 'rangeArea',
+          data: rows.map(r => ({ x: new Date(r['bucket']).getTime(), y: [r['lower'], r['upper']] }))
+        },
+        {
+          name: 'Volume reel',
+          type: 'area',
+          data: rows.map(r => ({ x: new Date(r['bucket']).getTime(), y: r['total'] }))
+        },
+        {
+          name: 'Moyenne 7j',
+          type: 'line',
+          data: rows.map(r => ({ x: new Date(r['bucket']).getTime(), y: r['avg'] }))
+        }
+      ];
       this.cdr.markForCheck();
     });
   }
+
+  onTimelineFilterChange(): void { this.loadTimeline(); }
 
   loadHeatmap(): void {
     this.svc.getHeatmap().subscribe(rows => {
@@ -380,7 +414,7 @@ export class FlowFileInComponent implements OnInit {
     this.applyTableFilters();
   }
 
-  onTimelineFilterChange(): void { this.loadTimeline(); }
+
 
   openDetail(file: any): void {
     this.selectedFile = file;

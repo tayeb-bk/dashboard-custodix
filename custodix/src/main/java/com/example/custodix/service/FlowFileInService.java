@@ -86,6 +86,19 @@ public class FlowFileInService {
                 ((Number) r[1]).longValue())).toList();
     }
 
+    public List<Map<String, Object>> getTimelineWithBaseline(LocalDateTime from, LocalDateTime to,
+            String workflow, String contrat) {
+        String w = nullify(workflow);
+        String c = nullify(contrat);
+        return repository.timelineWithBaseline(from, to, w, c).stream().map(r -> Map.<String, Object>of(
+            "bucket",    toLocalDateTime(r[0]).toString(),
+            "total",     ((Number) r[1]).longValue(),
+            "avg",       ((Number) r[2]).longValue(),
+            "upper",     ((Number) r[3]).longValue(),
+            "lower",     ((Number) r[4]).longValue()
+        )).toList();
+    }
+
     public List<FlowFileInDTO.HeatmapCell> getHeatmapData(Map<String, String> params) {
         String contrat = nullify(params.get("contrat"));
         String workflow = nullify(params.get("workflow"));

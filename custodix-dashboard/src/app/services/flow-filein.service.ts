@@ -27,6 +27,10 @@ export class FlowFileInService {
     return this.http.get<any[]>(`${this.base}/timeline`, { params: this.buildParams(params) });
   }
 
+  getTimelineBaseline(params?: any): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/timeline/baseline`, { params: this.buildParams(params) });
+  }
+
   getHeatmap(params?: any): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/heatmap`, { params: this.buildParams(params) });
   }

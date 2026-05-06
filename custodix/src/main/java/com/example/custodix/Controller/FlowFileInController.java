@@ -44,6 +44,15 @@ public class FlowFileInController {
         return service.getTimeline(parseDate(from), parseDate(to), bucket, workflow, contrat);
     }
 
+    @GetMapping("/timeline/baseline")
+    public List<Map<String, Object>> getTimelineBaseline(
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String workflow,
+            @RequestParam(required = false) String contrat) {
+        return service.getTimelineWithBaseline(parseDate(from), parseDate(to), workflow, contrat);
+    }
+
     @GetMapping("/heatmap")
     public List<FlowFileInDTO.HeatmapCell> getHeatmap(@RequestParam Map<String, String> params) {
         return service.getHeatmapData(params);

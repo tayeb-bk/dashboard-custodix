@@ -170,54 +170,7 @@
 
   <!-- ===== TIMELINE + HEATMAP ===== -->
   <div class="row-2col">
-
-    <div class="widget has-popover">
-      <div class="widget-header">
-        <div class="widget-title-group">
-          <span class="widget-icon">📈</span>
-          <h3 class="widget-title">Volume de réception</h3>
-          <div class="info-btn-wrap" (click)="toggleWidget('timeline', $event)">
-            <button class="info-btn">i</button>
-            <div class="info-popover" [class.open]="activeWidget==='timeline'" (click)="$event.stopPropagation()">
-              <div class="pop-header"><span>{{ widgetInfo['timeline'].icon }}</span><strong>{{
-                  widgetInfo['timeline'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
-              </div>
-              <div class="pop-row"><span class="pop-key">📌 Définition</span>
-                <p>{{ widgetInfo['timeline'].what }}</p>
-              </div>
-              <div class="pop-row"><span class="pop-key">🧮 Calcul</span>
-                <p>{{ widgetInfo['timeline'].how }}</p>
-              </div>
-              <div class="pop-row"><span class="pop-key">🎯 À surveiller</span>
-                <p>{{ widgetInfo['timeline'].action }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="timeline-controls">
-          <input type="datetime-local" [(ngModel)]="timelineFilter.from" (change)="onTimelineFilterChange()"
-            class="ctrl-input">
-          <input type="datetime-local" [(ngModel)]="timelineFilter.to" (change)="onTimelineFilterChange()"
-            class="ctrl-input">
-          <select [(ngModel)]="timelineFilter.workflow" (change)="onTimelineFilterChange()" class="ctrl-select">
-            <option value="">Tous les workflows</option>
-            <option *ngFor="let w of filterWorkflows" [value]="w">{{ w }}</option>
-          </select>
-          <select [(ngModel)]="timelineFilter.bucket" (change)="onTimelineFilterChange()" class="ctrl-select">
-            <option value="auto">Auto</option>
-            <option value="hour">Heure</option>
-            <option value="day">Jour</option>
-            <option value="month">Mois</option>
-          </select>
-        </div>
-      </div>
-      <apx-chart [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis" [yaxis]="timelineYAxis"
-        [stroke]="timelineStroke" [fill]="timelineFill" [grid]="timelineGrid" [tooltip]="timelineTooltip"
-        [colors]="timelineColors">
-      </apx-chart>
-    </div>
-
-    <div class="widget has-popover">
+    <div class="widget has-popover heatmap-widget">
       <div class="widget-header">
         <div class="widget-title-group">
           <span class="widget-icon">🔥</span>
@@ -244,6 +197,85 @@
       </div>
       <apx-chart [series]="heatmapSeries" [chart]="heatmapChart" [plotOptions]="heatmapPlotOptions"
         [dataLabels]="heatmapDataLabels" [xaxis]="heatmapXAxis" [tooltip]="heatmapTooltip">
+      </apx-chart>
+    </div>
+
+    <div class="widget has-popover timeline-widget">
+      <div class="widget-header">
+        <div class="widget-title-group">
+          <span class="widget-icon">📈</span>
+          <h3 class="widget-title">Surveillance du Volume de Réception</h3>
+          <div class="info-btn-wrap" (click)="toggleWidget('timeline', $event)">
+            <button class="info-btn">i</button>
+            <div class="info-popover" [class.open]="activeWidget==='timeline'" (click)="$event.stopPropagation()">
+              <div class="pop-header"><span>{{ widgetInfo['timeline'].icon }}</span><strong>{{
+                  widgetInfo['timeline'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
+              </div>
+              <div class="pop-row"><span class="pop-key">📌 Définition</span>
+                <p>{{ widgetInfo['timeline'].what }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🧮 Calcul</span>
+                <p>{{ widgetInfo['timeline'].how }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🎯 À surveiller</span>
+                <p>{{ widgetInfo['timeline'].action }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte de lecture visuelle -->
+      <div class="tl-legend-card">
+        <div class="tl-legend-items">
+          <div class="tl-legend-item">
+            <span class="tl-dot tl-dot-band"></span>
+            <div><strong>Zone normale</strong><span>Intervalle attendu (Moy. ± 1σ sur 7j)</span></div>
+          </div>
+          <div class="tl-legend-item">
+            <span class="tl-dot tl-dot-real"></span>
+            <div><strong>Volume réel</strong><span>Fichiers reçus ce jour</span></div>
+          </div>
+          <div class="tl-legend-item">
+            <span class="tl-dot tl-dot-avg"></span>
+            <div><strong>Moyenne 7j</strong><span>Tendance glissante</span></div>
+          </div>
+        </div>
+        <div class="tl-legend-alert">
+          ⚠️ Courbe bleue hors de la zone violette = anomalie de volume
+        </div>
+      </div>
+
+      <!-- Filtres compacts -->
+      <div class="tl-filters">
+        <div class="tl-filter-group">
+          <label>Du</label>
+          <input type="date" [(ngModel)]="timelineFilter.from" (change)="onTimelineFilterChange()" class="tl-input">
+          <label>au</label>
+          <input type="date" [(ngModel)]="timelineFilter.to" (change)="onTimelineFilterChange()" class="tl-input">
+        </div>
+        <div class="tl-filter-group">
+          <label>Workflow :</label>
+          <select [(ngModel)]="timelineFilter.workflow" (change)="onTimelineFilterChange()" class="tl-select">
+            <option value="">Tous</option>
+            <option *ngFor="let w of filterWorkflows" [value]="w">{{ w }}</option>
+          </select>
+        </div>
+      </div>
+
+      <apx-chart
+        [series]="timelineSeries"
+        [chart]="timelineChart"
+        [xaxis]="timelineXAxis"
+        [yaxis]="timelineYAxis"
+        [stroke]="timelineStroke"
+        [dataLabels]="timelineDataLabels"
+        [markers]="timelineMarkers"
+        [fill]="timelineFill"
+        [grid]="timelineGrid"
+        [tooltip]="timelineTooltip"
+        [colors]="timelineColors"
+        [legend]="timelineLegend">
       </apx-chart>
     </div>
   </div>

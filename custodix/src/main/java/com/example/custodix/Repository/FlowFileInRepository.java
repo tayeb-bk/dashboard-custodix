@@ -87,6 +87,37 @@ public interface FlowFileInRepository extends JpaRepository<FlowFileIn, Long> {
       @Param("workflow") String workflow,
       @Param("contrat") String contrat);
 
+  // ===== Timeline enrichie : Volume réel + Moyenne mobile 7j + Intervalle de confiance =====
+  @Query(value = """
+      SELECT
+        bucket,
+        total,
+        ROUND(AVG(total) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW))    AS moving_avg,
+        ROUND(AVG(total) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+            + COALESCE(STDDEV(total) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0)) AS upper_band,
+        GREATEST(0,
+          ROUND(AVG(total) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+            - COALESCE(STDDEV(total) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 0))
+        ) AS lower_band
+      FROM (
+        SELECT
+          TRUNC(SENDINGDATE_, 'DD') AS bucket,
+          COUNT(*) AS total
+        FROM UCUSTOI0.FLOW_FILEIN
+        WHERE (:from     IS NULL OR SENDINGDATE_              >= :from)
+          AND (:to       IS NULL OR SENDINGDATE_              <= :to)
+          AND (:workflow IS NULL OR WORKFLOWID_               = :workflow)
+          AND (:contrat  IS NULL OR PASSEDCONTRACTIDENTIFIER_ = :contrat)
+        GROUP BY TRUNC(SENDINGDATE_, 'DD')
+      )
+      ORDER BY bucket
+      """, nativeQuery = true)
+  List<Object[]> timelineWithBaseline(
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to,
+      @Param("workflow") String workflow,
+      @Param("contrat") String contrat);
+
   // ===== Heatmap =====
   @Query(value = """
       SELECT
