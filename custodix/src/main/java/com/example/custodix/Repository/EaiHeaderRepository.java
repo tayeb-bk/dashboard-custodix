@@ -14,6 +14,9 @@ public interface EaiHeaderRepository extends JpaRepository<EaiHeader, Long> {
 
     // ===== Summary KPIs =====
 
+    @Query("SELECT h FROM EaiHeader h WHERE h.messageId = :messageId")
+    List<EaiHeader> findByMessageId(@Param("messageId") Long messageId);
+
     @Query("SELECT COUNT(h) FROM EaiHeader h")
     long countTotal();
 
@@ -39,6 +42,56 @@ public interface EaiHeaderRepository extends JpaRepository<EaiHeader, Long> {
 
     @Query("SELECT h.creatorUserId, COUNT(h) FROM EaiHeader h GROUP BY h.creatorUserId ORDER BY COUNT(h) DESC")
     List<Object[]> countByCreator();
+
+    // ===== Widget File-In : Top headers par workflow (Heatmap Origine) =====
+    @Query(value = """
+        SELECT f.WORKFLOWID_, h.HEADERNAME_, COUNT(*) AS cnt
+        FROM UCUSTOI0.FLOW_FILEIN f
+        JOIN UCUSTOI0.EAI_HEADER h ON h.MESSAGE_ID_ = f.ID_
+        WHERE f.WORKFLOWID_ IS NOT NULL
+          AND (:workflow IS NULL OR f.WORKFLOWID_ = :workflow)
+        GROUP BY f.WORKFLOWID_, h.HEADERNAME_
+        ORDER BY cnt DESC
+        FETCH FIRST 300 ROWS ONLY
+        """, nativeQuery = true)
+    List<Object[]> getWorkflowHeaderMatrix(@Param("workflow") String workflow);
+
+    // ===== Widget File-In : Taux de présence des headers critiques =====
+    @Query(value = """
+        SELECT
+          h.HEADERNAME_,
+          COUNT(DISTINCT h.MESSAGE_ID_) AS nb_files,
+          ROUND(COUNT(DISTINCT h.MESSAGE_ID_) * 100.0 / (
+              SELECT COUNT(DISTINCT MESSAGE_ID_) FROM UCUSTOI0.EAI_HEADER
+              WHERE (:workflow IS NULL OR MESSAGE_ID_ IN (
+                  SELECT ID_ FROM UCUSTOI0.FLOW_FILEIN WHERE WORKFLOWID_ = :workflow))
+          ), 1) AS coverage_pct
+        FROM UCUSTOI0.EAI_HEADER h
+        JOIN UCUSTOI0.FLOW_FILEIN f ON f.ID_ = h.MESSAGE_ID_
+        WHERE (:workflow IS NULL OR f.WORKFLOWID_ = :workflow)
+        GROUP BY h.HEADERNAME_
+        ORDER BY nb_files DESC
+        FETCH FIRST 15 ROWS ONLY
+        """, nativeQuery = true)
+    List<Object[]> getHeaderCoverageByWorkflow(@Param("workflow") String workflow);
+
+    @Query(value = """
+        SELECT COUNT(DISTINCT HEADERNAME_) FROM UCUSTOI0.EAI_HEADER h
+        JOIN UCUSTOI0.FLOW_FILEIN f ON f.ID_ = h.MESSAGE_ID_
+        WHERE f.WORKFLOWID_ = :workflow
+        """, nativeQuery = true)
+    Long countDistinctHeadersByWorkflow(@Param("workflow") String workflow);
+
+    @Query(value = """
+        SELECT h.HEADERNAME_, COUNT(*) as total
+        FROM UCUSTOI0.EAI_HEADER h
+        JOIN UCUSTOI0.FLOW_FILEIN f ON f.ID_ = h.MESSAGE_ID_
+        WHERE f.WORKFLOWID_ = :workflow
+        GROUP BY h.HEADERNAME_
+        ORDER BY total DESC
+        FETCH FIRST 1 ROWS ONLY
+        """, nativeQuery = true)
+    List<Object[]> getTopHeaderForWorkflow(@Param("workflow") String workflow);
 
     // ===== Timeline — HOUR =====
     @Query(value = """

@@ -19,6 +19,11 @@ public class EaiHeaderService {
     @Autowired
     private EaiHeaderRepository repository;
 
+    // ===== Fetch by Message ID =====
+    public List<EaiHeader> getByMessageId(Long messageId) {
+        return repository.findByMessageId(messageId);
+    }
+
     // ===== 4 KPI Cards =====
     public EaiKpiSummaryDTO getSummary() {
         long total            = repository.countTotal();
@@ -33,6 +38,31 @@ public class EaiHeaderService {
     public List<Object[]> getStatsByType()        { return repository.countByType(); }
     public List<Object[]> getStatsByHeaderType()  { return repository.countByHeaderType(); }
     public List<Object[]> getStatsByCreator()     { return repository.countByCreator(); }
+
+    // ===== Widget File-In =====
+    public List<Object[]> getWorkflowHeaderMatrix(String workflow) {
+        return repository.getWorkflowHeaderMatrix(workflow == null || workflow.isBlank() ? null : workflow);
+    }
+    public List<Object[]> getHeaderCoverage(String workflow) {
+        return repository.getHeaderCoverageByWorkflow(workflow == null || workflow.isBlank() ? null : workflow);
+    }
+
+    public Map<String, Object> getWorkflowTechnicalProfile(String workflow) {
+        Long distinctHeaders = repository.countDistinctHeadersByWorkflow(workflow);
+        List<Object[]> topHeaderRow = repository.getTopHeaderForWorkflow(workflow);
+        
+        String topHeader = "N/A";
+        if (topHeaderRow != null && !topHeaderRow.isEmpty()) {
+            topHeader = (String) topHeaderRow.get(0)[0];
+        }
+
+        return Map.of(
+            "workflow", workflow,
+            "distinctHeaders", distinctHeaders != null ? distinctHeaders : 0,
+            "topHeader", topHeader,
+            "status", distinctHeaders != null && distinctHeaders > 3 ? "Complet" : "Partiel"
+        );
+    }
 
     // ===== Timeline =====
     public List<TimelinePointDTO> getTimeline(LocalDateTime from, LocalDateTime to,

@@ -21,6 +21,7 @@ export class FlowFileInComponent implements OnInit {
 
   // ===== KPI =====
   kpi: any = null;
+  kpiFilter = { contrat: '' };
 
   // ===== Timeline =====
   timelineFilter = { from: '', to: '', workflow: '', contrat: '', bucket: 'auto' };
@@ -42,10 +43,10 @@ export class FlowFileInComponent implements OnInit {
       shadeIntensity: 0.5, radius: 4,
       colorScale: {
         ranges: [
-          { from: 0,    to: 0,     color: '#f8fafc', name: 'Aucun' },
-          { from: 1,    to: 50,    color: '#c7d2fe', name: 'Faible' },
-          { from: 51,   to: 300,   color: '#818cf8', name: 'Moyen' },
-          { from: 301,  to: 2000,  color: '#4f46e5', name: 'Élevé' },
+          { from: 0, to: 0, color: '#f8fafc', name: 'Aucun' },
+          { from: 1, to: 50, color: '#c7d2fe', name: 'Faible' },
+          { from: 51, to: 300, color: '#818cf8', name: 'Moyen' },
+          { from: 301, to: 2000, color: '#4f46e5', name: 'Élevé' },
           { from: 2001, to: 99999, color: '#9333ea', name: 'Très élevé' }
         ]
       }
@@ -53,8 +54,8 @@ export class FlowFileInComponent implements OnInit {
   };
   heatmapDataLabels: ApexDataLabels = { enabled: false };
   heatmapXAxis: ApexXAxis = {
-    categories: ['00h','01h','02h','03h','04h','05h','06h','07h','08h','09h',
-                 '10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h'],
+    categories: ['00h', '01h', '02h', '03h', '04h', '05h', '06h', '07h', '08h', '09h',
+      '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'],
     labels: { style: { colors: '#64748b', fontSize: '10px' } }
   };
   heatmapTooltip: ApexTooltip = { theme: 'light' };
@@ -79,10 +80,18 @@ export class FlowFileInComponent implements OnInit {
   contractSeries: ApexNonAxisChartSeries = [];
   contractChart: ApexChart = { type: 'donut', height: 280, animations: { enabled: true } };
   contractLabels: string[] = [];
-  contractColors = ['#6366f1','#a855f7','#06b6d4','#10b981','#f59e0b','#f43f5e','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+  contractColors = ['#6366f1', '#a855f7', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
   contractLegend: ApexLegend = { position: 'bottom', labels: { colors: '#64748b' }, fontSize: '11px' };
   contractTooltip: ApexTooltip = { theme: 'light' };
   contractResponsive: ApexResponsive[] = [{ breakpoint: 480, options: { chart: { height: 220 } } }];
+
+  // ===== Widget EAI (Origine + Traçabilité) =====
+  eaiWorkflowFilter = '';
+  eaiCoverageData: { name: string; count: number; pct: number }[] = [];
+  eaiMatrixWorkflows: string[] = [];
+  eaiMatrixHeaders: string[] = [];
+  eaiMatrixData: { [wf: string]: { [hdr: string]: number } } = {};
+  eaiWorkflowProfiles: { [wf: string]: any } = {};
 
   // ===== Table =====
   tableRows: any[] = [];
@@ -92,7 +101,7 @@ export class FlowFileInComponent implements OnInit {
   tableTotalElements = 0;
   tableLoading = false;
   tableFilter = {
-    workflow: '', contrat: '', from: '', to: '',
+    workflow: '', contrat: '', checksum: '', client: '', fileName: '', from: '', to: '',
     isDuplicate: null as boolean | null,
     isManual: null as boolean | null
   };
@@ -100,15 +109,20 @@ export class FlowFileInComponent implements OnInit {
   // ===== Filter Options =====
   filterWorkflows: string[] = [];
   filterContracts: string[] = [];
+  filterClients: string[] = [];
+  filterChecksums: string[] = [];
 
   // ===== Detail Panel =====
   selectedFile: any = null;
   showDetailPanel = false;
+  selectedFileHeaders: any[] = [];
+  headersLoading = false;
 
   // ===== Widget Info Popovers =====
   activeWidget: string | null = null;
 
   readonly widgetInfo: Record<string, { icon: string; title: string; what: string; how: string; action: string }> = {
+    // ... widgetInfo unchanged ...
     totalFiles: {
       icon: '📂', title: 'Total Fichiers Reçus',
       what: 'Nombre total de fichiers entrants reçus par la plateforme Custodix depuis l\'origine des données.',
@@ -177,7 +191,7 @@ export class FlowFileInComponent implements OnInit {
   }
   closeWidget(): void { this.activeWidget = null; }
 
-  constructor(private svc: FlowFileInService, private cdr: ChangeDetectorRef) {}
+  constructor(private svc: FlowFileInService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.loadKpi();
@@ -188,6 +202,7 @@ export class FlowFileInComponent implements OnInit {
     this.loadTopContracts();
     this.loadTable();
     this.loadFilterOptions();
+    this.loadEaiWidget();
   }
 
   // ===== Loaders =====
@@ -198,10 +213,10 @@ export class FlowFileInComponent implements OnInit {
 
   loadTimeline(): void {
     const p: any = { bucket: this.timelineFilter.bucket };
-    if (this.timelineFilter.from)     p.from     = this.timelineFilter.from     + ':00';
-    if (this.timelineFilter.to)       p.to       = this.timelineFilter.to       + ':00';
+    if (this.timelineFilter.from) p.from = this.timelineFilter.from + ':00';
+    if (this.timelineFilter.to) p.to = this.timelineFilter.to + ':00';
     if (this.timelineFilter.workflow) p.workflow = this.timelineFilter.workflow;
-    if (this.timelineFilter.contrat)  p.contrat  = this.timelineFilter.contrat;
+    if (this.timelineFilter.contrat) p.contrat = this.timelineFilter.contrat;
     this.svc.getTimeline(p).subscribe(rows => {
       this.timelineSeries = [{
         name: 'Fichiers reçus',
@@ -229,8 +244,8 @@ export class FlowFileInComponent implements OnInit {
     this.svc.getAnomaliesTimeline().subscribe(rows => {
       this.anomaliesSeries = [
         { name: 'Total fichiers', data: rows.map((r: any) => [new Date(r.bucket).getTime(), r.total]) },
-        { name: 'Doublons',       data: rows.map((r: any) => [new Date(r.bucket).getTime(), r.doublons]) },
-        { name: 'Manuels',        data: rows.map((r: any) => [new Date(r.bucket).getTime(), r.manuels]) }
+        { name: 'Doublons', data: rows.map((r: any) => [new Date(r.bucket).getTime(), r.doublons]) },
+        { name: 'Manuels', data: rows.map((r: any) => [new Date(r.bucket).getTime(), r.manuels]) }
       ];
       this.cdr.markForCheck();
     });
@@ -257,22 +272,94 @@ export class FlowFileInComponent implements OnInit {
   loadFilterOptions(): void {
     this.svc.getFilterWorkflows().subscribe(d => { this.filterWorkflows = d; });
     this.svc.getFilterContracts().subscribe(d => { this.filterContracts = d; });
+    this.svc.getFilterClients().subscribe(d => { this.filterClients = d; });
+    this.svc.getFilterChecksums().subscribe(d => { this.filterChecksums = d; });
+  }
+
+  loadEaiWidget(): void {
+    const wf = this.eaiWorkflowFilter || undefined;
+
+    // --- Sous-widget 1 : Couverture headers ---
+    this.svc.getHeaderCoverage(wf).subscribe((rows: any[]) => {
+      this.eaiCoverageData = rows.map(r => ({
+        name: r[0] as string,
+        count: Number(r[1]),
+        pct: Number(r[2])
+      }));
+      this.cdr.markForCheck();
+    });
+
+    // --- Sous-widget 2 : Matrice Workflow × Header ---
+    this.svc.getWorkflowMatrix(wf).subscribe((rows: any[]) => {
+      const wfSet = new Set<string>();
+      const hdrSet = new Set<string>();
+      const raw: { wf: string; hdr: string; cnt: number }[] = [];
+      rows.forEach(r => {
+        const w = r[0] as string, h = r[1] as string, c = Number(r[2]);
+        wfSet.add(w); hdrSet.add(h);
+        raw.push({ wf: w, hdr: h, cnt: c });
+      });
+      this.eaiMatrixWorkflows = Array.from(wfSet).slice(0, 12);
+      this.eaiMatrixHeaders = Array.from(hdrSet).slice(0, 10);
+      const matrix: { [wf: string]: { [hdr: string]: number } } = {};
+      this.eaiMatrixWorkflows.forEach(w => { matrix[w] = {}; this.eaiMatrixHeaders.forEach(h => matrix[w][h] = 0); });
+      raw.forEach(r => { if (matrix[r.wf] && this.eaiMatrixHeaders.includes(r.hdr)) matrix[r.wf][r.hdr] = r.cnt; });
+      this.eaiMatrixData = matrix;
+      this.cdr.markForCheck();
+    });
+  }
+
+  onEaiWorkflowChange(): void { this.loadEaiWidget(); }
+
+  getTraceabilityScore(): number {
+    if (!this.eaiCoverageData || this.eaiCoverageData.length === 0) return 0;
+    const critical = ['CamelFileName', 'routeId', 'APP_REFERENCE'];
+    let score = 0;
+    let found = 0;
+    this.eaiCoverageData.forEach(h => {
+      if (critical.includes(h.name)) {
+        if (h.name === 'CamelFileName') score += h.pct * 0.4;
+        if (h.name === 'routeId') score += h.pct * 0.35;
+        if (h.name === 'APP_REFERENCE') score += h.pct * 0.25;
+        found++;
+      }
+    });
+    return Math.round(score);
+  }
+
+  getMatrixIntensity(wf: string, hdr: string): number {
+    const val = this.eaiMatrixData[wf]?.[hdr] || 0;
+    if (val === 0) return 0.05;
+    if (val < 10) return 0.3;
+    if (val < 100) return 0.6;
+    return 1;
+  }
+
+  getProfile(wf: string): void {
+    if (this.eaiWorkflowProfiles[wf]) return;
+    this.svc.getWorkflowProfile(wf).subscribe(p => {
+      this.eaiWorkflowProfiles[wf] = p;
+      this.cdr.markForCheck();
+    });
   }
 
   loadTable(): void {
     this.tableLoading = true;
     const p: any = { page: this.tablePage, size: this.tableSize };
-    if (this.tableFilter.workflow)           p.workflow    = this.tableFilter.workflow;
-    if (this.tableFilter.contrat)            p.contrat     = this.tableFilter.contrat;
-    if (this.tableFilter.from)               p.from        = this.tableFilter.from + ':00';
-    if (this.tableFilter.to)                 p.to          = this.tableFilter.to   + ':00';
+    if (this.tableFilter.workflow) p.workflow = this.tableFilter.workflow;
+    if (this.tableFilter.contrat) p.contrat = this.tableFilter.contrat;
+    if (this.tableFilter.checksum) p.checksum = this.tableFilter.checksum;
+    if (this.tableFilter.client) p.client = this.tableFilter.client;
+    if (this.tableFilter.fileName) p.fileName = this.tableFilter.fileName;
+    if (this.tableFilter.from) p.from = this.tableFilter.from + ':00';
+    if (this.tableFilter.to) p.to = this.tableFilter.to + ':00';
     if (this.tableFilter.isDuplicate !== null) p.isDuplicate = this.tableFilter.isDuplicate;
-    if (this.tableFilter.isManual    !== null) p.isManual    = this.tableFilter.isManual;
+    if (this.tableFilter.isManual !== null) p.isManual = this.tableFilter.isManual;
     this.svc.getFiltered(p).subscribe((page: any) => {
-      this.tableRows          = page.content;
-      this.tableTotalPages    = page.totalPages;
+      this.tableRows = page.content;
+      this.tableTotalPages = page.totalPages;
       this.tableTotalElements = page.totalElements;
-      this.tableLoading       = false;
+      this.tableLoading = false;
       this.cdr.markForCheck();
     });
   }
@@ -281,7 +368,7 @@ export class FlowFileInComponent implements OnInit {
 
   applyTableFilters(): void { this.tablePage = 0; this.loadTable(); }
   resetTableFilters(): void {
-    this.tableFilter = { workflow: '', contrat: '', from: '', to: '', isDuplicate: null, isManual: null };
+    this.tableFilter = { workflow: '', contrat: '', checksum: '', client: '', fileName: '', from: '', to: '', isDuplicate: null, isManual: null };
     this.tablePage = 0;
     this.loadTable();
   }
@@ -295,15 +382,39 @@ export class FlowFileInComponent implements OnInit {
 
   onTimelineFilterChange(): void { this.loadTimeline(); }
 
-  openDetail(file: any): void  { this.selectedFile = file; this.showDetailPanel = true; }
-  closeDetail(): void           { this.showDetailPanel = false; this.selectedFile = null; }
+  openDetail(file: any): void {
+    this.selectedFile = file;
+    this.showDetailPanel = true;
+    this.selectedFileHeaders = [];
+    this.headersLoading = true;
+
+    if (file.id) {
+      this.svc.getFileHeaders(file.id).subscribe({
+        next: (headers) => {
+          this.selectedFileHeaders = headers;
+          this.headersLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.headersLoading = false;
+          this.cdr.markForCheck();
+        }
+      });
+    }
+  }
+
+  closeDetail(): void {
+    this.showDetailPanel = false;
+    this.selectedFile = null;
+    this.selectedFileHeaders = [];
+  }
 
   getWorkflowMax(): number { return Math.max(...this.topWorkflows.map((w: any) => w.total), 1); }
   getContractMax(): number { return Math.max(...this.topContracts.map((c: any) => c.total), 1); }
 
   getDupColor(rate: number): string {
     if (rate > 10) return '#f43f5e';
-    if (rate > 3)  return '#f59e0b';
+    if (rate > 3) return '#f59e0b';
     return '#10b981';
   }
 }

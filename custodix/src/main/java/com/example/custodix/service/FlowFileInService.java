@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class FlowFileInService {
@@ -20,15 +22,28 @@ public class FlowFileInService {
     @Autowired
     private FlowFileInRepository repository;
 
-    // ===== Helpers =====
     private String nullify(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private LocalDateTime parseDate(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            if (s.contains(" ")) s = s.replace(" ", "T");
+            return LocalDateTime.parse(s, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+            try {
+                return LocalDateTime.parse(s + "T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (Exception e2) {
+                return null;
+            }
+        }
     }
 
     private String autoBucket(LocalDateTime from, LocalDateTime to) {
         if (from == null || to == null) return "day";
         long hours = Duration.between(from, to).toHours();
-        if (hours <= 48)      return "hour";
+        if (hours <= 48) return "hour";
         if (hours <= 90 * 24) return "day";
         return "month";
     }
@@ -38,98 +53,114 @@ public class FlowFileInService {
         return (LocalDateTime) obj;
     }
 
-    // ===== KPI Summary =====
-    public FlowFileInDTO.Summary getKpiSummary() {
-        Object[] r = repository.getKpiSummary().get(0);
+    public FlowFileInDTO.Summary getKpiSummary(Map<String, String> params) {
+        String contrat = nullify(params.get("contrat"));
+        String workflow = nullify(params.get("workflow"));
+        LocalDateTime from = parseDate(params.get("from"));
+        LocalDateTime to = parseDate(params.get("to"));
+
+        Object[] r = repository.getKpiSummary(contrat, workflow, from, to).get(0);
         return new FlowFileInDTO.Summary(
-            ((Number) r[0]).longValue(),
-            ((Number) r[1]).longValue(),
-            ((Number) r[2]).doubleValue(),
-            ((Number) r[3]).longValue(),
-            ((Number) r[4]).longValue(),
-            ((Number) r[5]).longValue()
-        );
+                ((Number) r[0]).longValue(),
+                ((Number) r[1]).longValue(),
+                ((Number) r[2]).doubleValue(),
+                ((Number) r[3]).longValue(),
+                ((Number) r[4]).longValue(),
+                ((Number) r[5]).longValue());
     }
 
-    // ===== Timeline =====
     public List<TimelinePointDTO> getTimeline(LocalDateTime from, LocalDateTime to,
-                                              String bucket, String workflow, String contrat) {
+            String bucket, String workflow, String contrat) {
         String resolved = "auto".equalsIgnoreCase(bucket) ? autoBucket(from, to) : bucket;
         String w = nullify(workflow);
         String c = nullify(contrat);
 
         List<Object[]> rows = switch (resolved) {
-            case "hour"  -> repository.timelineHour(from, to, w, c);
+            case "hour" -> repository.timelineHour(from, to, w, c);
             case "month" -> repository.timelineMonth(from, to, w, c);
-            default      -> repository.timelineDay(from, to, w, c);
+            default -> repository.timelineDay(from, to, w, c);
         };
 
         return rows.stream().map(r -> new TimelinePointDTO(
-            toLocalDateTime(r[0]),
-            ((Number) r[1]).longValue()
-        )).toList();
+                toLocalDateTime(r[0]),
+                ((Number) r[1]).longValue())).toList();
     }
 
-    // ===== Heatmap =====
-    public List<FlowFileInDTO.HeatmapCell> getHeatmapData() {
-        return repository.getHeatmapData().stream().map(r ->
-            new FlowFileInDTO.HeatmapCell(
+    public List<FlowFileInDTO.HeatmapCell> getHeatmapData(Map<String, String> params) {
+        String contrat = nullify(params.get("contrat"));
+        String workflow = nullify(params.get("workflow"));
+        LocalDateTime from = parseDate(params.get("from"));
+        LocalDateTime to = parseDate(params.get("to"));
+
+        return repository.getHeatmapData(contrat, workflow, from, to).stream().map(r -> new FlowFileInDTO.HeatmapCell(
                 ((Number) r[0]).intValue(),
                 ((Number) r[1]).intValue(),
-                ((Number) r[2]).longValue()
-            )
-        ).toList();
+                ((Number) r[2]).longValue())).toList();
     }
 
-    // ===== Anomalies Timeline =====
-    public List<FlowFileInDTO.AnomalyPoint> getAnomaliesTimeline() {
-        return repository.getAnomaliesTimeline().stream().map(r ->
-            new FlowFileInDTO.AnomalyPoint(
+    public List<FlowFileInDTO.AnomalyPoint> getAnomaliesTimeline(Map<String, String> params) {
+        String contrat = nullify(params.get("contrat"));
+        String workflow = nullify(params.get("workflow"));
+        LocalDateTime from = parseDate(params.get("from"));
+        LocalDateTime to = parseDate(params.get("to"));
+
+        return repository.getAnomaliesTimeline(contrat, workflow, from, to).stream().map(r -> new FlowFileInDTO.AnomalyPoint(
                 toLocalDateTime(r[0]),
                 ((Number) r[1]).longValue(),
                 ((Number) r[2]).longValue(),
-                ((Number) r[3]).longValue()
-            )
-        ).toList();
+                ((Number) r[3]).longValue())).toList();
     }
 
-    // ===== Top Workflows =====
-    public List<FlowFileInDTO.NameCount> getTopWorkflows() {
-        return repository.getTopWorkflows().stream().map(r ->
-            new FlowFileInDTO.NameCount(
+    public List<FlowFileInDTO.NameCount> getTopWorkflows(Map<String, String> params) {
+        String contrat = nullify(params.get("contrat"));
+        LocalDateTime from = parseDate(params.get("from"));
+        LocalDateTime to = parseDate(params.get("to"));
+
+        return repository.getTopWorkflows(contrat, from, to).stream().map(r -> new FlowFileInDTO.NameCount(
                 (String) r[0],
-                ((Number) r[1]).longValue()
-            )
-        ).toList();
+                ((Number) r[1]).longValue())).toList();
     }
 
-    // ===== Top Contrats =====
-    public List<FlowFileInDTO.ContractStats> getTopContracts() {
-        return repository.getTopContracts().stream().map(r ->
-            new FlowFileInDTO.ContractStats(
+    public List<FlowFileInDTO.ContractStats> getTopContracts(Map<String, String> params) {
+        String workflow = nullify(params.get("workflow"));
+        LocalDateTime from = parseDate(params.get("from"));
+        LocalDateTime to = parseDate(params.get("to"));
+
+        return repository.getTopContracts(workflow, from, to).stream().map(r -> new FlowFileInDTO.ContractStats(
                 (String) r[0],
                 ((Number) r[1]).longValue(),
-                ((Number) r[2]).longValue()
-            )
-        ).toList();
+                ((Number) r[2]).longValue())).toList();
     }
 
-    // ===== Table paginée =====
     public Page<FlowFileIn> getFileInPaginated(int page, int size,
-                                               String workflow, String contrat,
-                                               LocalDateTime from, LocalDateTime to,
-                                               Boolean isDuplicate, Boolean isManual) {
+            String workflow, String contrat, String checksum, String client, String fileName,
+            LocalDateTime from, LocalDateTime to,
+            Boolean isDuplicate, Boolean isManual) {
         PageRequest pr = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sendingDate"));
         return repository.findAllFiltered(
-            nullify(workflow),
-            nullify(contrat),
-            from, to,
-            isDuplicate, isManual,
-            pr
-        );
+                nullify(workflow),
+                nullify(contrat),
+                nullify(checksum),
+                nullify(client),
+                nullify(fileName),
+                from, to,
+                isDuplicate, isManual,
+                pr);
     }
 
-    // ===== Distinct values =====
-    public List<String> getDistinctWorkflows() { return repository.findDistinctWorkflows(); }
-    public List<String> getDistinctContracts() { return repository.findDistinctContracts(); }
+    public List<String> getDistinctWorkflows() {
+        return repository.findDistinctWorkflows();
+    }
+
+    public List<String> getDistinctContracts() {
+        return repository.findDistinctContracts();
+    }
+
+    public List<String> getDistinctClients() {
+        return repository.findDistinctClients();
+    }
+
+    public List<String> getDistinctChecksums() {
+        return repository.findDistinctChecksums();
+    }
 }

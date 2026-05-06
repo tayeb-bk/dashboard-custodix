@@ -184,18 +184,23 @@
 }
 
 .floating-capsule {
-  pointer-events: auto; /* Re-enable clicks for the capsule */
+  pointer-events: auto;
   display: flex;
   align-items: center;
-  background: rgba(230, 235, 240, 0.85); /* Slightly darker/grey frosted glass */
+  background: rgba(230, 235, 240, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 60px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.6);
-  gap: 4px;
+  gap: 2px;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  max-width: 95vw;
+  overflow-x: auto;
+}
+.floating-capsule::-webkit-scrollbar {
+  display: none;
 }
 
 [data-theme="dark"] .floating-capsule {
@@ -217,12 +222,13 @@
 .capsule-node {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 16px 6px 6px;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .capsule-node:hover:not(.disabled) {
@@ -245,8 +251,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -316,7 +322,7 @@
 }
 
 .node-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.2px;

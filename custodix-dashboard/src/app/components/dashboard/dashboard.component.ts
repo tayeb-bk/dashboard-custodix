@@ -27,21 +27,28 @@ export class DashboardComponent implements OnInit {
   steps: NavStep[] = [
     {
       id: 'overview',
-      label: 'Dashboard',
+      label: 'Tour de Contrôle',
       route: 'overview',
       iconPath: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
       status: 'active'
     },
     {
       id: 'file-in',
-      label: 'File In',
+      label: 'Étape 1 : Réception',
       route: 'file-in',
       iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3',
       status: 'active'
     },
     {
+      id: 'flows',
+      label: 'Étape 2 : Traitement',
+      route: 'flows',
+      iconPath: 'M22 12h-4l-3 9L9 3l-3 9H2',
+      status: 'active'
+    },
+    {
       id: 'file-out',
-      label: 'File Out',
+      label: 'Étape 3 : Expédition',
       route: 'file-out',
       iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12',
       status: 'disabled',
@@ -49,19 +56,25 @@ export class DashboardComponent implements OnInit {
     },
     {
       id: 'eai-header',
-      label: 'EAI Header',
+      label: 'Étape 4 : Alertes',
       route: 'eai-header',
-      iconPath: 'M17 1l4 4-4 4 M3 11V9a4 4 0 0 1 4-4h14 M7 23l-4-4 4-4 M21 13v2a4 4 0 0 1-4 4H3',
+      iconPath: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
       status: 'active',
-      badge: 'New'
+      badge: 'En cours'
     },
     {
-      id: 'flows',
-      label: 'Flow Flow',
-      route: 'flows',
-      iconPath: 'M22 12h-4l-3 9L9 3l-3 9H2',
-      status: 'active',
-      badge: 'Live'
+      id: 'perf',
+      label: 'Étape 5 : Performance',
+      route: 'performance',
+      iconPath: 'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+      status: 'disabled'
+    },
+    {
+      id: 'trace',
+      label: 'Étape 6 : Traçabilité',
+      route: 'traceability',
+      iconPath: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35',
+      status: 'disabled'
     },
     {
       id: 'custodix-ai',

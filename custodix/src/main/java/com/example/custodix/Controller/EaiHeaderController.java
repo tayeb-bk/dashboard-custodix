@@ -18,6 +18,12 @@ public class EaiHeaderController {
     @Autowired
     private EaiHeaderService service;
 
+    // ===== Get Headers for a specific Message/File =====
+    @GetMapping("/message/{messageId}")
+    public List<com.example.custodix.entity.EaiHeader> getByMessageId(@PathVariable Long messageId) {
+        return service.getByMessageId(messageId);
+    }
+
     // ===== 4 KPI Summary Cards =====
     @GetMapping("/kpis")
     public EaiKpiSummaryDTO getKpis() {
@@ -57,6 +63,22 @@ public class EaiHeaderController {
         LocalDateTime fromDate = from != null ? LocalDateTime.parse(from) : null;
         LocalDateTime toDate   = to   != null ? LocalDateTime.parse(to)   : null;
         return service.getTimeline(fromDate, toDate, bucket, headerName, type);
+    }
+
+    // ===== Widget File-In : Origine & Traçabilité =====
+    @GetMapping("/filein/workflow-matrix")
+    public List<Object[]> getWorkflowMatrix(@RequestParam(required = false) String workflow) {
+        return service.getWorkflowHeaderMatrix(workflow);
+    }
+
+    @GetMapping("/filein/header-coverage")
+    public List<Object[]> getHeaderCoverage(@RequestParam(required = false) String workflow) {
+        return service.getHeaderCoverage(workflow);
+    }
+
+    @GetMapping("/filein/workflow-profile/{workflow}")
+    public Map<String, Object> getWorkflowProfile(@PathVariable String workflow) {
+        return service.getWorkflowTechnicalProfile(workflow);
     }
 
     // ===== Liste paginée =====
