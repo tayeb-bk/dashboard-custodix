@@ -10,7 +10,10 @@
           partenaires</p>
       </div>
     </div>
-    <div class="live-badge"><span class="live-dot"></span>Live</div>
+    <div style="display: flex; gap: 12px;">
+      <div class="ai-badge" data-tooltip="Cette interface est dotée d'une Intelligence Artificielle. Elle vous permet d'analyser et de vérifier la conformité de chaque fichier de réception en langage clair."><span class="ai-sparkle">✨</span>Analyse IA</div>
+      <div class="live-badge"><span class="live-dot"></span>Live</div>
+    </div>
   </div>
 
   <!-- ===== KPI CARDS ===== -->
@@ -193,7 +196,21 @@
             </div>
           </div>
         </div>
-        <span class="widget-sub">Intensité par jour × heure</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; width: 100%;">
+          <span class="widget-sub" style="margin-top: 0;">Intensité par jour × heure</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input type="week" [(ngModel)]="heatmapWeek" (change)="onHeatmapWeekChange()" class="tl-input"
+              title="Sélectionner une semaine"
+              style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); cursor: pointer; outline: none;">
+            <button class="heatmap-refresh-btn" (click)="resetHeatmapWeek()" title="Actualiser / Réinitialiser">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
       <apx-chart [series]="heatmapSeries" [chart]="heatmapChart" [plotOptions]="heatmapPlotOptions"
         [dataLabels]="heatmapDataLabels" [xaxis]="heatmapXAxis" [tooltip]="heatmapTooltip">
@@ -247,35 +264,41 @@
       </div>
 
       <!-- Filtres compacts -->
-      <div class="tl-filters">
-        <div class="tl-filter-group">
-          <label>Du</label>
-          <input type="date" [(ngModel)]="timelineFilter.from" (change)="onTimelineFilterChange()" class="tl-input">
-          <label>au</label>
-          <input type="date" [(ngModel)]="timelineFilter.to" (change)="onTimelineFilterChange()" class="tl-input">
+      <div class="tl-filters"
+        style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px;">
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="quick-toggle" [class.active]="showAnomaliesOnTimeline" (click)="toggleAnomalies()"
+            style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+            {{ showAnomaliesOnTimeline ? '👁️ Masquer Anomalies' : '🚨 Détecter Anomalies' }}
+          </button>
         </div>
-        <div class="tl-filter-group">
-          <label>Workflow :</label>
-          <select [(ngModel)]="timelineFilter.workflow" (change)="onTimelineFilterChange()" class="tl-select">
-            <option value="">Tous</option>
+        <div class="tl-filter-group" style="display: flex; gap: 8px; align-items: center;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Du</label>
+          <input type="date" [(ngModel)]="timelineFilter.from" (change)="onTimelineFilterChange()" class="tl-input"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">au</label>
+          <input type="date" [(ngModel)]="timelineFilter.to" (change)="onTimelineFilterChange()" class="tl-input"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+          <select [(ngModel)]="timelineFilter.workflow" (change)="onTimelineFilterChange()" class="tl-select"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+            <option value="">Tous les Workflows</option>
             <option *ngFor="let w of filterWorkflows" [value]="w">{{ w }}</option>
           </select>
+          <button class="heatmap-refresh-btn" (click)="resetTimelineFilters()" title="Actualiser / Réinitialiser"
+            style="border: 1px solid var(--border); border-radius: 6px; padding: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <apx-chart
-        [series]="timelineSeries"
-        [chart]="timelineChart"
-        [xaxis]="timelineXAxis"
-        [yaxis]="timelineYAxis"
-        [stroke]="timelineStroke"
-        [dataLabels]="timelineDataLabels"
-        [markers]="timelineMarkers"
-        [fill]="timelineFill"
-        [grid]="timelineGrid"
-        [tooltip]="timelineTooltip"
-        [colors]="timelineColors"
-        [legend]="timelineLegend">
+      <apx-chart [series]="timelineSeries" [chart]="timelineChart" [annotations]="timelineAnnotations"
+        [xaxis]="timelineXAxis" [yaxis]="timelineYAxis" [stroke]="timelineStroke" [dataLabels]="timelineDataLabels"
+        [markers]="timelineMarkers" [fill]="timelineFill" [grid]="timelineGrid" [tooltip]="timelineTooltip"
+        [colors]="timelineColors" [legend]="timelineLegend">
       </apx-chart>
     </div>
   </div>
@@ -310,9 +333,40 @@
         </div>
         <span class="widget-sub">Total · Doublons · Manuels par mois</span>
       </div>
+
+      <div class="tl-filters"
+        style="display: flex; gap: 16px; align-items: center; justify-content: flex-start; flex-wrap: wrap; margin-bottom: 16px; padding-top: 8px;">
+        <div class="tl-filter-group" style="display: flex; gap: 8px; align-items: center; width: 100%;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Du</label>
+          <input type="date" [(ngModel)]="anomaliesFilter.from" (change)="onAnomaliesFilterChange()" class="tl-input"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">au</label>
+          <input type="date" [(ngModel)]="anomaliesFilter.to" (change)="onAnomaliesFilterChange()" class="tl-input"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+
+          <select [(ngModel)]="anomaliesFilter.workflow" (change)="onAnomaliesFilterChange()" class="tl-select"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none; margin-left: 8px;">
+            <option value="">Workflows</option>
+            <option *ngFor="let w of filterWorkflows" [value]="w">{{ w }}</option>
+          </select>
+          <select [(ngModel)]="anomaliesFilter.contrat" (change)="onAnomaliesFilterChange()" class="tl-select"
+            style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; background: var(--bg-hover); color: var(--text-primary); outline: none;">
+            <option value="">Clients / Contrats</option>
+            <option *ngFor="let c of filterContracts" [value]="c">{{ c }}</option>
+          </select>
+          <button class="heatmap-refresh-btn" (click)="resetAnomaliesFilters()" title="Actualiser / Réinitialiser"
+            style="border: 1px solid var(--border); border-radius: 6px; padding: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
       <apx-chart [series]="anomaliesSeries" [chart]="anomaliesChart" [xaxis]="anomaliesXAxis" [yaxis]="anomaliesYAxis"
         [stroke]="anomaliesStroke" [fill]="anomaliesFill" [colors]="anomaliesColors" [grid]="anomaliesGrid"
-        [tooltip]="anomaliesTooltip" [legend]="anomaliesLegend">
+        [dataLabels]="anomaliesDataLabels" [tooltip]="anomaliesTooltip" [legend]="anomaliesLegend">
       </apx-chart>
     </div>
 
@@ -343,7 +397,7 @@
 
   <div class="row-2col">
     <div class="widget has-popover">
-      <div class="widget-header">
+      <div class="widget-header" style="justify-content: space-between;">
         <div class="widget-title-group">
           <span class="widget-icon">🔄</span>
           <h3 class="widget-title">Top 10 Workflows</h3>
@@ -365,10 +419,30 @@
             </div>
           </div>
         </div>
-        <span class="widget-sub">Flux de traitement les plus actifs</span>
+        <div class="widget-actions">
+          <button class="heatmap-refresh-btn" (click)="resetCrossFilters()" title="Réinitialiser les filtres"
+            style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; background: #f8fafc; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span style="font-size: 11px; font-weight: 600;">Reset</span>
+          </button>
+        </div>
       </div>
-      <div class="rank-list">
-        <div class="rank-item" *ngFor="let wf of topWorkflows; let i = index">
+      <span class="widget-sub" style="display: block; margin-bottom: 12px; margin-top: -8px;">Flux de traitement les
+        plus actifs</span>
+      <div class="rank-list" style="position: relative;">
+        <div *ngIf="selectedContractFilter" class="active-cross-filter"
+          style="display: inline-block; padding: 4px 8px; margin-bottom: 8px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;"
+          (click)="onContractClick(selectedContractFilter)" title="Cliquez pour annuler">
+          Filtré par contrat : {{ selectedContractFilter }} <span style="margin-left: 4px;">✕</span>
+        </div>
+        <div class="rank-item" *ngFor="let wf of topWorkflows; let i = index" (click)="onWorkflowClick(wf.name)"
+          style="cursor: pointer; padding: 6px; border-radius: 6px; transition: background 0.2s;"
+          [style.background]="selectedWorkflowFilter === wf.name ? 'rgba(99, 102, 241, 0.1)' : 'transparent'"
+          [title]="'Cliquer pour filtrer les contrats par ' + wf.name">
           <div class="rank-pos">#{{ i + 1 }}</div>
           <div class="rank-body">
             <div class="rank-name" [title]="wf.name">{{ wf.name }}</div>
@@ -382,7 +456,7 @@
     </div>
 
     <div class="widget has-popover">
-      <div class="widget-header">
+      <div class="widget-header" style="justify-content: space-between;">
         <div class="widget-title-group">
           <span class="widget-icon">📋</span>
           <h3 class="widget-title">Top Contrats SLA</h3>
@@ -404,18 +478,59 @@
             </div>
           </div>
         </div>
+        <div class="widget-actions">
+          <button class="heatmap-refresh-btn" (click)="resetCrossFilters()" title="Réinitialiser l'analyse croisée"
+            style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; background: #f8fafc; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span style="font-size: 11px; font-weight: 600;">Reset</span>
+          </button>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
         <span class="widget-sub">Répartition des fichiers par contrat</span>
+        <div *ngIf="selectedWorkflowFilter" class="active-cross-filter"
+          style="display: inline-block; padding: 4px 8px; margin-top: 4px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; align-self: flex-start;"
+          (click)="onWorkflowClick(selectedWorkflowFilter)" title="Cliquez pour annuler">
+          Filtré par workflow : {{ selectedWorkflowFilter }} <span style="margin-left: 4px;">✕</span>
+        </div>
       </div>
       <apx-chart [series]="contractSeries" [chart]="contractChart" [labels]="contractLabels" [colors]="contractColors"
-        [legend]="contractLegend" [tooltip]="contractTooltip" [responsive]="contractResponsive">
+        [plotOptions]="contractPlotOptions" [legend]="contractLegend" [tooltip]="contractTooltip"
+        [responsive]="contractResponsive">
       </apx-chart>
     </div>
   </div>
 
   <!-- ===== SECTION INNOVANTE : ANALYSE CONTEXTUELLE (EAI HEADERS) ===== -->
-  <div class="section-label">
+  <div class="section-label" style="margin-bottom: 8px;">
     <span class="section-icon">🧠</span>Analyse Contextuelle (EAI Headers)
     <span class="section-hint">Identifiabilité & Origines des fichiers reçus</span>
+  </div>
+
+  <div class="eai-glossary-card">
+    <div class="glossary-header" (click)="showEaiGlossary = !showEaiGlossary"
+      style="cursor: pointer; justify-content: space-between; margin-bottom: 0;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="glossary-icon">💡</span>
+        <span class="glossary-title">Importance des étiquettes (Headers) en cas d'incident</span>
+      </div>
+      <span style="color: var(--text-muted); font-size: 18px; line-height: 1; transition: transform 0.3s;"
+        [style.transform]="showEaiGlossary ? 'rotate(180deg)' : 'rotate(0)'">▾</span>
+    </div>
+    <div class="glossary-body" *ngIf="showEaiGlossary"
+      style="display: block; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(99, 102, 241, 0.2);">
+      <div class="glossary-item" style="font-size: 13px;">
+        Ces 4 étiquettes (<strong>flowId</strong>, <strong>routeId</strong>, <strong>APP_REFERENCE</strong>,
+        <strong>CamelMessageTimestamp</strong>) sont vitales pour le support technique. En cas de blocage d'un flux,
+        elles permettent de savoir <strong>quand</strong> le fichier est arrivé, par <strong>quel chemin</strong>
+        (workflow/route) il est passé, et à <strong>quelle transaction métier</strong> il correspond. L'absence de ces
+        étiquettes rend l'investigation et la résolution des erreurs extrêmement difficiles.
+      </div>
+    </div>
   </div>
 
   <div class="eai-analysis-header">
@@ -430,11 +545,28 @@
 
   <div class="eai-grid">
     <!-- WIDGET 1 : INDICE DE TRAÇABILITÉ -->
-    <div class="widget traceability-card">
+    <div class="widget has-popover traceability-card">
       <div class="widget-header">
         <div class="widget-title-group">
           <span class="widget-icon">🧭</span>
           <h3 class="widget-title">Indice de Traçabilité</h3>
+          <div class="info-btn-wrap" (click)="toggleWidget('traceability', $event)">
+            <button class="info-btn">i</button>
+            <div class="info-popover" [class.open]="activeWidget==='traceability'" (click)="$event.stopPropagation()">
+              <div class="pop-header"><span>{{ widgetInfo['traceability'].icon }}</span><strong>{{
+                  widgetInfo['traceability'].title }}</strong><button class="pop-close"
+                  (click)="closeWidget()">✕</button></div>
+              <div class="pop-row"><span class="pop-key">📌 Définition</span>
+                <p>{{ widgetInfo['traceability'].what }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🧮 Calcul</span>
+                <p>{{ widgetInfo['traceability'].how }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🎯 À surveiller</span>
+                <p>{{ widgetInfo['traceability'].action }}</p>
+              </div>
+            </div>
+          </div>
         </div>
         <span class="widget-sub">Taux de présence des headers critiques</span>
       </div>
@@ -468,11 +600,28 @@
     </div>
 
     <!-- WIDGET 2 : CARTOGRAPHIE DES ORIGINES -->
-    <div class="widget origin-card">
+    <div class="widget has-popover origin-card">
       <div class="widget-header">
         <div class="widget-title-group">
           <span class="widget-icon">🗺️</span>
           <h3 class="widget-title">Origines & Chemins</h3>
+          <div class="info-btn-wrap" (click)="toggleWidget('originMatrix', $event)">
+            <button class="info-btn">i</button>
+            <div class="info-popover" [class.open]="activeWidget==='originMatrix'" (click)="$event.stopPropagation()">
+              <div class="pop-header"><span>{{ widgetInfo['originMatrix'].icon }}</span><strong>{{
+                  widgetInfo['originMatrix'].title }}</strong><button class="pop-close"
+                  (click)="closeWidget()">✕</button></div>
+              <div class="pop-row"><span class="pop-key">📌 Définition</span>
+                <p>{{ widgetInfo['originMatrix'].what }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🧮 Calcul</span>
+                <p>{{ widgetInfo['originMatrix'].how }}</p>
+              </div>
+              <div class="pop-row"><span class="pop-key">🎯 À surveiller</span>
+                <p>{{ widgetInfo['originMatrix'].action }}</p>
+              </div>
+            </div>
+          </div>
         </div>
         <span class="widget-sub">Disponibilité des paramètres par workflow</span>
       </div>
@@ -505,10 +654,12 @@
                     </div>
                   </div>
                 </td>
-                <td *ngFor="let hdr of eaiMatrixHeaders" class="dot-cell">
-                  <div class="matrix-dot" [style.opacity]="getMatrixIntensity(wf, hdr)"
-                    [title]="wf + ' / ' + hdr + ': ' + (eaiMatrixData[wf][hdr] || 0) + ' occ.'">
-                  </div>
+                <td *ngFor="let hdr of eaiMatrixHeaders"
+                  [style.background-color]="getMatrixColor(eaiMatrixData[wf][hdr])"
+                  [style.color]="getTextColor(eaiMatrixData[wf][hdr])" [class.has-value]="eaiMatrixData[wf][hdr] > 0"
+                  [title]="wf + ' / ' + hdr + ': ' + (eaiMatrixData[wf][hdr] || 0) + ' occ.'"
+                  style="transition: background-color 0.3s; text-align: center; font-size: 11px; font-weight: 600; padding: 4px; min-width: 40px;">
+                  {{ eaiMatrixData[wf][hdr] > 0 ? eaiMatrixData[wf][hdr] : '-' }}
                 </td>
               </tr>
             </tbody>
@@ -519,8 +670,27 @@
   </div>
 
   <!-- ===== TABLE ===== -->
-  <div class="section-label"><span class="section-icon">📑</span>Explorateur de Fichiers Entrants<span
-      class="section-count">{{ tableTotalElements | number }} fichiers</span></div>
+  <div class="section-label" style="display: flex; align-items: center; gap: 8px;">
+    <span class="section-icon">📑</span>Explorateur de Fichiers Entrants
+    <span class="section-count">{{ tableTotalElements | number }} fichiers</span>
+    <div class="info-btn-wrap" (click)="toggleWidget('dataTable', $event)">
+      <button class="info-btn">i</button>
+      <div class="info-popover" [class.open]="activeWidget==='dataTable'" (click)="$event.stopPropagation()">
+        <div class="pop-header"><span>{{ widgetInfo['dataTable'].icon }}</span><strong>{{
+            widgetInfo['dataTable'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
+        </div>
+        <div class="pop-row"><span class="pop-key">📌 Définition</span>
+          <p>{{ widgetInfo['dataTable'].what }}</p>
+        </div>
+        <div class="pop-row"><span class="pop-key">🧮 Technique</span>
+          <p>{{ widgetInfo['dataTable'].how }}</p>
+        </div>
+        <div class="pop-row"><span class="pop-key">🎯 À surveiller</span>
+          <p>{{ widgetInfo['dataTable'].action }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="filter-bar">
     <select [(ngModel)]="tableFilter.workflow" class="f-select">
@@ -531,15 +701,33 @@
       <option value="">Tous les contrats SLA</option>
       <option *ngFor="let c of filterContracts" [value]="c">{{ c }}</option>
     </select>
-    <input type="text" [(ngModel)]="tableFilter.checksum" placeholder="🔍 Checksum..." class="f-input f-mono">
     <input type="datetime-local" [(ngModel)]="tableFilter.from" class="f-input">
     <input type="datetime-local" [(ngModel)]="tableFilter.to" class="f-input">
     <button class="quick-toggle" [class.active]="tableFilter.isDuplicate === true"
       (click)="toggleQuickFilter('isDuplicate', true)">♻️ Doublons seulement</button>
     <button class="quick-toggle" [class.active]="tableFilter.isManual === true"
       (click)="toggleQuickFilter('isManual', true)">🖐️ Manuels seulement</button>
-    <button class="btn-apply" (click)="applyTableFilters()">Filtrer</button>
+    <button class="btn-apply" (click)="applyTableFilters()">Rechercher</button>
     <button class="btn-reset" (click)="resetTableFilters()">Réinitialiser</button>
+    
+    <div class="ai-badge tooltip-left" style="margin-left: auto; cursor: help;" data-tooltip="Cette interface est dotée d'une Intelligence Artificielle. Elle vous permet d'analyser et de vérifier la conformité de chaque fichier de réception en langage clair."><span class="ai-sparkle">✨</span>Analyse IA</div>
+  </div>
+
+  <div class="active-filters-row"
+    *ngIf="tableFilter.workflow || tableFilter.contrat || tableFilter.isDuplicate || tableFilter.isManual">
+    <div class="active-chip" *ngIf="tableFilter.workflow" (click)="clearFilter('workflow')" title="Retirer ce filtre">
+      <span>Workflow:</span> <strong>{{ tableFilter.workflow }}</strong> <span class="chip-close">✕</span>
+    </div>
+    <div class="active-chip" *ngIf="tableFilter.contrat" (click)="clearFilter('contrat')" title="Retirer ce filtre">
+      <span>Contrat:</span> <strong>{{ tableFilter.contrat }}</strong> <span class="chip-close">✕</span>
+    </div>
+    <div class="active-chip" *ngIf="tableFilter.isDuplicate" (click)="clearFilter('isDuplicate')"
+      title="Retirer ce filtre">
+      <strong>♻️ Doublons</strong> <span class="chip-close">✕</span>
+    </div>
+    <div class="active-chip" *ngIf="tableFilter.isManual" (click)="clearFilter('isManual')" title="Retirer ce filtre">
+      <strong>🖐️ Manuels</strong> <span class="chip-close">✕</span>
+    </div>
   </div>
 
   <div class="table-wrapper">
@@ -553,9 +741,7 @@
           <th>Date réception</th>
           <th>Workflow</th>
           <th>Contrat SLA</th>
-          <th>Checksum</th>
           <th>Tags</th>
-          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -565,12 +751,18 @@
           <td class="td-workflow"><span class="workflow-chip" [title]="row.workflowId">{{ row.workflowId || '—'
               }}</span></td>
           <td class="td-contrat" [title]="row.passedContractIdentifier">{{ row.passedContractIdentifier || '—' }}</td>
-          <td class="td-checksum mono">{{ row.checksum ? row.checksum.slice(0,16) + '…' : '—' }}</td>
           <td class="td-tags">
-            <span class="tag tag-dup" *ngIf="row.duplicatedId">♻️ Doublon</span>
-            <span class="tag tag-manual" *ngIf="row.manualFlowIntegrationId">🖐️ Manuel</span>
+            <span class="tag tag-dup" *ngIf="row.duplicatedId" title="Doublon">♻️</span>
+            <span class="tag tag-manual" *ngIf="row.manualFlowIntegrationId" title="Manuel">🖐️</span>
           </td>
-          <td><button class="btn-detail" (click)="openDetail(row); $event.stopPropagation()">Détail</button></td>
+
+          <div class="quick-actions">
+            <button class="qa-btn" (click)="copyToClipboard(row.id, $event)" title="Copier ID">ID</button>
+            <button class="qa-btn qa-open" (click)="openDetail(row); $event.stopPropagation()"
+              title="Détails du fichier">👁️ Ouvrir</button>
+            <button class="qa-btn qa-ai" (click)="openDetailAndAnalyze(row, $event)"
+              title="Ouvrir les détails et lancer une analyse métier automatisée par l'Intelligence Artificielle">🪄 Analyser AI</button>
+          </div>
         </tr>
       </tbody>
     </table>
@@ -589,6 +781,20 @@
       <div class="detail-close" (click)="closeDetail()">✕</div>
       <div class="detail-panel-title">📄 Détail du Fichier</div>
       <div class="detail-id">#{{ selectedFile.id }}</div>
+
+      <!-- ===== AI Translator Section ===== -->
+      <div class="ai-translator-section">
+        <button class="btn-ai-trigger" (click)="analyzeFileWithAI()" [disabled]="isAiLoading"
+          title="Génère une synthèse métier intelligente par l'IA pour vérifier la conformité de ce fichier.">
+          <span class="ai-icon">🪄</span> 
+          {{ isAiLoading ? 'Analyse en cours...' : 'Analyser ce fichier (IA)' }}
+        </button>
+
+        <div class="ai-response-box" *ngIf="isAiLoading || aiExplanation" [class.loading]="isAiLoading">
+          <div class="ai-spinner" *ngIf="isAiLoading"></div>
+          <p class="ai-text" *ngIf="!isAiLoading"><strong>🤖 Synthèse IA :</strong> <br> {{ aiExplanation }}</p>
+        </div>
+      </div>
       <div class="detail-tags-row">
         <span class="tag tag-dup" *ngIf="selectedFile.duplicatedId">♻️ Doublon de #{{ selectedFile.duplicatedId
           }}</span>
@@ -603,29 +809,9 @@
               selectedFile.workflowId || '—' }}</span></div>
           <div class="detail-field"><span class="field-key">Contrat SLA</span><span class="field-val">{{
               selectedFile.passedContractIdentifier || '—' }}</span></div>
-          <div class="detail-field"><span class="field-key">Checksum</span><span class="field-val mono small">{{
-              selectedFile.checksum || '—' }}</span></div>
         </div>
       </div>
-      <div class="detail-section">
-        <h4 class="detail-section-title">📊 Progression du Découpage</h4>
-        <div class="split-progress-wrapper" *ngIf="selectedFile.totalSplitCount > 0; else noSplit">
-          <div class="progress-stats">
-            <span class="progress-text">{{ selectedFile.completeCount || 0 }} / {{ selectedFile.totalSplitCount }}
-              portions</span>
-            <span class="progress-percent">{{ ((selectedFile.completeCount || 0) / selectedFile.totalSplitCount) |
-              percent:'1.0-1' }}</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill"
-              [style.width.%]="((selectedFile.completeCount || 0) / selectedFile.totalSplitCount) * 100"
-              [class.complete]="selectedFile.completeCount === selectedFile.totalSplitCount"></div>
-          </div>
-        </div>
-        <ng-template #noSplit>
-          <div class="no-split-msg">Fichier non découpé (Total Split = 0)</div>
-        </ng-template>
-      </div>
+
 
       <div class="detail-section">
         <h4 class="detail-section-title">🔗 Références techniques</h4>

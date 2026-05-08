@@ -139,10 +139,10 @@ public interface FlowFileInRepository extends JpaRepository<FlowFileIn, Long> {
       @Param("toDate") LocalDateTime toDate
   );
 
-  // ===== Évolution anomalies (doublons + manuels) par mois =====
+  // ===== Évolution anomalies (doublons + manuels) par jour =====
   @Query(value = """
       SELECT
-        TRUNC(SENDINGDATE_, 'MM')              AS bucket,
+        TRUNC(SENDINGDATE_, 'DD')              AS bucket,
         COUNT(*)                               AS total,
         COUNT(DUPLICATED_ID_)                  AS doublons,
         COUNT(MANUALFLOWINTEGRATION_ID_)        AS manuels
@@ -151,7 +151,7 @@ public interface FlowFileInRepository extends JpaRepository<FlowFileIn, Long> {
         AND (:workflow IS NULL OR WORKFLOWID_ = :workflow)
         AND (:fromDate IS NULL OR SENDINGDATE_ >= :fromDate)
         AND (:toDate   IS NULL OR SENDINGDATE_ <= :toDate)
-      GROUP BY TRUNC(SENDINGDATE_, 'MM')
+      GROUP BY TRUNC(SENDINGDATE_, 'DD')
       ORDER BY bucket
       """, nativeQuery = true)
   List<Object[]> getAnomaliesTimeline(
