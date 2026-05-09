@@ -54,7 +54,8 @@
       </div>
 
       <!-- MIDDLE ROW: Main Pipeline -->
-      <div class="pipe-node node-in" (click)="navigateTo('/dashboard/file-in')">
+      <div class="pipe-node node-in node-clickable" (click)="navigateTo('/dashboard/file-in')">
+        <div class="node-badge">Cliquer pour accéder →</div>
         <div class="node-icon">📥</div>
         <div class="node-title">Réception</div>
         <div class="node-definition">
@@ -62,7 +63,8 @@
           Collecte et identification des fichiers reçus depuis les partenaires. Surveille les volumes et doublons.
         </div>
       </div>
-      <div class="pipe-node node-process" (click)="navigateTo('/dashboard/flow-processing')">
+      <div class="pipe-node node-process node-clickable" (click)="navigateTo('/dashboard/flows')">
+        <div class="node-badge">Cliquer pour accéder →</div>
         <div class="node-icon">⚙️</div>
         <div class="node-title">Traitement</div>
         <div class="node-definition">
@@ -147,6 +149,156 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 : TRAITEMENT -->
+    <div class="phase-card phase-traitement">
+      <div class="phase-header">
+        <div class="phase-title-wrap">
+          <span class="phase-step">Phase 2</span>
+          <h2 class="phase-title">Traitement des Flux</h2>
+        </div>
+        <button class="btn-investigate btn-cyan" (click)="navigateTo('/dashboard/flows')">
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="phase-body" *ngIf="processingLoaded && processingKpi">
+
+        <!-- COLONNE GAUCHE : Fonctionnel + Bilan -->
+        <div class="phase-main-metric" style="justify-content: space-between; gap: 15px;">
+
+          <!-- Objectif Métier -->
+          <div class="functional-objective">
+            <div class="obj-icon-wrap"><span class="obj-icon">⚙️</span></div>
+            <div class="obj-text">
+              <strong>Moteur de Routage & Traduction</strong>
+              <p>Supervision des conversions de formats (SWIFT, XML) et évaluation IA des blocages.</p>
+            </div>
+          </div>
+
+          <!-- Bilan Visuel du Moteur -->
+          <div class="processing-balance" [class.filtered]="currentDisplayStats.isFiltered">
+            <div class="balance-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 class="phase-title" style="margin: 0;" [title]="selectedRoute ? selectedRoute.name : 'Activité Moteur'">
+                  {{ selectedRoute ? 'Bilan : ' + (selectedRoute.name | slice:0:22) + (selectedRoute.name.length > 22 ? '…' : '') : 'Activité Moteur (Flux/j)' }}
+                </h3>
+                <button *ngIf="selectedRoute" class="btn-clear-filter" (click)="selectRoute(null)" title="Revenir à la vue globale">✕</button>
+              </div>
+              
+              <div class="health-badge ai-evaluated" 
+                   *ngIf="selectedRoute"
+                   style="cursor: help; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"
+                   [class.badge-error]="currentDisplayStats.tauxErreur > 5"
+                   [class.badge-warning]="currentDisplayStats.tauxErreur > 0 && currentDisplayStats.tauxErreur <= 5"
+                   title="Évaluation Custodix AI ✨ : Score de criticité calculé selon le taux d'erreurs ({{ currentDisplayStats.tauxErreur | number:'1.1-1' }}%) et le volume bloqué.">
+                <span class="health-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"
+                      [style.background]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')"></span> 
+                <span>✨</span>
+                <span [style.color]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')">
+                  {{ currentDisplayStats.tauxErreur > 5 ? 'Critique' : (currentDisplayStats.tauxErreur > 0 ? 'Sous tension' : 'Optimal') }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="balance-labels" style="margin-bottom: 10px;">
+              <span class="lbl-success">{{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }} Traités</span>
+              <span class="lbl-error">{{ currentDisplayStats.bloques | number }} Anomalies ({{ currentDisplayStats.tauxErreur | number:'1.1-1' }}%)</span>
+            </div>
+
+            <!-- TIMELINE CHART (Global only) -->
+            <div class="chart-container" style="margin-top: 0; padding: 5px 0 0 0; border: none; box-shadow: none; background: transparent; height: 160px;" *ngIf="processingChartLoaded && !currentDisplayStats.isFiltered">
+              <apx-chart 
+                [series]="processingChartOptions.series"
+                [chart]="processingChartOptions.chart"
+                [xaxis]="processingChartOptions.xaxis"
+                [yaxis]="processingChartOptions.yaxis"
+                [stroke]="processingChartOptions.stroke"
+                [colors]="processingChartOptions.colors"
+                [fill]="processingChartOptions.fill"
+                [dataLabels]="processingChartOptions.dataLabels"
+                [grid]="processingChartOptions.grid"
+                [tooltip]="processingChartOptions.tooltip">
+              </apx-chart>
+            </div>
+            <div class="chart-container loading" *ngIf="!processingChartLoaded && !currentDisplayStats.isFiltered" style="display:flex; justify-content:center; align-items:center; height: 160px; color:#94a3b8; margin-top:0; border: none; background: transparent;">
+              Chargement de la chronologie...
+            </div>
+            <div *ngIf="currentDisplayStats.isFiltered" class="route-visualizer">
+              <!-- GAUCHE : Phase 1 - Réception -->
+              <div class="rv-node">
+                <span class="rv-icon" title="Émetteur : {{ selectedRoute?.sender }}">📥</span>
+                <span class="rv-name">RÉCEPTION</span>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.sender | slice:0:10 }}{{ (selectedRoute?.sender?.length || 0) > 10 ? '…' : '' }}</span>
+              </div>
+              
+              <div class="rv-path">
+                 <div class="rv-line"></div>
+                 <div class="rv-packet packet-1"></div>
+                 <div class="rv-packet packet-2"></div>
+                 <div class="rv-badge blue" title="Depuis {{ selectedRoute?.sender }}">{{ currentDisplayStats.total | number }} Flux</div>
+              </div>
+
+              <!-- MILIEU : Phase 2 - Traitement -->
+              <div class="rv-node engine">
+                <span class="rv-icon spinner">⚙️</span>
+                <span class="rv-name" style="margin-top: 8px;">TRAITEMENT</span>
+              </div>
+
+              <div class="rv-path">
+                 <div class="rv-line"></div>
+                 <div class="rv-packet packet-3"></div>
+                 <div class="rv-badge" [class.success]="currentDisplayStats.tauxErreur === 0" [class.warn]="currentDisplayStats.tauxErreur > 0" title="Vers {{ selectedRoute?.receiver }}">
+                    {{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }} OK
+                 </div>
+              </div>
+
+              <!-- DROITE : Phase 3 - Expédition -->
+              <div class="rv-node">
+                <span class="rv-icon" title="Récepteur : {{ selectedRoute?.receiver }}">📤</span>
+                <span class="rv-name">EXPÉDITION</span>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.receiver | slice:0:10 }}{{ (selectedRoute?.receiver?.length || 0) > 10 ? '…' : '' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Insight IA -->
+          <div class="ai-insight" [class.active]="currentDisplayStats.bloques > 0">
+             <span class="ai-icon">✨</span>
+             <span *ngIf="currentDisplayStats.bloques > 0" style="font-size: 13px;"><strong>Analyse IA requise :</strong> {{ currentDisplayStats.bloques }} flux bloqués attendent une évaluation de criticité métier.</span>
+             <span *ngIf="currentDisplayStats.bloques === 0" style="font-size: 13px;"><strong>Validation IA :</strong> Aucun blocage critique détecté pour {{ currentDisplayStats.isFiltered ? 'cette route' : 'le moment' }}.</span>
+          </div>
+
+        </div>
+
+        <!-- COLONNE DROITE : Filtres Routes -->
+        <div class="phase-side-widget">
+          <h4 class="widget-title">Top Routes Actives (Filtres)</h4>
+          <p class="widget-subtitle">Sélectionnez une route pour l'isoler.</p>
+          <div class="top-list">
+            
+            <div class="route-filter-card" *ngFor="let route of topRoutes" 
+                 [class.selected]="selectedRoute?.id === route.id"
+                 (click)="selectRoute(route, $event)">
+              
+              <div class="route-filter-header">
+                <span class="rf-name">{{ route.name }}</span>
+                <span class="rf-badge-err" *ngIf="route.errors > 0">⚠ {{ route.errors }} Err</span>
+              </div>
+            </div>
+
+            <div *ngIf="topRoutes.length === 0" style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+              Aucune donnée
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="phase-body" *ngIf="!processingLoaded" style="display:flex; align-items:center; justify-content:center; height:200px; color:#94a3b8;">
+        Chargement du moteur...
       </div>
     </div>
 

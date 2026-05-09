@@ -1,43 +1,63 @@
 /* ===== PAGE ===== */
 .page {
   padding: 28px 32px;
-  min-height: 100%;
+  min-height: 100vh;
   animation: fadeIn 0.35s ease;
   overflow: visible;
+  background-color: #f0f9ff;
+  background-image:
+    radial-gradient(at 0% 0%,   rgba(6, 182, 212, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 0%,  rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
+    radial-gradient(at 0% 100%,  rgba(139, 92, 246, 0.04) 0px, transparent 50%);
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== HEADER ===== */
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+}
+
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-icon {
+  font-size: 36px;
+  display: inline-block;
+  filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.5));
+  animation: spinGear 12s linear infinite;
+}
+
+@keyframes spinGear {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .page-title {
   font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
   margin: 0 0 4px;
+  background: linear-gradient(135deg, #0f172a, #0891b2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .page-sub {
   font-size: 13px;
   color: var(--text-muted);
   font-weight: 400;
+  margin: 0;
 }
 
 .page-actions {
@@ -103,17 +123,20 @@
 }
 
 .metric-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 18px;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   animation: slideUp 0.4s ease both;
   position: relative;
   border-top-width: 3px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02), inset 0 0 0 1px rgba(255,255,255,0.5);
 }
 
 .metric-card.blue {
@@ -137,9 +160,9 @@
 }
 
 .metric-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.12);
-  border-color: var(--border-accent);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px -10px rgba(6, 182, 212, 0.15), 0 0 20px rgba(6, 182, 212, 0.05);
+  border-color: rgba(6, 182, 212, 0.4);
 }
 
 .metric-top {
@@ -469,10 +492,11 @@
   margin-bottom: 30px;
 }
 
-.kpi-charts-row > div {
+.kpi-charts-row>div {
   flex: 1;
   min-width: 0;
-  height: 580px; /* Hauteur fixe pour aligner les deux widgets */
+  height: 580px;
+  /* Hauteur fixe pour aligner les deux widgets */
 }
 
 @media (max-width: 1000px) {
@@ -488,17 +512,20 @@
 }
 
 .chart-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
   overflow: hidden;
-  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02), inset 0 0 0 1px rgba(255,255,255,0.5);
 }
 
 .chart-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 36px rgba(99, 102, 241, 0.1);
-  border-color: #c7d2fe;
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 20px 40px -10px rgba(6, 182, 212, 0.15), 0 0 20px rgba(6, 182, 212, 0.05);
+  border-color: rgba(6, 182, 212, 0.3);
 }
 
 .chart-card-wide {
@@ -510,7 +537,8 @@
   align-items: center;
   gap: 12px;
   padding: 14px 18px 0 18px;
-  position: relative; /* Pour le popover */
+  position: relative;
+  /* Pour le popover */
 }
 
 /* Éviter le clipping du popover */
@@ -1465,9 +1493,20 @@ apx-chart {
 }
 
 @keyframes pulse-dot-art {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.3); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .other-label {
@@ -1552,7 +1591,8 @@ apx-chart {
 
 /* ===== ROUTE LIST & CARDS ===== */
 .scroll-body {
-  height: calc(580px - 70px); /* Hauteur moins le header */
+  height: calc(580px - 70px);
+  /* Hauteur moins le header */
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 8px;
@@ -1585,7 +1625,7 @@ apx-chart {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
 }
 
 .route-item-card:hover {
@@ -1713,8 +1753,15 @@ apx-chart {
 }
 
 @keyframes bounce-art {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
 }
 
 /* Missing Info Button Style */
@@ -1776,13 +1823,19 @@ apx-chart {
   background: rgba(16, 185, 129, 0.05);
   border-color: rgba(16, 185, 129, 0.2);
 }
-.l-good .l-badge-val { color: #10b981; }
+
+.l-good .l-badge-val {
+  color: #10b981;
+}
 
 .l-bad {
   background: rgba(239, 68, 68, 0.05);
   border-color: rgba(239, 68, 68, 0.2);
 }
-.l-bad .l-badge-val { color: #ef4444; }
+
+.l-bad .l-badge-val {
+  color: #ef4444;
+}
 
 .refresh-btn {
   background: var(--bg-hover);
@@ -1861,3 +1914,38 @@ apx-chart {
 .scroll-body::-webkit-scrollbar-thumb:active {
   background-color: var(--accent-blue);
 }
+
+/* ======================================================
+   DARK MODE ADAPTATION — Étape 2 Traitement
+   ====================================================== */
+:host-context([data-theme="dark"]) .page {
+  background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(at 0% 0%,   rgba(6, 182, 212, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 0%,  rgba(99, 102, 241, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%,  rgba(139, 92, 246, 0.04) 0px, transparent 50%);
+}
+
+:host-context([data-theme="dark"]) .metric-card,
+:host-context([data-theme="dark"]) .chart-card,
+:host-context([data-theme="dark"]) .section,
+:host-context([data-theme="dark"]) .table-section {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+:host-context([data-theme="dark"]) .metric-card:hover,
+:host-context([data-theme="dark"]) .chart-card:hover {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8), 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+:host-context([data-theme="dark"]) .page-title {
+  background: linear-gradient(135deg, #f0f6fc, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

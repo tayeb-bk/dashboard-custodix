@@ -47,9 +47,9 @@ export const SCORING_RULES: Array<{ label: string; statuses: string[]; flowTypes
     label: 'Type de flux sensible (Swift/Generali)',
     statuses: [],
     flowTypes: [
-      'FT_MT502', 'FT_MT546', 'FT_MT509', 'FT_MT544', 
-      'FT_MT545', 'FT_MT547', 'FT_MT515', 'GENERALI_MT535_FT', 
-      'GENERALI_MT566_FT', 'GENERALI_MX515_FT', 'GENERALI_MT515_FT', 
+      'FT_MT502', 'FT_MT546', 'FT_MT509', 'FT_MT544',
+      'FT_MT545', 'FT_MT547', 'FT_MT515', 'GENERALI_MT535_FT',
+      'GENERALI_MT566_FT', 'GENERALI_MX515_FT', 'GENERALI_MT515_FT',
       'MT54x'
     ],
     points: 20,
@@ -495,13 +495,13 @@ export class FlowFlowComponent implements OnInit {
 
     this.flowService.getTimeline(params).subscribe(data => {
       const rawData = data || [];
-      
+
       // Extraction des dates uniques pour le padding
       const allDates = Array.from(new Set(rawData.map(d => new Date(d.bucket).getTime()))).sort((a, b) => a - b);
-      
+
       // Extraction des expéditeurs uniques et regroupement
       const sendersMap = new Map<string, { x: number, y: number }[]>();
-      
+
       // Mettre à jour la liste des expéditeurs pour le filtre (uniquement s'il n'y a pas de filtre expéditeur actif)
       if (!this.selectedSender) {
         this.timelineSenders = Array.from(new Set(rawData.map(d => d.category || 'Inconnu'))).sort();
@@ -514,7 +514,7 @@ export class FlowFlowComponent implements OnInit {
           const emptyPadding = allDates.map(date => ({ x: date, y: 0 }));
           sendersMap.set(sender, emptyPadding);
         }
-        
+
         const timestamp = new Date(d.bucket).getTime();
         const senderData = sendersMap.get(sender);
         if (senderData) {
@@ -534,7 +534,7 @@ export class FlowFlowComponent implements OnInit {
         const others = sortedSenders.slice(9);
 
         finalSeries = top10.map(s => ({ name: s.name, data: s.data }));
-        
+
         if (others.length > 0) {
           const othersData = allDates.map(date => {
             const sumForDate = others.reduce((acc, s) => {
@@ -562,7 +562,7 @@ export class FlowFlowComponent implements OnInit {
         const totalSum = rawData.reduce((acc, p) => acc + p.total, 0);
         avg = Math.round(totalSum / allDates.length);
       }
-      
+
       this.timelineAnnotations = {
         yaxis: [{
           y: avg, borderColor: '#94a3b8', borderWidth: 1, strokeDashArray: 4,
@@ -891,12 +891,12 @@ export class FlowFlowComponent implements OnInit {
     // Règle 4 : Type de flux (Sensible)
     const sensitiveFlowTypes = SCORING_RULES[3].flowTypes;
     const isSensitiveType = !!flow.flowTypeName && (sensitiveFlowTypes?.includes(flow.flowTypeName) ?? false);
-    
-    breakdown.push({ 
-      rule: SCORING_RULES[3].label, 
-      points: SCORING_RULES[3].points, 
-      applied: isSensitiveType, 
-      description: SCORING_RULES[3].description 
+
+    breakdown.push({
+      rule: SCORING_RULES[3].label,
+      points: SCORING_RULES[3].points,
+      applied: isSensitiveType,
+      description: SCORING_RULES[3].description
     });
     if (isSensitiveType) score += SCORING_RULES[3].points;
 

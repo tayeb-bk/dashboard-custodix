@@ -9,7 +9,7 @@ export class Flow {
 
   private apiUrl = 'http://localhost:8080/api/flows';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAllFlows(): Observable<any[]> {
     return this.http.get<any[]>(this.apiUrl);
@@ -68,11 +68,11 @@ export class Flow {
     scoreLevel?: string;
   }): Observable<any> {
     const cleanParams: any = { page: params.page, size: params.size };
-    if (params.status)   cleanParams['status']   = params.status;
-    if (params.type)     cleanParams['type']      = params.type;
-    if (params.flowType) cleanParams['flowType']  = params.flowType;
-    if (params.from)     cleanParams['from']      = params.from;
-    if (params.to)       cleanParams['to']        = params.to;
+    if (params.status) cleanParams['status'] = params.status;
+    if (params.type) cleanParams['type'] = params.type;
+    if (params.flowType) cleanParams['flowType'] = params.flowType;
+    if (params.from) cleanParams['from'] = params.from;
+    if (params.to) cleanParams['to'] = params.to;
     if (params.scoreLevel) cleanParams['scoreLevel'] = params.scoreLevel;
     return this.http.get<any>(`${this.apiUrl}/paginated`, { params: cleanParams });
   }
