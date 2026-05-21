@@ -9,7 +9,9 @@ import java.time.LocalDateTime;
  */
 public interface FlowFileOutProjection {
 
-    Long getFoId();               // FLOW_FILEOUT.ID_
+    Long getFoId();               // FLOW_FILEOUT.ID_ (null en vue non_livre)
+
+    Long getFileInId();           // FLOW_FILEIN.ID_
 
     String getContrat();          // FLOW_FILEIN.PASSEDCONTRACTIDENTIFIER_
 

@@ -387,9 +387,36 @@
 /* ===== CONTENT ===== */
 .content {
   flex: 1;
+  min-height: 0; /* permet le scroll flex enfant */
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-padding-bottom: 120px;
   background: var(--bg-primary);
   transition: background 0.3s ease;
-  padding-bottom: 110px; /* Espace réservé pour la capsule flottante */
+  padding-bottom: 120px; /* capsule flottante + fin de page */
   box-sizing: border-box;
+  /* Scroll actif, barre discrète (molette / trackpad / touch) */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.content:hover,
+.content:focus-within {
+  scrollbar-color: rgba(99, 102, 241, 0.22) transparent;
+}
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 6px;
+  transition: background 0.25s ease;
+}
+.content:hover::-webkit-scrollbar-thumb,
+.content:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.28);
 }

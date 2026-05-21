@@ -17,8 +17,8 @@ import java.util.List;
  *   GET /kpi/hero              → KPIs du Widget 0 (total, ackAttendu, ackRecus, fileInTotal)
  *   GET /funnel                → Funnel pipeline inter-étapes (Widget 2)
  *   GET /timeline              → Évolution temporelle des expéditions (Widget 3)
- *   GET /top-contrats          → Classement des contrats (Widget 4)
- *   GET /top-destinations      → Répartition par destination (Widget 5)
+ *   GET /top-contrats          → Performance par contrat SLA (Widget 4)
+ *   GET /top-destinations      → Répartition livraisons par destination (Widget 5)
  *   GET /ack/distribution      → Distribution ACK attendu/non attendu (Widget 6A)
  *   GET /ack/confirmations     → ACKs réellement reçus par type (Widget 6B)
  *   GET /ack/manquants         → Nombre d'ACKs attendus sans confirmation (Widget 6C)
@@ -85,31 +85,43 @@ public class FlowFileOutController {
     @GetMapping("/timeline")
     public List<Object[]> getTimeline(
             @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String workflow,
             @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to) {
-        LocalDateTime fromDate = (from != null && !from.isBlank()) ? LocalDateTime.parse(from) : null;
-        LocalDateTime toDate   = (to   != null && !to.isBlank())   ? LocalDateTime.parse(to)   : null;
-        return service.getTimeline(contrat, fromDate, toDate);
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "false") boolean ackOnly) {
+        return service.getTimeline(contrat, workflow, parseDateTime(from), parseDateTimeEnd(to), ackOnly);
+    }
+
+    @GetMapping("/workflows")
+    public List<Object[]> getWorkflows() {
+        return service.getWorkflowsList();
     }
 
     // =========================================================================
-    // WIDGET 4 — Top Contrats / Partenaires
-    // Source : FLOW_FILEOUT + FLOW_FILEIN via FILEIN_ID_
-    // Retourne top 15 : [0] contrat, [1] total, [2] premiere, [3] derniere, [4] avecAck
+    // WIDGET 4 — Performance par partenaire (contrat SLA)
+    // Mêmes filtres page que funnel : contrat, from, to, ackOnly
+    // [0] contrat … [8] tauxAckPct — voir repository getContratsPerformance
     // =========================================================================
     @GetMapping("/top-contrats")
-    public List<Object[]> getTopContrats() {
-        return service.getTopContrats();
+    public List<Object[]> getContratsPerformance(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "false") boolean ackOnly) {
+        return service.getContratsPerformance(contrat, parseDateTime(from), parseDateTimeEnd(to), ackOnly);
     }
 
     // =========================================================================
-    // WIDGET 5 — Top Destinations
-    // Source : FLOW_FILEOUT.DESTINATIONINFO_ID_
-    // Retourne top 10 : [0] destination, [1] total, [2] pourcentage
+    // WIDGET 5 — Répartition par destination (canaux de sortie)
+    // [0] destination … [4] ackManquants — filtres : contrat, from, to, ackOnly
     // =========================================================================
     @GetMapping("/top-destinations")
-    public List<Object[]> getTopDestinations() {
-        return service.getTopDestinations();
+    public List<Object[]> getDestinationsRepartition(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, defaultValue = "false") boolean ackOnly) {
+        return service.getDestinationsRepartition(contrat, parseDateTime(from), parseDateTimeEnd(to), ackOnly);
     }
 
     // =========================================================================
@@ -146,20 +158,39 @@ public class FlowFileOutController {
 
     // =========================================================================
     // WIDGET 7 — Journal d'Expédition Paginé
-    // Source : FLOW_FILEOUT + FLOW_FILEIN + FLOW_INCOMINGACKNOWLEGEMENT
-    // Paramètres : contrat, ackExpected (0/1), from, to, page, size
-    // Retourne : foId, contrat, workflow, dateEnvoi, priorite, ackAttendu, destination, statutAck
+    // view=livraisons | non_livre — preset=ack_confirme | ack_manquant
+    // Filtres alignés funnel/KPI : contrat, from, to, ackOnly, ackExpected (0/1), destination (W5)
     // =========================================================================
     @GetMapping("/journal")
     public Page<com.example.custodix.dto.FlowFileOutProjection> getJournal(
+            @RequestParam(required = false, defaultValue = "livraisons") String view,
+            @RequestParam(required = false) String preset,
             @RequestParam(required = false) String contrat,
             @RequestParam(required = false) Integer ackExpected,
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "50") int size) {
-        LocalDateTime from = (fromDate != null && !fromDate.isBlank()) ? LocalDateTime.parse(fromDate) : null;
-        LocalDateTime to   = (toDate   != null && !toDate.isBlank())   ? LocalDateTime.parse(toDate)   : null;
-        return service.getJournalPaginated(contrat, ackExpected, from, to, page, size);
+            @RequestParam(required = false, defaultValue = "false") boolean ackOnly,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        String fromRaw = (from != null && !from.isBlank()) ? from : fromDate;
+        String toRaw = (to != null && !to.isBlank()) ? to : toDate;
+        LocalDateTime fromDt = parseDateTime(fromRaw);
+        LocalDateTime toDt = parseDateTimeEnd(toRaw);
+        return service.getJournalPaginated(
+                view, preset, contrat, ackExpected, fromDt, toDt, ackOnly, destination, page, size);
+    }
+
+    private static LocalDateTime parseDateTimeEnd(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String v = value.trim();
+        if (v.length() == 10) {
+            return LocalDateTime.parse(v + "T23:59:59");
+        }
+        return LocalDateTime.parse(v);
     }
 }

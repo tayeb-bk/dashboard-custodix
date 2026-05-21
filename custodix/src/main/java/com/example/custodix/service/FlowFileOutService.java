@@ -50,16 +50,27 @@ public class FlowFileOutService {
         return repository.getContratsList();
     }
 
-    public List<Object[]> getTimeline(String contrat, LocalDateTime from, LocalDateTime to) {
-        return repository.getTimelineByDay(blankToNull(contrat), from, to);
+    public List<Object[]> getTimeline(String contrat, String workflow, LocalDateTime from, LocalDateTime to, Boolean ackOnly) {
+        return repository.getTimelineByDay(
+                blankToNull(contrat), blankToNull(workflow), from, to, ackOnlyFlag(ackOnly));
     }
 
-    public List<Object[]> getTopContrats() {
-        return repository.getTopContrats();
+    public List<Object[]> getWorkflowsList() {
+        return repository.getWorkflowsList();
     }
 
-    public List<Object[]> getTopDestinations() {
-        return repository.getTopDestinations();
+    /** Widget 4 — Performance par partenaire (contrat SLA), filtrable comme le funnel */
+    public List<Object[]> getContratsPerformance(
+            String contrat, LocalDateTime from, LocalDateTime to, Boolean ackOnly) {
+        return repository.getContratsPerformance(
+                blankToNull(contrat), from, to, ackOnlyFlag(ackOnly));
+    }
+
+    /** Widget 5 — Répartition des livraisons par destination (canal de sortie) */
+    public List<Object[]> getDestinationsRepartition(
+            String contrat, LocalDateTime from, LocalDateTime to, Boolean ackOnly) {
+        return repository.getDestinationsRepartition(
+                blankToNull(contrat), from, to, ackOnlyFlag(ackOnly));
     }
 
     public List<Object[]> getAckDistribution() {
@@ -70,16 +81,50 @@ public class FlowFileOutService {
         return repository.getAckConfirmations();
     }
 
+    private static String blankPreset(String preset) {
+        if (preset == null || preset.isBlank()) return null;
+        String p = preset.trim().toLowerCase();
+        if ("ack_confirme".equals(p) || "ack_manquant".equals(p)) return p;
+        return null;
+    }
+
+    /**
+     * Widget 7 — Journal paginé.
+     * view : livraisons (défaut) | non_livre (fichiers reçus sans FileOut)
+     * preset : ack_confirme | ack_manquant (livraisons uniquement)
+     */
+    private static String blankDestination(String destination) {
+        if (destination == null || destination.isBlank()) {
+            return null;
+        }
+        return destination.trim();
+    }
+
     public Page<com.example.custodix.dto.FlowFileOutProjection> getJournalPaginated(
-            String contrat, Integer ackExpected,
-            LocalDateTime fromDate, LocalDateTime toDate,
-            int page, int size) {
-        return repository.getJournalPaginated(
-                blankToNull(contrat),
+            String view,
+            String preset,
+            String contrat,
+            Integer ackExpected,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
+            Boolean ackOnly,
+            String destination,
+            int page,
+            int size) {
+        String c = blankToNull(contrat);
+        var pageable = PageRequest.of(Math.max(0, page), Math.min(200, Math.max(1, size)));
+        if ("non_livre".equalsIgnoreCase(blankToNull(view))) {
+            return repository.getJournalNonLivrePaginated(c, fromDate, toDate, pageable);
+        }
+        return repository.getJournalLivraisonsPaginated(
+                c,
                 ackExpected,
                 fromDate,
                 toDate,
-                PageRequest.of(page, size)
+                ackOnlyFlag(ackOnly),
+                blankPreset(preset),
+                blankDestination(destination),
+                pageable
         );
     }
 }

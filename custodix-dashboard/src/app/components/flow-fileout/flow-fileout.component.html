@@ -254,14 +254,14 @@
                 <button class="fo-pop-close" type="button" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
               </div>
               <div class="fo-pop-body">
-                <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
-                  <p>Nombre de destinations distinctes utilisées — chaque destination = un partenaire ou canal configuré.</p>
+                <div class="fo-pop-row"><span class="fo-pop-key">🌍 Destination</span>
+                  <p>Canal de sortie technique (<code>DESTINATIONINFO_ID_</code>) : où Custodix pousse le fichier (connecteur, répertoire…). Ce n’est pas le contrat SLA partenaire.</p>
                 </div>
                 <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
-                  <p><code>COUNT(DISTINCT DESTINATIONINFO_ID_)</code> sur <code>FLOW_FILEOUT</code>.</p>
+                  <p>Nombre de canaux différents ayant reçu au moins une livraison : <code>COUNT(DISTINCT DESTINATIONINFO_ID_)</code>.</p>
                 </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🗺 Note</span>
-                  <p>Chaque ID = un canal de sortie Custodix (SFTP, HTTP, etc.). Affiché « Destination #ID » dans les widgets à venir.</p>
+                <div class="fo-pop-row"><span class="fo-pop-key">🔗 Widget W5</span>
+                  <p>Le panneau « Canaux de sortie » détaille le volume par destination ; « fichier distinct » y compte les dossiers uniques par canal.</p>
                 </div>
               </div>
             </div>
@@ -464,14 +464,525 @@
       </div>
     </div>
 
-    <div class="fo-funnel-insight" *ngIf="!funnelLoading">
+    <div class="fo-funnel-insight" *ngIf="!funnelLoading" (click)="$event.stopPropagation()">
       <p class="fo-insight-text">{{ funnelInsight }}</p>
       <p class="fo-insight-hint" *ngIf="selectedFunnelStep">
         {{ funnelStepMeta[selectedFunnelStep].hint }}
       </p>
-      <button type="button" class="fo-btn-investigate" disabled title="Journal W7 — prochain widget">
-        Investiguer la sélection (bientôt)
+      <p class="fo-insight-cta-hint" *ngIf="!selectedFunnelStep">
+        Cliquez d’abord un palier du pipeline (il se surligne en vert), puis le bouton ci-dessous.
+      </p>
+      <div class="fo-insight-cta">
+        <button type="button"
+                class="fo-btn-investigate"
+                [class.fo-btn-investigate-active]="!!selectedFunnelStep"
+                (click)="investigateFromFunnel()"
+                [attr.title]="selectedFunnelStep
+                  ? 'Ouvrir le journal pour : ' + selectedFunnelStepLabel
+                  : 'Ouvrir toutes les livraisons (aucun palier sélectionné)'">
+          Voir la liste détaillée
+          <span class="fo-btn-investigate-sub" *ngIf="selectedFunnelStep">— {{ selectedFunnelStepLabel }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET 3 — Timeline livraisons ===== -->
+  <div class="fo-timeline-panel"
+       [class.pop-open]="activeTimelineInfo"
+       (click)="closeAllPopovers()">
+    <div class="fo-timeline-head">
+      <div class="fo-timeline-head-text">
+        <h2 class="fo-timeline-title">Évolution des livraisons</h2>
+        <p class="fo-timeline-sub">Volume par jour — dates via filtres page · partenaire / workflow ci-dessous</p>
+      </div>
+      <div class="fo-timeline-head-actions">
+        <div class="fo-info-wrap fo-timeline-panel-info" (click)="toggleTimelineInfo($event)">
+          <button class="fo-info-btn" type="button" aria-label="Aide timeline">i</button>
+          <div class="fo-info-popover fo-timeline-popover"
+               [class.open]="activeTimelineInfo"
+               (click)="$event.stopPropagation()">
+            <div class="fo-pop-header">
+              <span>📈</span>
+              <strong>Timeline expédition</strong>
+              <button class="fo-pop-close" type="button" (click)="activeTimelineInfo = false; $event.stopPropagation()">✕</button>
+            </div>
+            <div class="fo-pop-body">
+              <div class="fo-pop-row" *ngFor="let row of timelinePanelPopRows">
+                <span class="fo-pop-key">{{ row.key }}</span>
+                <p>{{ row.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="fo-timeline-peak" *ngIf="timelinePeak && !timelineLoading">
+          Pic : {{ timelinePeak.count | number }} livraisons · {{ timelinePeak.label }}
+        </span>
+      </div>
+    </div>
+
+    <div class="fo-timeline-toolbar" (click)="$event.stopPropagation()">
+      <div class="fo-timeline-filter-group fo-timeline-filter-grow">
+        <label class="fo-filter-label">Partenaire / contrat <span class="fo-filter-tag">principal</span></label>
+        <select class="fo-filter-input fo-timeline-select" [(ngModel)]="timelineFilters.contrat">
+          <option value="">Tous les contrats</option>
+          <option *ngFor="let c of timelineContratOptions" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="fo-timeline-filter-group fo-timeline-filter-grow">
+        <label class="fo-filter-label">Workflow (type de flux)</label>
+        <select class="fo-filter-input fo-timeline-select" [(ngModel)]="timelineFilters.workflow">
+          <option value="">Tous les workflows</option>
+          <option *ngFor="let w of timelineWorkflowOptions" [value]="w">{{ w }}</option>
+        </select>
+      </div>
+      <div class="fo-timeline-filter-actions">
+        <button type="button" class="fo-btn-apply" (click)="loadWidget3Timeline()">Actualiser</button>
+        <button type="button" class="fo-btn-reset" (click)="resetTimelineFilters()">Réinitialiser</button>
+      </div>
+    </div>
+    <p class="fo-timeline-filter-hint" *ngIf="timelineFiltersActive || filtersActive">
+      <span *ngIf="timelineFiltersActive">{{ timelineFilterSummary }}</span>
+      <span *ngIf="timelineFiltersActive && filtersActive"> · </span>
+      <span *ngIf="filtersActive">Période / ACK = filtres page (Appliquer en haut)</span>
+    </p>
+
+    <div class="fo-timeline-loading" *ngIf="timelineLoading">Chargement de la timeline…</div>
+    <div class="fo-timeline-error" *ngIf="!timelineLoading && timelineError">{{ timelineError }}</div>
+
+    <div class="fo-timeline-chart-wrap" *ngIf="!timelineLoading && !timelineError && timelineLoaded">
+      <apx-chart nonPassiveWheel
+        [series]="timelineSeries"
+        [chart]="timelineChart"
+        [xaxis]="timelineXAxis"
+        [yaxis]="timelineYAxis"
+        [stroke]="timelineStroke"
+        [fill]="timelineFill"
+        [grid]="timelineGrid"
+        [dataLabels]="timelineDataLabels"
+        [tooltip]="timelineTooltip"
+        [legend]="timelineLegend"
+        [colors]="timelineColors">
+      </apx-chart>
+    </div>
+    <div class="fo-timeline-empty" *ngIf="!timelineLoading && !timelineError && !timelineLoaded">
+      <span>📉</span>
+      <p>Aucune livraison sur la période sélectionnée.</p>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET 4 — Performance par partenaire (contrat SLA) ===== -->
+  <div class="fo-contrats-panel"
+       [class.pop-open]="activeContratsPerfInfo"
+       (click)="closeAllPopovers()">
+    <div class="fo-contrats-head">
+      <div class="fo-contrats-head-text">
+        <h2 class="fo-contrats-title">Performance par partenaire</h2>
+        <p class="fo-contrats-sub">
+          Contrat SLA — couverture d’expédition, volume et qualité ACK sur la même période que le funnel
+        </p>
+      </div>
+      <div class="fo-contrats-head-actions">
+        <div class="fo-info-wrap fo-contrats-panel-info" (click)="toggleContratsPerfInfo($event)">
+          <button class="fo-info-btn" type="button" aria-label="Aide performance partenaires">i</button>
+          <div class="fo-info-popover fo-contrats-popover"
+               [class.open]="activeContratsPerfInfo"
+               (click)="$event.stopPropagation()">
+            <div class="fo-pop-header">
+              <span>🤝</span>
+              <strong>Performance partenaire</strong>
+              <button class="fo-pop-close" type="button" (click)="activeContratsPerfInfo = false; $event.stopPropagation()">✕</button>
+            </div>
+            <div class="fo-pop-body">
+              <div class="fo-pop-row" *ngFor="let row of contratsPerfPanelPopRows">
+                <span class="fo-pop-key">{{ row.key }}</span>
+                <p>{{ row.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="fo-contrats-summary" *ngIf="!contratsPerfLoading && !contratsPerfError">{{ contratsPerfSummary }}</span>
+      </div>
+    </div>
+
+    <div class="fo-contrats-toolbar" (click)="$event.stopPropagation()">
+      <span class="fo-contrats-toolbar-label">Trier par</span>
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'volume'" (click)="setContratsPerfSort('volume')">Volume livraisons</button>
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'couverture'" (click)="setContratsPerfSort('couverture')">Couverture la plus faible</button>
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'risque'" (click)="setContratsPerfSort('risque')">Risque ACK</button>
+      <button type="button"
+              class="fo-btn-apply fo-contrats-refresh"
+              [class.fo-btn-reset-drill]="contratsPerfDrillActive"
+              (click)="refreshContratsPerf()">
+        {{ contratsPerfDrillActive ? 'Réinitialiser vue' : 'Actualiser' }}
       </button>
+    </div>
+
+    <div class="fo-contrats-drill" *ngIf="contratsPerfDrillActive" (click)="$event.stopPropagation()">
+      <span>Zoom partenaire : <strong>{{ contratsPerfDrillContrat }}</strong></span>
+      <button type="button" class="fo-contrats-drill-clear" (click)="clearContratsPerfDrill(true)">✕ Tout le dashboard</button>
+    </div>
+
+    <p class="fo-contrats-hint" *ngIf="filtersActive && !contratsPerfDrillActive">
+      Filtres page actifs — classement limité à cette sélection. Cliquez une ligne pour zoomer sur le partenaire et le journal.
+    </p>
+    <p class="fo-contrats-hint fo-contrats-scroll-hint" *ngIf="!contratsPerfLoading && sortedContratsPerf.length > 3">
+      {{ sortedContratsPerf.length }} partenaires — faites défiler la liste (environ 3 visibles).
+    </p>
+
+    <div class="fo-contrats-loading" *ngIf="contratsPerfLoading">Analyse des partenaires…</div>
+    <div class="fo-contrats-error" *ngIf="!contratsPerfLoading && contratsPerfError">{{ contratsPerfError }}</div>
+
+    <div class="fo-contrats-scroll-wrap" *ngIf="!contratsPerfLoading && !contratsPerfError">
+      <div class="fo-contrats-empty" *ngIf="sortedContratsPerf.length === 0">
+        <span>🤝</span>
+        <p>Aucun contrat avec activité sur cette période.</p>
+      </div>
+
+      <div class="fo-contrats-scroll" *ngIf="sortedContratsPerf.length > 0">
+      <article class="fo-perf-row"
+               *ngFor="let row of sortedContratsPerf; let i = index"
+               [class.selected]="isContratPerfSelected(row.contrat)"
+               [style.animation-delay.ms]="i * 45"
+               (click)="selectContratPerf(row, $event)"
+               role="button"
+               tabindex="0"
+               [attr.aria-label]="'Filtrer sur ' + row.contrat">
+        <div class="fo-perf-rank">{{ i + 1 }}</div>
+        <div class="fo-perf-main">
+          <div class="fo-perf-top">
+            <h3 class="fo-perf-contrat" [title]="row.contrat">{{ row.contrat }}</h3>
+            <div class="fo-perf-volume-wrap">
+              <div class="fo-perf-volume-bar">
+                <div class="fo-perf-volume-fill"
+                     [style.width.%]="(row.livraisons / contratsPerfMaxLivraisons) * 100"></div>
+              </div>
+              <span class="fo-perf-livraisons">{{ row.livraisons | number }} livraisons</span>
+            </div>
+          </div>
+
+          <div class="fo-perf-pipeline">
+            <div class="fo-perf-metric">
+              <span class="fo-perf-m-label">Reçus</span>
+              <span class="fo-perf-m-value">{{ row.fichiersRecus | number }}</span>
+            </div>
+            <span class="fo-perf-arrow">→</span>
+            <div class="fo-perf-metric fo-perf-metric--accent">
+              <span class="fo-perf-m-label">Livrés</span>
+              <span class="fo-perf-m-value">{{ row.fichiersLivres | number }}</span>
+            </div>
+            <span class="fo-perf-arrow">→</span>
+            <div class="fo-perf-metric">
+              <span class="fo-perf-m-label">Envois</span>
+              <span class="fo-perf-m-value">{{ row.livraisons | number }}</span>
+            </div>
+            <span class="fo-perf-meta" *ngIf="row.fichiersLivres > 0">~{{ contratPerfLivraisonsRatio(row) }} / fichier livré</span>
+          </div>
+
+          <div class="fo-perf-bottom">
+            <div class="fo-perf-couverture">
+              <div class="fo-perf-couv-head">
+                <span class="fo-perf-couv-label">Couverture expédition</span>
+                <strong class="fo-perf-couv-pct">{{ row.couverturePct }} %</strong>
+              </div>
+              <div class="fo-perf-bar">
+                <div class="fo-perf-bar-fill"
+                     [ngClass]="couvertureBarClass(row.couverturePct)"
+                     [style.width.%]="row.couverturePct"></div>
+              </div>
+              <span class="fo-perf-couv-hint" *ngIf="contratPerfNonLivres(row) > 0">
+                {{ contratPerfNonLivres(row) | number }} fichier(s) reçu(s) sans livraison
+              </span>
+            </div>
+
+            <div class="fo-perf-ack" (click)="$event.stopPropagation()">
+              <span class="fo-perf-ack-label">ACK (livraisons requises)</span>
+              <div class="fo-perf-ack-stats" *ngIf="row.ackAttendu > 0">
+                <span class="fo-perf-ack-pill fo-perf-ack-pill--ok">{{ row.ackConfirmes | number }} confirmés</span>
+                <button type="button"
+                        class="fo-perf-ack-pill fo-perf-ack-pill--alert"
+                        *ngIf="row.ackManquants > 0"
+                        (click)="investigateContratAckManquants(row, $event)">
+                  {{ row.ackManquants | number }} manquant(s)
+                </button>
+                <span class="fo-perf-ack-rate">Taux {{ row.tauxAckPct ?? 0 }} %</span>
+              </div>
+              <span class="fo-perf-ack-na" *ngIf="row.ackAttendu === 0">Aucun ACK requis sur ce partenaire</span>
+            </div>
+          </div>
+        </div>
+        <div class="fo-perf-action" aria-hidden="true">›</div>
+      </article>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET 5 — Répartition par destination ===== -->
+  <div class="fo-dest-panel"
+       [class.pop-open]="activeDestInfo"
+       (click)="closeAllPopovers()">
+    <div class="fo-dest-head">
+      <div class="fo-dest-head-text">
+        <h2 class="fo-dest-title">Canaux de sortie (destinations)</h2>
+        <p class="fo-dest-sub">
+          Où partent les livraisons — chaque destination = un canal configuré (<code>DESTINATIONINFO_ID_</code>)
+        </p>
+      </div>
+      <div class="fo-dest-head-actions">
+        <div class="fo-info-wrap fo-dest-panel-info" (click)="toggleDestInfo($event)">
+          <button class="fo-info-btn" type="button" aria-label="Aide destinations">i</button>
+          <div class="fo-info-popover fo-dest-popover"
+               [class.open]="activeDestInfo"
+               (click)="$event.stopPropagation()">
+            <div class="fo-pop-header">
+              <span>🌍</span>
+              <strong>Destinations d'expédition</strong>
+              <button class="fo-pop-close" type="button" (click)="activeDestInfo = false; $event.stopPropagation()">✕</button>
+            </div>
+            <div class="fo-pop-body">
+              <div class="fo-pop-row" *ngFor="let row of destPanelPopRows">
+                <span class="fo-pop-key">{{ row.key }}</span>
+                <p>{{ row.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="fo-dest-summary" *ngIf="!destLoading && !destError">{{ destSummary }}</span>
+      </div>
+    </div>
+
+    <div class="fo-dest-toolbar" (click)="$event.stopPropagation()">
+      <span class="fo-dest-toolbar-label">Trier par</span>
+      <button type="button" class="fo-csort" [class.active]="destSort === 'livraisons'" (click)="setDestSort('livraisons')">Volume livraisons</button>
+      <button type="button" class="fo-csort" [class.active]="destSort === 'fichiers'" (click)="setDestSort('fichiers')">Fichiers distincts</button>
+      <button type="button"
+              class="fo-btn-apply fo-dest-refresh"
+              [class.fo-btn-reset-drill]="destinationsDrillActive"
+              (click)="refreshDestinations()">
+        {{ destinationsDrillActive ? 'Réinitialiser vue' : 'Actualiser' }}
+      </button>
+    </div>
+
+    <div class="fo-dest-drill" *ngIf="destinationsDrillActive" (click)="$event.stopPropagation()">
+      <span>Zoom destination : <strong>{{ formatDestLabel(destinationsDrillId!) }}</strong></span>
+      <button type="button" class="fo-contrats-drill-clear" (click)="refreshDestinations()">✕ Journal seul</button>
+    </div>
+
+    <p class="fo-contrats-hint" *ngIf="filtersActive && !destinationsDrillActive">
+      Filtres page actifs — répartition recalculée sur la sélection.
+    </p>
+
+    <div class="fo-dest-loading" *ngIf="destLoading">Analyse des destinations…</div>
+    <div class="fo-dest-error" *ngIf="!destLoading && destError">{{ destError }}</div>
+
+    <div class="fo-dest-body" *ngIf="!destLoading && !destError">
+      <div class="fo-dest-empty" *ngIf="destRows.length === 0">
+        <span>🌍</span>
+        <p>Aucune livraison sur cette période.</p>
+      </div>
+
+      <div class="fo-dest-chart-wrap" *ngIf="destRows.length > 0">
+        <p class="fo-dest-chart-hint">
+          Centre du graphique = total livraisons KPI ({{ destGrandTotalLivraisons | number }}) — cliquez un canal pour filtrer le journal
+          <span *ngIf="destAutresLivraisons > 0"> · tranche grise = {{ destAutresLivraisons | number }} livraison(s) hors top 10</span>
+        </p>
+        <apx-chart *ngIf="destChartReady"
+          [series]="destDonutSeries"
+          [chart]="destDonutChart"
+          [labels]="destDonutLabels"
+          [colors]="destDonutColors"
+          [plotOptions]="destDonutPlotOptions"
+          [stroke]="destDonutStroke"
+          [legend]="destDonutLegend"
+          [dataLabels]="destDonutDataLabels"
+          [tooltip]="destDonutTooltip">
+        </apx-chart>
+        <div class="fo-dest-concentration" *ngIf="destTop3Pct > 0">
+          <span class="fo-dest-conc-label">Concentration</span>
+          <strong>{{ destTop3Pct }} %</strong>
+          <span class="fo-dest-conc-sub">du volume sur les 3 premiers canaux</span>
+        </div>
+      </div>
+
+      <div class="fo-dest-list-wrap" *ngIf="destRows.length > 0">
+        <p class="fo-dest-list-title">Détail par canal (top {{ destRows.length }})</p>
+        <div class="fo-dest-list-scroll">
+          <button type="button"
+                  class="fo-dest-row"
+                  *ngFor="let row of sortedDestRows; let i = index"
+                  [class.selected]="isDestSelected(row.id)"
+                  [style.animation-delay.ms]="i * 40"
+                  (click)="selectDestination(row, $event)">
+            <span class="fo-dest-rank">{{ i + 1 }}</span>
+            <span class="fo-dest-name">{{ formatDestLabel(row.id) }}</span>
+            <div class="fo-dest-bar-wrap">
+              <div class="fo-dest-bar">
+                <div class="fo-dest-bar-fill" [style.width.%]="(row.livraisons / destMaxLivraisons) * 100"></div>
+              </div>
+            </div>
+            <div class="fo-dest-stats">
+              <span class="fo-dest-stat-main">{{ row.livraisons | number }} envois</span>
+              <span class="fo-dest-stat-sub">{{ row.pct }} % · {{ row.fichiersDistinct | number }} fichiers</span>
+              <span class="fo-dest-stat-sub" *ngIf="row.fichiersDistinct > 0">~{{ destLivraisonsRatio(row) }} / fichier</span>
+              <span class="fo-dest-stat-alert" *ngIf="row.ackManquants > 0">{{ row.ackManquants }} ACK manquant(s)</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET 7 — Journal d'expédition ===== -->
+  <div id="fo-journal"
+       class="fo-journal-panel"
+       [class.pop-open]="activeJournalInfo"
+       (click)="closeAllPopovers()">
+    <div class="fo-journal-head">
+      <div class="fo-journal-head-text">
+        <h2 class="fo-journal-title">Journal d'expédition</h2>
+        <p class="fo-journal-sub">
+          1 ligne = 1 livraison (<code>FLOW_FILEOUT</code>) ou 1 fichier non livré — filtres page + liste détaillée funnel
+        </p>
+      </div>
+      <div class="fo-journal-head-actions">
+        <div class="fo-info-wrap fo-journal-panel-info" (click)="toggleJournalInfo($event)">
+          <button class="fo-info-btn" type="button" aria-label="Aide journal d'expédition">i</button>
+          <div class="fo-info-popover fo-journal-popover"
+               [class.open]="activeJournalInfo"
+               (click)="$event.stopPropagation()">
+            <div class="fo-pop-header">
+              <span>📋</span>
+              <strong>Journal d'expédition</strong>
+              <button class="fo-pop-close" type="button" (click)="activeJournalInfo = false; $event.stopPropagation()">✕</button>
+            </div>
+            <div class="fo-pop-body">
+              <div class="fo-pop-row" *ngFor="let row of journalPanelPopRows">
+                <span class="fo-pop-key">{{ row.key }}</span>
+                <p>{{ row.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="fo-journal-context">{{ journalContextLabel }}</span>
+      </div>
+    </div>
+
+    <div class="fo-journal-toolbar">
+      <div class="fo-journal-tabs">
+        <button type="button"
+                class="fo-jtab"
+                [class.active]="journalView === 'livraisons'"
+                (click)="setJournalView('livraisons'); $event.stopPropagation()">
+          Livraisons
+        </button>
+        <button type="button"
+                class="fo-jtab"
+                [class.active]="journalView === 'non_livre'"
+                (click)="setJournalView('non_livre'); $event.stopPropagation()">
+          Non livrés
+        </button>
+      </div>
+
+      <div class="fo-journal-presets" *ngIf="journalView === 'livraisons'">
+        <button type="button" class="fo-jpreset" [class.active]="!journalPreset" (click)="setJournalPreset(''); $event.stopPropagation()">Toutes</button>
+        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_confirme'" (click)="setJournalPreset('ack_confirme'); $event.stopPropagation()">ACK confirmés</button>
+        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_manquant'" (click)="setJournalPreset('ack_manquant'); $event.stopPropagation()">ACK manquants</button>
+      </div>
+
+      <div class="fo-journal-filters" *ngIf="journalView === 'livraisons'">
+        <label class="fo-filter-label">ACK attendu</label>
+        <select class="fo-filter-input fo-journal-select"
+                [(ngModel)]="journalAckFilter"
+                (ngModelChange)="loadWidget7Journal(true)"
+                (click)="$event.stopPropagation()">
+          <option [ngValue]="null">Tous</option>
+          <option [ngValue]="1">Oui</option>
+          <option [ngValue]="0">Non</option>
+        </select>
+      </div>
+
+      <div class="fo-journal-search-wrap">
+        <input type="search"
+               class="fo-filter-input fo-journal-search"
+               [(ngModel)]="journalSearch"
+               placeholder="Rechercher contrat, workflow, ID…"
+               (click)="$event.stopPropagation()">
+      </div>
+
+      <div class="fo-journal-size">
+        <label class="fo-filter-label">Par page</label>
+        <select class="fo-filter-input fo-journal-select"
+                [(ngModel)]="journalSize"
+                (ngModelChange)="onJournalSizeChange()"
+                (click)="$event.stopPropagation()">
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </div>
+
+      <button type="button" class="fo-btn-apply fo-journal-refresh" (click)="loadWidget7Journal(); $event.stopPropagation()">
+        Actualiser
+      </button>
+    </div>
+
+    <div class="fo-journal-loading" *ngIf="journalLoading">Chargement du journal…</div>
+    <div class="fo-journal-error" *ngIf="!journalLoading && journalError">{{ journalError }}</div>
+
+    <div class="fo-journal-table-wrap" *ngIf="!journalLoading && !journalError">
+      <table class="fo-journal-table">
+        <thead>
+          <tr>
+            <th *ngIf="journalView === 'livraisons'">ID livraison</th>
+            <th>ID fichier reçu</th>
+            <th>Contrat</th>
+            <th>Workflow</th>
+            <th>Date envoi</th>
+            <th>Priorité</th>
+            <th *ngIf="journalView === 'livraisons'">Destination</th>
+            <th *ngIf="journalView === 'livraisons'">ACK attendu</th>
+            <th>Statut ACK</th>
+            <th *ngIf="journalView === 'livraisons'">Type ACK</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="journalFilteredRows.length === 0">
+            <td [attr.colspan]="journalView === 'livraisons' ? 10 : 6" class="fo-journal-empty">
+              Aucune ligne pour cette sélection.
+            </td>
+          </tr>
+          <tr *ngFor="let row of journalFilteredRows">
+            <td *ngIf="journalView === 'livraisons'" class="fo-cell-mono">#{{ row.foId }}</td>
+            <td class="fo-cell-mono">#{{ row.fileInId }}</td>
+            <td>{{ row.contrat }}</td>
+            <td class="fo-cell-mono fo-cell-sm">{{ row.workflow }}</td>
+            <td class="fo-cell-date">{{ formatJournalDate(row.dateEnvoi) }}</td>
+            <td>{{ row.priorite }}</td>
+            <td *ngIf="journalView === 'livraisons'" class="fo-cell-mono">
+              {{ row.destination != null ? ('#' + row.destination) : '—' }}
+            </td>
+            <td *ngIf="journalView === 'livraisons'">
+              {{ row.ackAttendu === 1 ? 'Oui' : (row.ackAttendu === 0 ? 'Non' : '—') }}
+            </td>
+            <td>
+              <span class="fo-ack-badge" [ngClass]="getAckBadgeClass(row.statutAck)">{{ row.statutAck }}</span>
+            </td>
+            <td *ngIf="journalView === 'livraisons'" class="fo-cell-sm">{{ row.typeAck || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="fo-journal-pagination" *ngIf="!journalLoading && !journalError">
+      <p class="fo-journal-page-info">
+        Page {{ journalPage + 1 }} / {{ journalTotalPages || 1 }}
+        — {{ journalTotal | number }} ligne(s) au total
+        <span *ngIf="journalSearch.trim()"> · {{ journalFilteredRows.length }} affichée(s) après recherche locale</span>
+      </p>
+      <div class="fo-journal-page-btns">
+        <button type="button" class="fo-btn-reset" [disabled]="journalPage === 0 || journalTotal === 0" (click)="onJournalPageChange(-1)">Précédent</button>
+        <button type="button" class="fo-btn-reset" [disabled]="journalTotal === 0 || journalPage >= journalTotalPages - 1" (click)="onJournalPageChange(1)">Suivant</button>
+      </div>
     </div>
   </div>
 

@@ -180,53 +180,110 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
             WHERE fi.SENDINGDATE_ IS NOT NULL
               AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:workflow IS NULL OR fi.WORKFLOWID_ = :workflow)
               AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
               AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1)
             GROUP BY TRUNC(fi.SENDINGDATE_)
             ORDER BY jour ASC
             """, nativeQuery = true)
     List<Object[]> getTimelineByDay(
             @Param("contrat") String contrat,
+            @Param("workflow") String workflow,
             @Param("fromDate") java.time.LocalDateTime fromDate,
-            @Param("toDate")   java.time.LocalDateTime toDate);
+            @Param("toDate")   java.time.LocalDateTime toDate,
+            @Param("ackOnly")  Integer ackOnly);
+
+    @Query(value = """
+            SELECT DISTINCT fi.WORKFLOWID_
+            FROM UCUSTOI0.FLOW_FILEOUT fo
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE fi.WORKFLOWID_ IS NOT NULL
+            ORDER BY fi.WORKFLOWID_
+            FETCH FIRST 50 ROWS ONLY
+            """, nativeQuery = true)
+    List<Object[]> getWorkflowsList();
 
     // =========================================================================
-    // TOP CONTRATS (Widget 4)
-    // Source : FLOW_FILEOUT + FLOW_FILEIN (via FILEIN_ID_)
-    // Retourne : [0] contrat, [1] total, [2] premiereExp, [3] derniereExp, [4] avecAck
+    // PERFORMANCE PAR CONTRAT (Widget 4) — aligné funnel / KPI
+    // Source : FLOW_FILEIN + FLOW_FILEOUT (+ ACK)
+    // Filtres : contrat (focus), fromDate, toDate, ackOnly (même sémantique que funnel)
+    // Retourne : [0] contrat, [1] fichiersRecus, [2] fichiersLivres, [3] livraisons,
+    //            [4] couverturePct, [5] ackAttendu, [6] ackConfirmes, [7] ackManquants,
+    //            [8] tauxAckPct (null si ackAttendu=0)
     // =========================================================================
     @Query(value = """
             SELECT
                 fi.PASSEDCONTRACTIDENTIFIER_                                     AS contrat,
-                COUNT(*)                                                         AS total,
-                MIN(fi.SENDINGDATE_)                                             AS premiere_expedition,
-                MAX(fi.SENDINGDATE_)                                             AS derniere_expedition,
-                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 THEN 1 END)                 AS avec_ack_attendu
-            FROM UCUSTOI0.FLOW_FILEOUT fo
-            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+                COUNT(DISTINCT fi.ID_)                                           AS fichiers_recus,
+                COUNT(DISTINCT fo.FILEIN_ID_)                                    AS fichiers_livres,
+                COUNT(fo.ID_)                                                    AS livraisons,
+                ROUND(CASE WHEN COUNT(DISTINCT fi.ID_) > 0
+                    THEN COUNT(DISTINCT fo.FILEIN_ID_) * 100.0 / COUNT(DISTINCT fi.ID_)
+                    ELSE 0 END, 1)                                             AS couverture_pct,
+                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 THEN 1 END)                 AS ack_attendu,
+                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 AND EXISTS (
+                    SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                    WHERE a.ACKEDFILEOUT_ID_ = fo.ID_) THEN 1 END)              AS ack_confirmes,
+                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 AND NOT EXISTS (
+                    SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                    WHERE a.ACKEDFILEOUT_ID_ = fo.ID_) THEN 1 END)              AS ack_manquants,
+                CASE WHEN COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 THEN 1 END) > 0
+                    THEN ROUND(
+                        COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 AND EXISTS (
+                            SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                            WHERE a.ACKEDFILEOUT_ID_ = fo.ID_) THEN 1 END) * 100.0
+                        / COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 THEN 1 END), 1)
+                    ELSE NULL END                                              AS taux_ack_pct
+            FROM UCUSTOI0.FLOW_FILEIN fi
+            LEFT JOIN UCUSTOI0.FLOW_FILEOUT fo ON fo.FILEIN_ID_ = fi.ID_
+                AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1)
             WHERE fi.PASSEDCONTRACTIDENTIFIER_ IS NOT NULL
+              AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND (:ackOnly IS NULL OR EXISTS (
+                  SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo2
+                  WHERE fo2.FILEIN_ID_ = fi.ID_ AND fo2.ACKEXPECTED_ = 1))
             GROUP BY fi.PASSEDCONTRACTIDENTIFIER_
-            ORDER BY total DESC
-            FETCH FIRST 15 ROWS ONLY
+            HAVING COUNT(DISTINCT fi.ID_) > 0
+            ORDER BY COUNT(fo.ID_) DESC
+            FETCH FIRST 12 ROWS ONLY
             """, nativeQuery = true)
-    List<Object[]> getTopContrats();
+    List<Object[]> getContratsPerformance(
+            @Param("contrat") String contrat,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate,
+            @Param("ackOnly") Integer ackOnly);
 
     // =========================================================================
-    // RÉPARTITION PAR DESTINATION (Widget 5)
-    // Source : FLOW_FILEOUT.DESTINATIONINFO_ID_
-    // Retourne : [0] destinationId, [1] total, [2] pourcentage
+    // RÉPARTITION PAR DESTINATION (Widget 5) — filtrable comme funnel
+    // [0] destinationId, [1] livraisons, [2] fichiersDistinct, [3] ackAttendu, [4] ackManquants
     // =========================================================================
     @Query(value = """
             SELECT
-                NVL(TO_CHAR(fo.DESTINATIONINFO_ID_), 'Non défini')              AS destination,
-                COUNT(*)                                                         AS total,
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEOUT), 1) AS pourcentage
+                NVL(TO_CHAR(fo.DESTINATIONINFO_ID_), 'NON_DEFINI')              AS destination,
+                COUNT(*)                                                         AS livraisons,
+                COUNT(DISTINCT fo.FILEIN_ID_)                                    AS fichiers_distinct,
+                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 THEN 1 END)                 AS ack_attendu,
+                COUNT(CASE WHEN fo.ACKEXPECTED_ = 1 AND NOT EXISTS (
+                    SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                    WHERE a.ACKEDFILEOUT_ID_ = fo.ID_) THEN 1 END)              AS ack_manquants
             FROM UCUSTOI0.FLOW_FILEOUT fo
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1)
             GROUP BY fo.DESTINATIONINFO_ID_
-            ORDER BY total DESC
+            ORDER BY livraisons DESC
             FETCH FIRST 10 ROWS ONLY
             """, nativeQuery = true)
-    List<Object[]> getTopDestinations();
+    List<Object[]> getDestinationsRepartition(
+            @Param("contrat") String contrat,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate,
+            @Param("ackOnly") Integer ackOnly);
 
     // =========================================================================
     // ANALYSE ACK — Distribution (Widget 6)
@@ -277,43 +334,107 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
     List<Object[]> getAckManquants();
 
     // =========================================================================
-    // TABLE JOURNAL PAGINÉE (Widget 7)
-    // Source : FLOW_FILEOUT + FLOW_FILEIN (via FILEIN_ID_) + ACK optionnel
-    // Retourne : foId, contrat, workflow, dateEnvoi, priorite, ackAttendu, destination, statutAck
+    // TABLE JOURNAL PAGINÉE — livraisons (Widget 7)
+    // 1 ligne = 1 FLOW_FILEOUT. ACK via sous-requêtes (évite doublons si plusieurs ACK).
+    // preset : ack_confirme | ack_manquant | null
     // =========================================================================
     @Query(value = """
             SELECT
                 fo.ID_                                                           AS foId,
+                fi.ID_                                                           AS fileInId,
                 fi.PASSEDCONTRACTIDENTIFIER_                                     AS contrat,
                 fi.WORKFLOWID_                                                   AS workflow,
                 fi.SENDINGDATE_                                                  AS dateEnvoi,
                 fi.PRIORITY_                                                     AS priorite,
                 fo.ACKEXPECTED_                                                  AS ackAttendu,
                 fo.DESTINATIONINFO_ID_                                           AS destination,
-                CASE WHEN ack.ID_ IS NOT NULL THEN 'Confirmé' ELSE '—' END      AS statutAck,
-                ack.ACKNOWLEDGEMENTTYPE_                                         AS typeAck
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                    WHERE a.ACKEDFILEOUT_ID_ = fo.ID_) THEN 'Confirmé' ELSE '—' END AS statutAck,
+                (SELECT MAX(a.ACKNOWLEDGEMENTTYPE_) FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                    WHERE a.ACKEDFILEOUT_ID_ = fo.ID_)                           AS typeAck
             FROM UCUSTOI0.FLOW_FILEOUT fo
             JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
-            LEFT JOIN UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack ON ack.ACKEDFILEOUT_ID_ = fo.ID_
             WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
               AND (:ackExpected IS NULL OR fo.ACKEXPECTED_ = :ackExpected)
               AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
               AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
-            ORDER BY fi.SENDINGDATE_ DESC NULLS LAST
+              AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1)
+              AND (:preset IS NULL
+                   OR (:preset = 'ack_confirme' AND EXISTS (
+                       SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                       WHERE a.ACKEDFILEOUT_ID_ = fo.ID_))
+                   OR (:preset = 'ack_manquant' AND fo.ACKEXPECTED_ = 1 AND NOT EXISTS (
+                       SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                       WHERE a.ACKEDFILEOUT_ID_ = fo.ID_)))
+              AND (:destination IS NULL
+                   OR (:destination = 'NON_DEFINI' AND fo.DESTINATIONINFO_ID_ IS NULL)
+                   OR (:destination <> 'NON_DEFINI' AND TO_CHAR(fo.DESTINATIONINFO_ID_) = :destination))
+            ORDER BY fi.SENDINGDATE_ DESC NULLS LAST, fo.ID_ DESC
             """, countQuery = """
             SELECT COUNT(fo.ID_)
             FROM UCUSTOI0.FLOW_FILEOUT fo
             JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
-            LEFT JOIN UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack ON ack.ACKEDFILEOUT_ID_ = fo.ID_
             WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
               AND (:ackExpected IS NULL OR fo.ACKEXPECTED_ = :ackExpected)
               AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
               AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1)
+              AND (:preset IS NULL
+                   OR (:preset = 'ack_confirme' AND EXISTS (
+                       SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                       WHERE a.ACKEDFILEOUT_ID_ = fo.ID_))
+                   OR (:preset = 'ack_manquant' AND fo.ACKEXPECTED_ = 1 AND NOT EXISTS (
+                       SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT a
+                       WHERE a.ACKEDFILEOUT_ID_ = fo.ID_)))
+              AND (:destination IS NULL
+                   OR (:destination = 'NON_DEFINI' AND fo.DESTINATIONINFO_ID_ IS NULL)
+                   OR (:destination <> 'NON_DEFINI' AND TO_CHAR(fo.DESTINATIONINFO_ID_) = :destination))
             """, nativeQuery = true)
-    org.springframework.data.domain.Page<com.example.custodix.dto.FlowFileOutProjection> getJournalPaginated(
+    org.springframework.data.domain.Page<com.example.custodix.dto.FlowFileOutProjection> getJournalLivraisonsPaginated(
             @Param("contrat")      String contrat,
             @Param("ackExpected")  Integer ackExpected,
             @Param("fromDate")     java.time.LocalDateTime fromDate,
             @Param("toDate")       java.time.LocalDateTime toDate,
+            @Param("ackOnly")      Integer ackOnly,
+            @Param("preset")       String preset,
+            @Param("destination") String destination,
+            org.springframework.data.domain.Pageable pageable);
+
+    // =========================================================================
+    // JOURNAL — fichiers reçus sans aucune livraison (palier funnel « reçus »)
+    // =========================================================================
+    @Query(value = """
+            SELECT
+                CAST(NULL AS NUMBER)                                             AS foId,
+                fi.ID_                                                           AS fileInId,
+                fi.PASSEDCONTRACTIDENTIFIER_                                     AS contrat,
+                fi.WORKFLOWID_                                                   AS workflow,
+                fi.SENDINGDATE_                                                  AS dateEnvoi,
+                fi.PRIORITY_                                                     AS priorite,
+                CAST(NULL AS NUMBER)                                             AS ackAttendu,
+                CAST(NULL AS NUMBER)                                             AS destination,
+                'Non livré'                                                      AS statutAck,
+                CAST(NULL AS VARCHAR2(100))                                      AS typeAck
+            FROM UCUSTOI0.FLOW_FILEIN fi
+            WHERE NOT EXISTS (
+                SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo WHERE fo.FILEIN_ID_ = fi.ID_)
+              AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+            ORDER BY fi.SENDINGDATE_ DESC NULLS LAST, fi.ID_ DESC
+            """, countQuery = """
+            SELECT COUNT(fi.ID_)
+            FROM UCUSTOI0.FLOW_FILEIN fi
+            WHERE NOT EXISTS (
+                SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo WHERE fo.FILEIN_ID_ = fi.ID_)
+              AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+            """, nativeQuery = true)
+    org.springframework.data.domain.Page<com.example.custodix.dto.FlowFileOutProjection> getJournalNonLivrePaginated(
+            @Param("contrat")  String contrat,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate")   java.time.LocalDateTime toDate,
             org.springframework.data.domain.Pageable pageable);
 }
