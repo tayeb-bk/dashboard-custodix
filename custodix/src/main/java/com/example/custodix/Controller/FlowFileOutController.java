@@ -52,6 +52,8 @@ public class FlowFileOutController {
         return service.getContratsList();
     }
 
+
+
     // =========================================================================
     // WIDGET 2 — Funnel Pipeline (4 paliers, filtrable)
     // [0] recus, [1] fichiersLivres, [2] livraisons, [3] ackConfirmes
@@ -129,8 +131,12 @@ public class FlowFileOutController {
     // Retourne : [0] typeAck (0=sans, 1=avec), [1] total
     // =========================================================================
     @GetMapping("/ack/distribution")
-    public List<Object[]> getAckDistribution() {
-        return service.getAckDistribution();
+    public List<Object[]> getAckDistribution(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String workflow,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        return service.getAckDistribution(contrat, workflow, parseDateTime(from), parseDateTimeEnd(to));
     }
 
     // =========================================================================
@@ -139,8 +145,12 @@ public class FlowFileOutController {
     // Retourne : [0] type, [1] categorie, [2] total, [3] avecErreur
     // =========================================================================
     @GetMapping("/ack/confirmations")
-    public List<Object[]> getAckConfirmations() {
-        return service.getAckConfirmations();
+    public List<Object[]> getAckConfirmations(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String workflow,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        return service.getAckConfirmations(contrat, workflow, parseDateTime(from), parseDateTimeEnd(to));
     }
 
     // =========================================================================
@@ -154,6 +164,24 @@ public class FlowFileOutController {
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
         return service.getAckManquants(contrat, parseDateTime(from), parseDateTime(to));
+    }
+
+    @GetMapping("/ack/top-manquants")
+    public List<Object[]> getAckTopManquants(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String workflow,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        return service.getAckTopManquants(contrat, workflow, parseDateTime(from), parseDateTimeEnd(to));
+    }
+
+    @GetMapping("/ack/vieillissement")
+    public List<Object[]> getAckVieillissement(
+            @RequestParam(required = false) String contrat,
+            @RequestParam(required = false) String workflow,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        return service.getAckVieillissement(contrat, workflow, parseDateTime(from), parseDateTimeEnd(to));
     }
 
     // =========================================================================

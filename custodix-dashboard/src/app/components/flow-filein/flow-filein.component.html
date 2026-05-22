@@ -148,7 +148,7 @@
           <span class="kpi-label">Contrats SLA distincts</span>
           <div class="info-btn-wrap" (click)="toggleWidget('contracts', $event)">
             <button class="info-btn">i</button>
-            <div class="info-popover" [class.open]="activeWidget==='contracts'" (click)="$event.stopPropagation()">
+            <div class="info-popover popover-left" [class.open]="activeWidget==='contracts'" (click)="$event.stopPropagation()">
               <div class="pop-header"><span>{{ widgetInfo['contracts'].icon }}</span><strong>{{
                   widgetInfo['contracts'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
               </div>
@@ -224,7 +224,7 @@
           <h3 class="widget-title">Surveillance du Volume de Réception</h3>
           <div class="info-btn-wrap" (click)="toggleWidget('timeline', $event)">
             <button class="info-btn">i</button>
-            <div class="info-popover" [class.open]="activeWidget==='timeline'" (click)="$event.stopPropagation()">
+            <div class="info-popover popover-left" [class.open]="activeWidget==='timeline'" (click)="$event.stopPropagation()">
               <div class="pop-header"><span>{{ widgetInfo['timeline'].icon }}</span><strong>{{
                   widgetInfo['timeline'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
               </div>
@@ -462,7 +462,7 @@
           <h3 class="widget-title">Top Contrats SLA</h3>
           <div class="info-btn-wrap" (click)="toggleWidget('topContracts', $event)">
             <button class="info-btn">i</button>
-            <div class="info-popover" [class.open]="activeWidget==='topContracts'" (click)="$event.stopPropagation()">
+            <div class="info-popover popover-left" [class.open]="activeWidget==='topContracts'" (click)="$event.stopPropagation()">
               <div class="pop-header"><span>{{ widgetInfo['topContracts'].icon }}</span><strong>{{
                   widgetInfo['topContracts'].title }}</strong><button class="pop-close"
                   (click)="closeWidget()">✕</button></div>
@@ -607,7 +607,7 @@
           <h3 class="widget-title">Origines & Chemins</h3>
           <div class="info-btn-wrap" (click)="toggleWidget('originMatrix', $event)">
             <button class="info-btn">i</button>
-            <div class="info-popover" [class.open]="activeWidget==='originMatrix'" (click)="$event.stopPropagation()">
+            <div class="info-popover popover-left" [class.open]="activeWidget==='originMatrix'" (click)="$event.stopPropagation()">
               <div class="pop-header"><span>{{ widgetInfo['originMatrix'].icon }}</span><strong>{{
                   widgetInfo['originMatrix'].title }}</strong><button class="pop-close"
                   (click)="closeWidget()">✕</button></div>
@@ -675,7 +675,7 @@
     <span class="section-count">{{ tableTotalElements | number }} fichiers</span>
     <div class="info-btn-wrap" (click)="toggleWidget('dataTable', $event)">
       <button class="info-btn">i</button>
-      <div class="info-popover" [class.open]="activeWidget==='dataTable'" (click)="$event.stopPropagation()">
+      <div class="info-popover popover-left" [class.open]="activeWidget==='dataTable'" (click)="$event.stopPropagation()">
         <div class="pop-header"><span>{{ widgetInfo['dataTable'].icon }}</span><strong>{{
             widgetInfo['dataTable'].title }}</strong><button class="pop-close" (click)="closeWidget()">✕</button>
         </div>

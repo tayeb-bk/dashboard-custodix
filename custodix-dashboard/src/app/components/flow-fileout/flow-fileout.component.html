@@ -31,7 +31,9 @@
             <span class="ps-sub">Étape 1</span>
           </div>
           <div class="pipe-connector completed">
-            <div class="pipe-line"><div class="pipe-flow-dot"></div></div>
+            <div class="pipe-line">
+              <div class="pipe-flow-dot"></div>
+            </div>
           </div>
           <div class="pipe-step completed">
             <div class="ps-node completed"><span class="ps-icon">⚙️</span></div>
@@ -39,7 +41,9 @@
             <span class="ps-sub">Étape 2</span>
           </div>
           <div class="pipe-connector active">
-            <div class="pipe-line"><div class="pipe-flow-dot animated"></div></div>
+            <div class="pipe-line">
+              <div class="pipe-flow-dot animated"></div>
+            </div>
           </div>
           <div class="pipe-step current">
             <div class="ps-node current"><span class="ps-icon">📤</span></div>
@@ -106,174 +110,190 @@
 
   <!-- ===== WIDGET 1 — 4 KPI CARDS ===== -->
   <div class="fo-kpi-panel" (click)="closeKpiCard()">
-  <div class="fo-kpi-panel-head">
-    <span class="fo-kpi-panel-title">Indicateurs clés</span>
-    <span class="fo-kpi-panel-hint">Cliquez sur <strong>i</strong> sur chaque carte pour le détail</span>
-  </div>
-  <div class="fo-kpi-grid">
+    <div class="fo-kpi-panel-head">
+      <span class="fo-kpi-panel-title">Indicateurs clés</span>
+      <span class="fo-kpi-panel-hint">Cliquez sur <strong>i</strong> sur chaque carte pour le détail</span>
+    </div>
+    <div class="fo-kpi-grid">
 
-    <!-- CARD 1 : Livraisons enregistrées -->
-    <div class="fo-kpi-card fo-kpi-blue">
-      <div class="fo-kpi-icon">📤</div>
-      <div class="fo-kpi-content">
-        <div class="fo-kpi-label-row">
-          <span class="fo-kpi-label">Livraisons enregistrées</span>
-          <span class="fo-kpi-info-hint">Détail</span>
-          <div class="fo-info-wrap" (click)="toggleKpiCard('total', $event)">
-            <button class="fo-info-btn" type="button" aria-label="Détail livraisons">i</button>
-            <div class="fo-info-popover" [class.open]="activeKpiCard === 'total'" (click)="$event.stopPropagation()">
-              <div class="fo-pop-header">
-                <span>📤</span>
-                <strong>Volume des livraisons</strong>
-                <button class="fo-pop-close" type="button" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
-              </div>
-              <div class="fo-pop-body">
-                <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
-                  <p>Nombre total de <strong>livraisons</strong> enregistrées dans Custodix (une ligne <code>FLOW_FILEOUT</code> = un envoi vers une destination).</p>
+      <!-- CARD 1 : Livraisons enregistrées -->
+      <div class="fo-kpi-card fo-kpi-blue">
+        <div class="fo-kpi-icon">📤</div>
+        <div class="fo-kpi-content">
+          <div class="fo-kpi-label-row">
+            <span class="fo-kpi-label">Livraisons enregistrées</span>
+            <span class="fo-kpi-info-hint">Détail</span>
+            <div class="fo-info-wrap" (click)="toggleKpiCard('total', $event)">
+              <button class="fo-info-btn" type="button" aria-label="Détail livraisons">i</button>
+              <div class="fo-info-popover" [class.open]="activeKpiCard === 'total'" (click)="$event.stopPropagation()">
+                <div class="fo-pop-header">
+                  <span>📤</span>
+                  <strong>Volume des livraisons</strong>
+                  <button class="fo-pop-close" type="button"
+                    (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                 </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
-                  <p><code>COUNT(*)</code> sur <code>UCUSTOI0.FLOW_FILEOUT</code>.</p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">💡 Importance</span>
-                  <p>Charge de l'étape 3. Un même fichier reçu peut générer plusieurs livraisons (multi-destination).</p>
+                <div class="fo-pop-body">
+                  <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
+                    <p>Nombre total de <strong>livraisons</strong> enregistrées dans Custodix (une ligne
+                      <code>FLOW_FILEOUT</code> = un envoi vers une destination).</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
+                    <p><code>COUNT(*)</code> sur <code>UCUSTOI0.FLOW_FILEOUT</code>.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">💡 Importance</span>
+                    <p>Charge de l'étape 3. Un même fichier reçu peut générer plusieurs livraisons (multi-destination).
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <div class="fo-kpi-value">{{ kpi.total | number }}</div>
+          <div class="fo-kpi-sub">livraisons vers les destinataires</div>
         </div>
-        <div class="fo-kpi-value">{{ kpi.total | number }}</div>
-        <div class="fo-kpi-sub">livraisons vers les destinataires</div>
+        <div class="fo-kpi-badge" style="background:rgba(99,102,241,0.1);color:#6366f1">Étape 3 · FileOut</div>
       </div>
-      <div class="fo-kpi-badge" style="background:rgba(99,102,241,0.1);color:#6366f1">Étape 3 · FileOut</div>
-    </div>
 
-    <!-- CARD 2 : Couverture Pipeline -->
-    <div class="fo-kpi-card"
-         [class.fo-kpi-green]="kpi.couverture >= 80"
-         [class.fo-kpi-amber]="kpi.couverture >= 50 && kpi.couverture < 80"
-         [class.fo-kpi-red]="kpi.couverture < 50">
-      <div class="fo-kpi-icon">🔗</div>
-      <div class="fo-kpi-content">
-        <div class="fo-kpi-label-row">
-          <span class="fo-kpi-label">Couverture Pipeline</span>
-          <span class="fo-kpi-info-hint">Détail</span>
-          <div class="fo-info-wrap" (click)="toggleKpiCard('couverture', $event)">
-            <button class="fo-info-btn" type="button" aria-label="Détail couverture">i</button>
-            <div class="fo-info-popover" [class.open]="activeKpiCard === 'couverture'" (click)="$event.stopPropagation()">
-              <div class="fo-pop-header">
-                <span>🔗</span>
-                <strong>Couverture Pipeline</strong>
-                <button class="fo-pop-close" type="button" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
-              </div>
-              <div class="fo-pop-body">
-                <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
-                  <p>% des fichiers <strong>reçus</strong> (étape 1) ayant eu <strong>au moins une livraison</strong> (étape 3).</p>
+      <!-- CARD 2 : Couverture Pipeline -->
+      <div class="fo-kpi-card" [class.fo-kpi-green]="kpi.couverture >= 80"
+        [class.fo-kpi-amber]="kpi.couverture >= 50 && kpi.couverture < 80" [class.fo-kpi-red]="kpi.couverture < 50">
+        <div class="fo-kpi-icon">🔗</div>
+        <div class="fo-kpi-content">
+          <div class="fo-kpi-label-row">
+            <span class="fo-kpi-label">Couverture Pipeline</span>
+            <span class="fo-kpi-info-hint">Détail</span>
+            <div class="fo-info-wrap" (click)="toggleKpiCard('couverture', $event)">
+              <button class="fo-info-btn" type="button" aria-label="Détail couverture">i</button>
+              <div class="fo-info-popover" [class.open]="activeKpiCard === 'couverture'"
+                (click)="$event.stopPropagation()">
+                <div class="fo-pop-header">
+                  <span>🔗</span>
+                  <strong>Couverture Pipeline</strong>
+                  <button class="fo-pop-close" type="button"
+                    (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                 </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
-                  <p>({{ kpi.fileInDistinctLivres | number }} fichiers livrés ÷ {{ kpi.fileInTotal | number }} reçus) × 100 = <strong>{{ kpi.couverture }}%</strong></p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">💡 Lecture</span>
-                  <p>{{ kpi.total | number }} livraisons au total — un fichier peut en produire plusieurs. {{ 100 - kpi.couverture }}% des reçus sans livraison.</p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🎯 Seuils</span>
-                  <p>🟢 ≥80% Optimal · 🟡 50–79% Acceptable · 🔴 &lt;50% À investiguer</p>
+                <div class="fo-pop-body">
+                  <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
+                    <p>% des fichiers <strong>reçus</strong> (étape 1) ayant eu <strong>au moins une livraison</strong>
+                      (étape 3).</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
+                    <p>({{ kpi.fileInDistinctLivres | number }} fichiers livrés ÷ {{ kpi.fileInTotal | number }} reçus)
+                      × 100 = <strong>{{ kpi.couverture }}%</strong></p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">💡 Lecture</span>
+                    <p>{{ kpi.total | number }} livraisons au total — un fichier peut en produire plusieurs. {{ 100 -
+                      kpi.couverture }}% des reçus sans livraison.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🎯 Seuils</span>
+                    <p>🟢 ≥80% Optimal · 🟡 50–79% Acceptable · 🔴 &lt;50% À investiguer</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <div class="fo-kpi-value">{{ kpi.couverture }}%</div>
+          <div class="fo-kpi-sub">{{ kpi.fileInDistinctLivres | number }} fichiers livrés / {{ kpi.fileInTotal | number
+            }} reçus</div>
+          <div class="fo-kpi-sub fo-kpi-sub-muted">{{ kpi.total | number }} livraisons au total</div>
         </div>
-        <div class="fo-kpi-value">{{ kpi.couverture }}%</div>
-        <div class="fo-kpi-sub">{{ kpi.fileInDistinctLivres | number }} fichiers livrés / {{ kpi.fileInTotal | number }} reçus</div>
-        <div class="fo-kpi-sub fo-kpi-sub-muted">{{ kpi.total | number }} livraisons au total</div>
+        <div class="fo-kpi-badge"
+          [style.background]="kpi.couverture >= 80 ? 'rgba(16,185,129,0.12)' : kpi.couverture >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'"
+          [style.color]="kpi.couverture >= 80 ? '#10b981' : kpi.couverture >= 50 ? '#d97706' : '#ef4444'">
+          {{ kpi.couverture >= 80 ? '✓ Optimale' : kpi.couverture >= 50 ? '⚠ Partielle' : '✗ Faible' }}
+        </div>
       </div>
-      <div class="fo-kpi-badge"
-           [style.background]="kpi.couverture >= 80 ? 'rgba(16,185,129,0.12)' : kpi.couverture >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'"
-           [style.color]="kpi.couverture >= 80 ? '#10b981' : kpi.couverture >= 50 ? '#d97706' : '#ef4444'">
-        {{ kpi.couverture >= 80 ? '✓ Optimale' : kpi.couverture >= 50 ? '⚠ Partielle' : '✗ Faible' }}
-      </div>
-    </div>
 
-    <!-- CARD 3 : Taux ACK -->
-    <div class="fo-kpi-card"
-         [class.fo-kpi-green]="kpi.tauxAck >= 80"
-         [class.fo-kpi-amber]="kpi.tauxAck >= 50 && kpi.tauxAck < 80"
-         [class.fo-kpi-red]="kpi.tauxAck < 50 && kpi.ackAttendu > 0">
-      <div class="fo-kpi-icon">✅</div>
-      <div class="fo-kpi-content">
-        <div class="fo-kpi-label-row">
-          <span class="fo-kpi-label">Taux de Confirmation</span>
-          <span class="fo-kpi-info-hint">Détail</span>
-          <div class="fo-info-wrap" (click)="toggleKpiCard('ack', $event)">
-            <button class="fo-info-btn" type="button" aria-label="Détail ACK">i</button>
-            <div class="fo-info-popover" [class.open]="activeKpiCard === 'ack'" (click)="$event.stopPropagation()">
-              <div class="fo-pop-header">
-                <span>✅</span>
-                <strong>Taux de Confirmation ACK</strong>
-                <button class="fo-pop-close" type="button" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
-              </div>
-              <div class="fo-pop-body">
-                <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
-                  <p>Parmi les livraisons avec <code>ACKEXPECTED_=1</code>, combien ont reçu une confirmation dans <code>FLOW_INCOMINGACKNOWLEGEMENT</code>.</p>
+      <!-- CARD 3 : Taux ACK -->
+      <div class="fo-kpi-card" [class.fo-kpi-green]="kpi.tauxAck >= 80"
+        [class.fo-kpi-amber]="kpi.tauxAck >= 50 && kpi.tauxAck < 80"
+        [class.fo-kpi-red]="kpi.tauxAck < 50 && kpi.ackAttendu > 0">
+        <div class="fo-kpi-icon">✅</div>
+        <div class="fo-kpi-content">
+          <div class="fo-kpi-label-row">
+            <span class="fo-kpi-label">Taux de Confirmation</span>
+            <span class="fo-kpi-info-hint">Détail</span>
+            <div class="fo-info-wrap" (click)="toggleKpiCard('ack', $event)">
+              <button class="fo-info-btn" type="button" aria-label="Détail ACK">i</button>
+              <div class="fo-info-popover" [class.open]="activeKpiCard === 'ack'" (click)="$event.stopPropagation()">
+                <div class="fo-pop-header">
+                  <span>✅</span>
+                  <strong>Taux de Confirmation ACK</strong>
+                  <button class="fo-pop-close" type="button"
+                    (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                 </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
-                  <p>({{ kpi.ackRecus }} reçus ÷ {{ kpi.ackAttendu | number }} attendus) × 100 = <strong>{{ kpi.tauxAck }}%</strong></p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">💡 Contexte</span>
-                  <p>La majorité des livraisons sont « fire and forget ». {{ kpi.ackAttendu | number }} exigent un ACK formel.</p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">⚠ Manquants</span>
-                  <p><strong>{{ kpi.ackManquants | number }}</strong> livraisons ACK requis sans confirmation (<code>NOT EXISTS</code> sur la table ACK).</p>
+                <div class="fo-pop-body">
+                  <div class="fo-pop-row"><span class="fo-pop-key">📌 Quoi</span>
+                    <p>Parmi les livraisons avec <code>ACKEXPECTED_=1</code>, combien ont reçu une confirmation dans
+                      <code>FLOW_INCOMINGACKNOWLEGEMENT</code>.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
+                    <p>({{ kpi.ackRecus }} reçus ÷ {{ kpi.ackAttendu | number }} attendus) × 100 = <strong>{{
+                        kpi.tauxAck }}%</strong></p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">💡 Contexte</span>
+                    <p>La majorité des livraisons sont « fire and forget ». {{ kpi.ackAttendu | number }} exigent un ACK
+                      formel.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">⚠ Manquants</span>
+                    <p><strong>{{ kpi.ackManquants | number }}</strong> livraisons ACK requis sans confirmation
+                      (<code>NOT EXISTS</code> sur la table ACK).</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <div class="fo-kpi-value">{{ kpi.tauxAck }}%</div>
+          <div class="fo-kpi-sub">{{ kpi.ackRecus | number }} ACK reçus / {{ kpi.ackAttendu | number }} attendus</div>
         </div>
-        <div class="fo-kpi-value">{{ kpi.tauxAck }}%</div>
-        <div class="fo-kpi-sub">{{ kpi.ackRecus | number }} ACK reçus / {{ kpi.ackAttendu | number }} attendus</div>
+        <div class="fo-kpi-badge"
+          [style.background]="kpi.tauxAck >= 80 ? 'rgba(16,185,129,0.12)' : kpi.tauxAck >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'"
+          [style.color]="kpi.tauxAck >= 80 ? '#10b981' : kpi.tauxAck >= 50 ? '#d97706' : '#ef4444'">
+          {{ kpi.ackManquants | number }} en attente
+        </div>
       </div>
-      <div class="fo-kpi-badge"
-           [style.background]="kpi.tauxAck >= 80 ? 'rgba(16,185,129,0.12)' : kpi.tauxAck >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'"
-           [style.color]="kpi.tauxAck >= 80 ? '#10b981' : kpi.tauxAck >= 50 ? '#d97706' : '#ef4444'">
-        {{ kpi.ackManquants | number }} en attente
-      </div>
-    </div>
 
-    <!-- CARD 4 : Destinations -->
-    <div class="fo-kpi-card fo-kpi-cyan">
-      <div class="fo-kpi-icon">🎯</div>
-      <div class="fo-kpi-content">
-        <div class="fo-kpi-label-row">
-          <span class="fo-kpi-label">Destinations Actives</span>
-          <span class="fo-kpi-info-hint">Détail</span>
-          <div class="fo-info-wrap" (click)="toggleKpiCard('destinations', $event)">
-            <button class="fo-info-btn" type="button" aria-label="Détail destinations">i</button>
-            <div class="fo-info-popover" [class.open]="activeKpiCard === 'destinations'" (click)="$event.stopPropagation()">
-              <div class="fo-pop-header">
-                <span>🎯</span>
-                <strong>Destinations Actives</strong>
-                <button class="fo-pop-close" type="button" (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
-              </div>
-              <div class="fo-pop-body">
-                <div class="fo-pop-row"><span class="fo-pop-key">🌍 Destination</span>
-                  <p>Canal de sortie technique (<code>DESTINATIONINFO_ID_</code>) : où Custodix pousse le fichier (connecteur, répertoire…). Ce n’est pas le contrat SLA partenaire.</p>
+      <!-- CARD 4 : Destinations -->
+      <div class="fo-kpi-card fo-kpi-cyan">
+        <div class="fo-kpi-icon">🎯</div>
+        <div class="fo-kpi-content">
+          <div class="fo-kpi-label-row">
+            <span class="fo-kpi-label">Destinations Actives</span>
+            <span class="fo-kpi-info-hint">Détail</span>
+            <div class="fo-info-wrap" (click)="toggleKpiCard('destinations', $event)">
+              <button class="fo-info-btn" type="button" aria-label="Détail destinations">i</button>
+              <div class="fo-info-popover" [class.open]="activeKpiCard === 'destinations'"
+                (click)="$event.stopPropagation()">
+                <div class="fo-pop-header">
+                  <span>🎯</span>
+                  <strong>Destinations Actives</strong>
+                  <button class="fo-pop-close" type="button"
+                    (click)="closeKpiCard(); $event.stopPropagation()">✕</button>
                 </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
-                  <p>Nombre de canaux différents ayant reçu au moins une livraison : <code>COUNT(DISTINCT DESTINATIONINFO_ID_)</code>.</p>
-                </div>
-                <div class="fo-pop-row"><span class="fo-pop-key">🔗 Widget W5</span>
-                  <p>Le panneau « Canaux de sortie » détaille le volume par destination ; « fichier distinct » y compte les dossiers uniques par canal.</p>
+                <div class="fo-pop-body">
+                  <div class="fo-pop-row"><span class="fo-pop-key">🌍 Destination</span>
+                    <p>Canal de sortie technique (<code>DESTINATIONINFO_ID_</code>) : où Custodix pousse le fichier
+                      (connecteur, répertoire…). Ce n’est pas le contrat SLA partenaire.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🧮 Calcul</span>
+                    <p>Nombre de canaux différents ayant reçu au moins une livraison :
+                      <code>COUNT(DISTINCT DESTINATIONINFO_ID_)</code>.</p>
+                  </div>
+                  <div class="fo-pop-row"><span class="fo-pop-key">🔗 Widget W5</span>
+                    <p>Le panneau « Canaux de sortie » détaille le volume par destination ; « fichier distinct » y
+                      compte les dossiers uniques par canal.</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <div class="fo-kpi-value">{{ kpi.destinations }}</div>
+          <div class="fo-kpi-sub">canaux de livraison sur la période</div>
         </div>
-        <div class="fo-kpi-value">{{ kpi.destinations }}</div>
-        <div class="fo-kpi-sub">canaux de livraison sur la période</div>
+        <div class="fo-kpi-badge" style="background:rgba(6,182,212,0.1);color:#06b6d4">Réseau actif</div>
       </div>
-      <div class="fo-kpi-badge" style="background:rgba(6,182,212,0.1);color:#06b6d4">Réseau actif</div>
-    </div>
 
-  </div>
+    </div>
   </div>
 
   <!-- ===== WIDGET 2 — Pipeline funnel (fonctionnel) ===== -->
@@ -286,11 +306,13 @@
       <div class="fo-funnel-head-actions">
         <div class="fo-info-wrap fo-funnel-panel-info" (click)="toggleFunnelInfo('panel', $event)">
           <button class="fo-info-btn" type="button" aria-label="Fichier livré vs livraison">i</button>
-          <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'panel'" (click)="$event.stopPropagation()">
+          <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'panel'"
+            (click)="$event.stopPropagation()">
             <div class="fo-pop-header">
               <span>📦</span>
               <strong>Fichier livré vs livraison</strong>
-              <button class="fo-pop-close" type="button" (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
+              <button class="fo-pop-close" type="button"
+                (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
             </div>
             <div class="fo-pop-body">
               <div class="fo-pop-row" *ngFor="let row of funnelPanelPopRows">
@@ -341,20 +363,21 @@
     <div class="fo-funnel-loading" *ngIf="funnelLoading">Mise à jour du pipeline…</div>
 
     <div class="fo-funnel-track" *ngIf="!funnelLoading">
-      <div class="fo-funnel-step"
-           [class.active]="selectedFunnelStep === 'recus'"
-           [class.pop-open]="activeFunnelInfo === 'recus'"
-           (click)="selectFunnelStep('recus', $event)">
+      <div class="fo-funnel-step" [class.active]="selectedFunnelStep === 'recus'"
+        [class.pop-open]="activeFunnelInfo === 'recus'" (click)="selectFunnelStep('recus', $event)">
         <div class="fo-fs-icon">{{ funnelStepMeta['recus'].icon }}</div>
         <div class="fo-fs-head">
           <div class="fo-fs-label">{{ funnelStepMeta['recus'].label }}</div>
           <div class="fo-info-wrap" (click)="toggleFunnelInfo('recus', $event)">
-            <button class="fo-info-btn" type="button" [attr.aria-label]="'Détail ' + funnelStepMeta['recus'].label">i</button>
-            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'recus'" (click)="$event.stopPropagation()">
+            <button class="fo-info-btn" type="button"
+              [attr.aria-label]="'Détail ' + funnelStepMeta['recus'].label">i</button>
+            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'recus'"
+              (click)="$event.stopPropagation()">
               <div class="fo-pop-header">
                 <span>{{ funnelStepMeta['recus'].icon }}</span>
                 <strong>{{ funnelStepMeta['recus'].popTitle }}</strong>
-                <button class="fo-pop-close" type="button" (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
+                <button class="fo-pop-close" type="button"
+                  (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
               </div>
               <div class="fo-pop-body">
                 <div class="fo-pop-row" *ngFor="let row of funnelStepMeta['recus'].popRows">
@@ -372,20 +395,21 @@
 
       <div class="fo-funnel-arrow"><span class="fo-arrow-line"></span></div>
 
-      <div class="fo-funnel-step"
-           [class.active]="selectedFunnelStep === 'livres'"
-           [class.pop-open]="activeFunnelInfo === 'livres'"
-           (click)="selectFunnelStep('livres', $event)">
+      <div class="fo-funnel-step" [class.active]="selectedFunnelStep === 'livres'"
+        [class.pop-open]="activeFunnelInfo === 'livres'" (click)="selectFunnelStep('livres', $event)">
         <div class="fo-fs-icon">{{ funnelStepMeta['livres'].icon }}</div>
         <div class="fo-fs-head">
           <div class="fo-fs-label">{{ funnelStepMeta['livres'].label }}</div>
           <div class="fo-info-wrap" (click)="toggleFunnelInfo('livres', $event)">
-            <button class="fo-info-btn" type="button" [attr.aria-label]="'Détail ' + funnelStepMeta['livres'].label">i</button>
-            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'livres'" (click)="$event.stopPropagation()">
+            <button class="fo-info-btn" type="button"
+              [attr.aria-label]="'Détail ' + funnelStepMeta['livres'].label">i</button>
+            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'livres'"
+              (click)="$event.stopPropagation()">
               <div class="fo-pop-header">
                 <span>{{ funnelStepMeta['livres'].icon }}</span>
                 <strong>{{ funnelStepMeta['livres'].popTitle }}</strong>
-                <button class="fo-pop-close" type="button" (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
+                <button class="fo-pop-close" type="button"
+                  (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
               </div>
               <div class="fo-pop-body">
                 <div class="fo-pop-row" *ngFor="let row of funnelStepMeta['livres'].popRows">
@@ -403,20 +427,21 @@
 
       <div class="fo-funnel-arrow"><span class="fo-arrow-line"></span></div>
 
-      <div class="fo-funnel-step"
-           [class.active]="selectedFunnelStep === 'livraisons'"
-           [class.pop-open]="activeFunnelInfo === 'livraisons'"
-           (click)="selectFunnelStep('livraisons', $event)">
+      <div class="fo-funnel-step" [class.active]="selectedFunnelStep === 'livraisons'"
+        [class.pop-open]="activeFunnelInfo === 'livraisons'" (click)="selectFunnelStep('livraisons', $event)">
         <div class="fo-fs-icon">{{ funnelStepMeta['livraisons'].icon }}</div>
         <div class="fo-fs-head">
           <div class="fo-fs-label">{{ funnelStepMeta['livraisons'].label }}</div>
           <div class="fo-info-wrap" (click)="toggleFunnelInfo('livraisons', $event)">
-            <button class="fo-info-btn" type="button" [attr.aria-label]="'Détail ' + funnelStepMeta['livraisons'].label">i</button>
-            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'livraisons'" (click)="$event.stopPropagation()">
+            <button class="fo-info-btn" type="button"
+              [attr.aria-label]="'Détail ' + funnelStepMeta['livraisons'].label">i</button>
+            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'livraisons'"
+              (click)="$event.stopPropagation()">
               <div class="fo-pop-header">
                 <span>{{ funnelStepMeta['livraisons'].icon }}</span>
                 <strong>{{ funnelStepMeta['livraisons'].popTitle }}</strong>
-                <button class="fo-pop-close" type="button" (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
+                <button class="fo-pop-close" type="button"
+                  (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
               </div>
               <div class="fo-pop-body">
                 <div class="fo-pop-row" *ngFor="let row of funnelStepMeta['livraisons'].popRows">
@@ -434,20 +459,21 @@
 
       <div class="fo-funnel-arrow"><span class="fo-arrow-line"></span></div>
 
-      <div class="fo-funnel-step"
-           [class.active]="selectedFunnelStep === 'ack'"
-           [class.pop-open]="activeFunnelInfo === 'ack'"
-           (click)="selectFunnelStep('ack', $event)">
+      <div class="fo-funnel-step" [class.active]="selectedFunnelStep === 'ack'"
+        [class.pop-open]="activeFunnelInfo === 'ack'" (click)="selectFunnelStep('ack', $event)">
         <div class="fo-fs-icon">{{ funnelStepMeta['ack'].icon }}</div>
         <div class="fo-fs-head">
           <div class="fo-fs-label">{{ funnelStepMeta['ack'].label }}</div>
           <div class="fo-info-wrap" (click)="toggleFunnelInfo('ack', $event)">
-            <button class="fo-info-btn" type="button" [attr.aria-label]="'Détail ' + funnelStepMeta['ack'].label">i</button>
-            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'ack'" (click)="$event.stopPropagation()">
+            <button class="fo-info-btn" type="button"
+              [attr.aria-label]="'Détail ' + funnelStepMeta['ack'].label">i</button>
+            <div class="fo-info-popover fo-funnel-popover" [class.open]="activeFunnelInfo === 'ack'"
+              (click)="$event.stopPropagation()">
               <div class="fo-pop-header">
                 <span>{{ funnelStepMeta['ack'].icon }}</span>
                 <strong>{{ funnelStepMeta['ack'].popTitle }}</strong>
-                <button class="fo-pop-close" type="button" (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
+                <button class="fo-pop-close" type="button"
+                  (click)="activeFunnelInfo = null; $event.stopPropagation()">✕</button>
               </div>
               <div class="fo-pop-body">
                 <div class="fo-pop-row" *ngFor="let row of funnelStepMeta['ack'].popRows">
@@ -473,11 +499,8 @@
         Cliquez d’abord un palier du pipeline (il se surligne en vert), puis le bouton ci-dessous.
       </p>
       <div class="fo-insight-cta">
-        <button type="button"
-                class="fo-btn-investigate"
-                [class.fo-btn-investigate-active]="!!selectedFunnelStep"
-                (click)="investigateFromFunnel()"
-                [attr.title]="selectedFunnelStep
+        <button type="button" class="fo-btn-investigate" [class.fo-btn-investigate-active]="!!selectedFunnelStep"
+          (click)="investigateFromFunnel()" [attr.title]="selectedFunnelStep
                   ? 'Ouvrir le journal pour : ' + selectedFunnelStepLabel
                   : 'Ouvrir toutes les livraisons (aucun palier sélectionné)'">
           Voir la liste détaillée
@@ -488,9 +511,7 @@
   </div>
 
   <!-- ===== WIDGET 3 — Timeline livraisons ===== -->
-  <div class="fo-timeline-panel"
-       [class.pop-open]="activeTimelineInfo"
-       (click)="closeAllPopovers()">
+  <div class="fo-timeline-panel" [class.pop-open]="activeTimelineInfo" (click)="closeAllPopovers()">
     <div class="fo-timeline-head">
       <div class="fo-timeline-head-text">
         <h2 class="fo-timeline-title">Évolution des livraisons</h2>
@@ -499,13 +520,13 @@
       <div class="fo-timeline-head-actions">
         <div class="fo-info-wrap fo-timeline-panel-info" (click)="toggleTimelineInfo($event)">
           <button class="fo-info-btn" type="button" aria-label="Aide timeline">i</button>
-          <div class="fo-info-popover fo-timeline-popover"
-               [class.open]="activeTimelineInfo"
-               (click)="$event.stopPropagation()">
+          <div class="fo-info-popover fo-timeline-popover" [class.open]="activeTimelineInfo"
+            (click)="$event.stopPropagation()">
             <div class="fo-pop-header">
               <span>📈</span>
               <strong>Timeline expédition</strong>
-              <button class="fo-pop-close" type="button" (click)="activeTimelineInfo = false; $event.stopPropagation()">✕</button>
+              <button class="fo-pop-close" type="button"
+                (click)="activeTimelineInfo = false; $event.stopPropagation()">✕</button>
             </div>
             <div class="fo-pop-body">
               <div class="fo-pop-row" *ngFor="let row of timelinePanelPopRows">
@@ -551,17 +572,9 @@
     <div class="fo-timeline-error" *ngIf="!timelineLoading && timelineError">{{ timelineError }}</div>
 
     <div class="fo-timeline-chart-wrap" *ngIf="!timelineLoading && !timelineError && timelineLoaded">
-      <apx-chart nonPassiveWheel
-        [series]="timelineSeries"
-        [chart]="timelineChart"
-        [xaxis]="timelineXAxis"
-        [yaxis]="timelineYAxis"
-        [stroke]="timelineStroke"
-        [fill]="timelineFill"
-        [grid]="timelineGrid"
-        [dataLabels]="timelineDataLabels"
-        [tooltip]="timelineTooltip"
-        [legend]="timelineLegend"
+      <apx-chart nonPassiveWheel [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis"
+        [yaxis]="timelineYAxis" [stroke]="timelineStroke" [fill]="timelineFill" [grid]="timelineGrid"
+        [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip" [legend]="timelineLegend"
         [colors]="timelineColors">
       </apx-chart>
     </div>
@@ -572,9 +585,7 @@
   </div>
 
   <!-- ===== WIDGET 4 — Performance par partenaire (contrat SLA) ===== -->
-  <div class="fo-contrats-panel"
-       [class.pop-open]="activeContratsPerfInfo"
-       (click)="closeAllPopovers()">
+  <div class="fo-contrats-panel" [class.pop-open]="activeContratsPerfInfo" (click)="closeAllPopovers()">
     <div class="fo-contrats-head">
       <div class="fo-contrats-head-text">
         <h2 class="fo-contrats-title">Performance par partenaire</h2>
@@ -585,13 +596,13 @@
       <div class="fo-contrats-head-actions">
         <div class="fo-info-wrap fo-contrats-panel-info" (click)="toggleContratsPerfInfo($event)">
           <button class="fo-info-btn" type="button" aria-label="Aide performance partenaires">i</button>
-          <div class="fo-info-popover fo-contrats-popover"
-               [class.open]="activeContratsPerfInfo"
-               (click)="$event.stopPropagation()">
+          <div class="fo-info-popover fo-contrats-popover" [class.open]="activeContratsPerfInfo"
+            (click)="$event.stopPropagation()">
             <div class="fo-pop-header">
               <span>🤝</span>
               <strong>Performance partenaire</strong>
-              <button class="fo-pop-close" type="button" (click)="activeContratsPerfInfo = false; $event.stopPropagation()">✕</button>
+              <button class="fo-pop-close" type="button"
+                (click)="activeContratsPerfInfo = false; $event.stopPropagation()">✕</button>
             </div>
             <div class="fo-pop-body">
               <div class="fo-pop-row" *ngFor="let row of contratsPerfPanelPopRows">
@@ -601,30 +612,34 @@
             </div>
           </div>
         </div>
-        <span class="fo-contrats-summary" *ngIf="!contratsPerfLoading && !contratsPerfError">{{ contratsPerfSummary }}</span>
+        <span class="fo-contrats-summary" *ngIf="!contratsPerfLoading && !contratsPerfError">{{ contratsPerfSummary
+          }}</span>
       </div>
     </div>
 
     <div class="fo-contrats-toolbar" (click)="$event.stopPropagation()">
       <span class="fo-contrats-toolbar-label">Trier par</span>
-      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'volume'" (click)="setContratsPerfSort('volume')">Volume livraisons</button>
-      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'couverture'" (click)="setContratsPerfSort('couverture')">Couverture la plus faible</button>
-      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'risque'" (click)="setContratsPerfSort('risque')">Risque ACK</button>
-      <button type="button"
-              class="fo-btn-apply fo-contrats-refresh"
-              [class.fo-btn-reset-drill]="contratsPerfDrillActive"
-              (click)="refreshContratsPerf()">
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'volume'"
+        (click)="setContratsPerfSort('volume')">Volume livraisons</button>
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'couverture'"
+        (click)="setContratsPerfSort('couverture')">Couverture la plus faible</button>
+      <button type="button" class="fo-csort" [class.active]="contratsPerfSort === 'risque'"
+        (click)="setContratsPerfSort('risque')">Risque ACK</button>
+      <button type="button" class="fo-btn-apply fo-contrats-refresh"
+        [class.fo-btn-reset-drill]="contratsPerfDrillActive" (click)="refreshContratsPerf()">
         {{ contratsPerfDrillActive ? 'Réinitialiser vue' : 'Actualiser' }}
       </button>
     </div>
 
     <div class="fo-contrats-drill" *ngIf="contratsPerfDrillActive" (click)="$event.stopPropagation()">
       <span>Zoom partenaire : <strong>{{ contratsPerfDrillContrat }}</strong></span>
-      <button type="button" class="fo-contrats-drill-clear" (click)="clearContratsPerfDrill(true)">✕ Tout le dashboard</button>
+      <button type="button" class="fo-contrats-drill-clear" (click)="clearContratsPerfDrill(true)">✕ Tout le
+        dashboard</button>
     </div>
 
     <p class="fo-contrats-hint" *ngIf="filtersActive && !contratsPerfDrillActive">
-      Filtres page actifs — classement limité à cette sélection. Cliquez une ligne pour zoomer sur le partenaire et le journal.
+      Filtres page actifs — classement limité à cette sélection. Cliquez une ligne pour zoomer sur le partenaire et le
+      journal.
     </p>
     <p class="fo-contrats-hint fo-contrats-scroll-hint" *ngIf="!contratsPerfLoading && sortedContratsPerf.length > 3">
       {{ sortedContratsPerf.length }} partenaires — faites défiler la liste (environ 3 visibles).
@@ -640,87 +655,79 @@
       </div>
 
       <div class="fo-contrats-scroll" *ngIf="sortedContratsPerf.length > 0">
-      <article class="fo-perf-row"
-               *ngFor="let row of sortedContratsPerf; let i = index"
-               [class.selected]="isContratPerfSelected(row.contrat)"
-               [style.animation-delay.ms]="i * 45"
-               (click)="selectContratPerf(row, $event)"
-               role="button"
-               tabindex="0"
-               [attr.aria-label]="'Filtrer sur ' + row.contrat">
-        <div class="fo-perf-rank">{{ i + 1 }}</div>
-        <div class="fo-perf-main">
-          <div class="fo-perf-top">
-            <h3 class="fo-perf-contrat" [title]="row.contrat">{{ row.contrat }}</h3>
-            <div class="fo-perf-volume-wrap">
-              <div class="fo-perf-volume-bar">
-                <div class="fo-perf-volume-fill"
-                     [style.width.%]="(row.livraisons / contratsPerfMaxLivraisons) * 100"></div>
+        <article class="fo-perf-row" *ngFor="let row of sortedContratsPerf; let i = index"
+          [class.selected]="isContratPerfSelected(row.contrat)" [style.animation-delay.ms]="i * 45"
+          (click)="selectContratPerf(row, $event)" role="button" tabindex="0"
+          [attr.aria-label]="'Filtrer sur ' + row.contrat">
+          <div class="fo-perf-rank">{{ i + 1 }}</div>
+          <div class="fo-perf-main">
+            <div class="fo-perf-top">
+              <h3 class="fo-perf-contrat" [title]="row.contrat">{{ row.contrat }}</h3>
+              <div class="fo-perf-volume-wrap">
+                <div class="fo-perf-volume-bar">
+                  <div class="fo-perf-volume-fill" [style.width.%]="(row.livraisons / contratsPerfMaxLivraisons) * 100">
+                  </div>
+                </div>
+                <span class="fo-perf-livraisons">{{ row.livraisons | number }} livraisons</span>
               </div>
-              <span class="fo-perf-livraisons">{{ row.livraisons | number }} livraisons</span>
-            </div>
-          </div>
-
-          <div class="fo-perf-pipeline">
-            <div class="fo-perf-metric">
-              <span class="fo-perf-m-label">Reçus</span>
-              <span class="fo-perf-m-value">{{ row.fichiersRecus | number }}</span>
-            </div>
-            <span class="fo-perf-arrow">→</span>
-            <div class="fo-perf-metric fo-perf-metric--accent">
-              <span class="fo-perf-m-label">Livrés</span>
-              <span class="fo-perf-m-value">{{ row.fichiersLivres | number }}</span>
-            </div>
-            <span class="fo-perf-arrow">→</span>
-            <div class="fo-perf-metric">
-              <span class="fo-perf-m-label">Envois</span>
-              <span class="fo-perf-m-value">{{ row.livraisons | number }}</span>
-            </div>
-            <span class="fo-perf-meta" *ngIf="row.fichiersLivres > 0">~{{ contratPerfLivraisonsRatio(row) }} / fichier livré</span>
-          </div>
-
-          <div class="fo-perf-bottom">
-            <div class="fo-perf-couverture">
-              <div class="fo-perf-couv-head">
-                <span class="fo-perf-couv-label">Couverture expédition</span>
-                <strong class="fo-perf-couv-pct">{{ row.couverturePct }} %</strong>
-              </div>
-              <div class="fo-perf-bar">
-                <div class="fo-perf-bar-fill"
-                     [ngClass]="couvertureBarClass(row.couverturePct)"
-                     [style.width.%]="row.couverturePct"></div>
-              </div>
-              <span class="fo-perf-couv-hint" *ngIf="contratPerfNonLivres(row) > 0">
-                {{ contratPerfNonLivres(row) | number }} fichier(s) reçu(s) sans livraison
-              </span>
             </div>
 
-            <div class="fo-perf-ack" (click)="$event.stopPropagation()">
-              <span class="fo-perf-ack-label">ACK (livraisons requises)</span>
-              <div class="fo-perf-ack-stats" *ngIf="row.ackAttendu > 0">
-                <span class="fo-perf-ack-pill fo-perf-ack-pill--ok">{{ row.ackConfirmes | number }} confirmés</span>
-                <button type="button"
-                        class="fo-perf-ack-pill fo-perf-ack-pill--alert"
-                        *ngIf="row.ackManquants > 0"
-                        (click)="investigateContratAckManquants(row, $event)">
-                  {{ row.ackManquants | number }} manquant(s)
-                </button>
-                <span class="fo-perf-ack-rate">Taux {{ row.tauxAckPct ?? 0 }} %</span>
+            <div class="fo-perf-pipeline">
+              <div class="fo-perf-metric">
+                <span class="fo-perf-m-label">Reçus</span>
+                <span class="fo-perf-m-value">{{ row.fichiersRecus | number }}</span>
               </div>
-              <span class="fo-perf-ack-na" *ngIf="row.ackAttendu === 0">Aucun ACK requis sur ce partenaire</span>
+              <span class="fo-perf-arrow">→</span>
+              <div class="fo-perf-metric fo-perf-metric--accent">
+                <span class="fo-perf-m-label">Livrés</span>
+                <span class="fo-perf-m-value">{{ row.fichiersLivres | number }}</span>
+              </div>
+              <span class="fo-perf-arrow">→</span>
+              <div class="fo-perf-metric">
+                <span class="fo-perf-m-label">Envois</span>
+                <span class="fo-perf-m-value">{{ row.livraisons | number }}</span>
+              </div>
+              <span class="fo-perf-meta" *ngIf="row.fichiersLivres > 0">~{{ contratPerfLivraisonsRatio(row) }} / fichier
+                livré</span>
+            </div>
+
+            <div class="fo-perf-bottom">
+              <div class="fo-perf-couverture">
+                <div class="fo-perf-couv-head">
+                  <span class="fo-perf-couv-label">Couverture expédition</span>
+                  <strong class="fo-perf-couv-pct">{{ row.couverturePct }} %</strong>
+                </div>
+                <div class="fo-perf-bar">
+                  <div class="fo-perf-bar-fill" [ngClass]="couvertureBarClass(row.couverturePct)"
+                    [style.width.%]="row.couverturePct"></div>
+                </div>
+                <span class="fo-perf-couv-hint" *ngIf="contratPerfNonLivres(row) > 0">
+                  {{ contratPerfNonLivres(row) | number }} fichier(s) reçu(s) sans livraison
+                </span>
+              </div>
+
+              <div class="fo-perf-ack" (click)="$event.stopPropagation()">
+                <span class="fo-perf-ack-label">ACK (livraisons requises)</span>
+                <div class="fo-perf-ack-stats" *ngIf="row.ackAttendu > 0">
+                  <span class="fo-perf-ack-pill fo-perf-ack-pill--ok">{{ row.ackConfirmes | number }} confirmés</span>
+                  <button type="button" class="fo-perf-ack-pill fo-perf-ack-pill--alert" *ngIf="row.ackManquants > 0"
+                    (click)="investigateContratAckManquants(row, $event)">
+                    {{ row.ackManquants | number }} manquant(s)
+                  </button>
+                  <span class="fo-perf-ack-rate">Taux {{ row.tauxAckPct ?? 0 }} %</span>
+                </div>
+                <span class="fo-perf-ack-na" *ngIf="row.ackAttendu === 0">Aucun ACK requis sur ce partenaire</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="fo-perf-action" aria-hidden="true">›</div>
-      </article>
+          <div class="fo-perf-action" aria-hidden="true">›</div>
+        </article>
       </div>
     </div>
   </div>
 
   <!-- ===== WIDGET 5 — Répartition par destination ===== -->
-  <div class="fo-dest-panel"
-       [class.pop-open]="activeDestInfo"
-       (click)="closeAllPopovers()">
+  <div class="fo-dest-panel" [class.pop-open]="activeDestInfo" (click)="closeAllPopovers()">
     <div class="fo-dest-head">
       <div class="fo-dest-head-text">
         <h2 class="fo-dest-title">Canaux de sortie (destinations)</h2>
@@ -731,13 +738,12 @@
       <div class="fo-dest-head-actions">
         <div class="fo-info-wrap fo-dest-panel-info" (click)="toggleDestInfo($event)">
           <button class="fo-info-btn" type="button" aria-label="Aide destinations">i</button>
-          <div class="fo-info-popover fo-dest-popover"
-               [class.open]="activeDestInfo"
-               (click)="$event.stopPropagation()">
+          <div class="fo-info-popover fo-dest-popover" [class.open]="activeDestInfo" (click)="$event.stopPropagation()">
             <div class="fo-pop-header">
               <span>🌍</span>
               <strong>Destinations d'expédition</strong>
-              <button class="fo-pop-close" type="button" (click)="activeDestInfo = false; $event.stopPropagation()">✕</button>
+              <button class="fo-pop-close" type="button"
+                (click)="activeDestInfo = false; $event.stopPropagation()">✕</button>
             </div>
             <div class="fo-pop-body">
               <div class="fo-pop-row" *ngFor="let row of destPanelPopRows">
@@ -753,12 +759,12 @@
 
     <div class="fo-dest-toolbar" (click)="$event.stopPropagation()">
       <span class="fo-dest-toolbar-label">Trier par</span>
-      <button type="button" class="fo-csort" [class.active]="destSort === 'livraisons'" (click)="setDestSort('livraisons')">Volume livraisons</button>
-      <button type="button" class="fo-csort" [class.active]="destSort === 'fichiers'" (click)="setDestSort('fichiers')">Fichiers distincts</button>
-      <button type="button"
-              class="fo-btn-apply fo-dest-refresh"
-              [class.fo-btn-reset-drill]="destinationsDrillActive"
-              (click)="refreshDestinations()">
+      <button type="button" class="fo-csort" [class.active]="destSort === 'livraisons'"
+        (click)="setDestSort('livraisons')">Volume livraisons</button>
+      <button type="button" class="fo-csort" [class.active]="destSort === 'fichiers'"
+        (click)="setDestSort('fichiers')">Fichiers distincts</button>
+      <button type="button" class="fo-btn-apply fo-dest-refresh" [class.fo-btn-reset-drill]="destinationsDrillActive"
+        (click)="refreshDestinations()">
         {{ destinationsDrillActive ? 'Réinitialiser vue' : 'Actualiser' }}
       </button>
     </div>
@@ -783,19 +789,14 @@
 
       <div class="fo-dest-chart-wrap" *ngIf="destRows.length > 0">
         <p class="fo-dest-chart-hint">
-          Centre du graphique = total livraisons KPI ({{ destGrandTotalLivraisons | number }}) — cliquez un canal pour filtrer le journal
-          <span *ngIf="destAutresLivraisons > 0"> · tranche grise = {{ destAutresLivraisons | number }} livraison(s) hors top 10</span>
+          Centre du graphique = total livraisons KPI ({{ destGrandTotalLivraisons | number }}) — cliquez un canal pour
+          filtrer le journal
+          <span *ngIf="destAutresLivraisons > 0"> · tranche grise = {{ destAutresLivraisons | number }} livraison(s)
+            hors top 10</span>
         </p>
-        <apx-chart *ngIf="destChartReady"
-          [series]="destDonutSeries"
-          [chart]="destDonutChart"
-          [labels]="destDonutLabels"
-          [colors]="destDonutColors"
-          [plotOptions]="destDonutPlotOptions"
-          [stroke]="destDonutStroke"
-          [legend]="destDonutLegend"
-          [dataLabels]="destDonutDataLabels"
-          [tooltip]="destDonutTooltip">
+        <apx-chart *ngIf="destChartReady" [series]="destDonutSeries" [chart]="destDonutChart" [labels]="destDonutLabels"
+          [colors]="destDonutColors" [plotOptions]="destDonutPlotOptions" [stroke]="destDonutStroke"
+          [legend]="destDonutLegend" [dataLabels]="destDonutDataLabels" [tooltip]="destDonutTooltip">
         </apx-chart>
         <div class="fo-dest-concentration" *ngIf="destTop3Pct > 0">
           <span class="fo-dest-conc-label">Concentration</span>
@@ -807,12 +808,9 @@
       <div class="fo-dest-list-wrap" *ngIf="destRows.length > 0">
         <p class="fo-dest-list-title">Détail par canal (top {{ destRows.length }})</p>
         <div class="fo-dest-list-scroll">
-          <button type="button"
-                  class="fo-dest-row"
-                  *ngFor="let row of sortedDestRows; let i = index"
-                  [class.selected]="isDestSelected(row.id)"
-                  [style.animation-delay.ms]="i * 40"
-                  (click)="selectDestination(row, $event)">
+          <button type="button" class="fo-dest-row" *ngFor="let row of sortedDestRows; let i = index"
+            [class.selected]="isDestSelected(row.id)" [style.animation-delay.ms]="i * 40"
+            (click)="selectDestination(row, $event)">
             <span class="fo-dest-rank">{{ i + 1 }}</span>
             <span class="fo-dest-name">{{ formatDestLabel(row.id) }}</span>
             <div class="fo-dest-bar-wrap">
@@ -823,8 +821,10 @@
             <div class="fo-dest-stats">
               <span class="fo-dest-stat-main">{{ row.livraisons | number }} envois</span>
               <span class="fo-dest-stat-sub">{{ row.pct }} % · {{ row.fichiersDistinct | number }} fichiers</span>
-              <span class="fo-dest-stat-sub" *ngIf="row.fichiersDistinct > 0">~{{ destLivraisonsRatio(row) }} / fichier</span>
-              <span class="fo-dest-stat-alert" *ngIf="row.ackManquants > 0">{{ row.ackManquants }} ACK manquant(s)</span>
+              <span class="fo-dest-stat-sub" *ngIf="row.fichiersDistinct > 0">~{{ destLivraisonsRatio(row) }} /
+                fichier</span>
+              <span class="fo-dest-stat-alert" *ngIf="row.ackManquants > 0">{{ row.ackManquants }} ACK
+                manquant(s)</span>
             </div>
           </button>
         </div>
@@ -832,28 +832,162 @@
     </div>
   </div>
 
+  <!-- ===== WIDGET 6 — Analyse ACK ===== -->
+  <div class="fo-ack-panel" (click)="closeAllPopovers()">
+    <div class="fo-ack-head">
+      <div class="fo-ack-head-text">
+        <h2 class="fo-ack-title">Analyse des Confirmations (ACK)</h2>
+        <p class="fo-ack-sub">
+          Répartition des flux, typologie des confirmations reçues et vieillissement des accusés manquants.
+        </p>
+      </div>
+      <div class="fo-ack-head-actions">
+        <div class="fo-info-wrap fo-ack-panel-info" (click)="toggleAckInfo($event)">
+          <button class="fo-info-btn" type="button" aria-label="Aide Analyse ACK">i</button>
+          <div class="fo-info-popover fo-ack-popover" [class.open]="activeAckInfo" (click)="$event.stopPropagation()">
+            <div class="fo-pop-header">
+              <span>🛡️</span>
+              <strong>Objectif Métier : Suivi des ACK</strong>
+              <button class="fo-pop-close" type="button" (click)="activeAckInfo = false; $event.stopPropagation()">✕</button>
+            </div>
+            <div class="fo-pop-body">
+              <div class="fo-pop-row">
+                <span class="fo-pop-key">Filtrage Intelligent & Local</span>
+                <p>Réagit aux filtres globaux de la page (Dates) et dispose de ses propres filtres spécifiques (Contrat, Workflow) pour affiner l'analyse ACK.</p>
+              </div>
+              <div class="fo-pop-row">
+                <span class="fo-pop-key">Surveillance Active</span>
+                <p>Détecter rapidement les expéditions qui nécessitent un accusé de réception (ACK) mais qui ne l'ont pas encore reçu.</p>
+              </div>
+              <div class="fo-pop-row">
+                <span class="fo-pop-key">Identification des Bloquages</span>
+                <p>Analyser les NACK (erreurs) et cibler les partenaires en échec fréquent pour réduire les délais de résolution.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fo-ack-toolbar" (click)="$event.stopPropagation()">
+      <span class="fo-ack-toolbar-label">Filtres spécifiques :</span>
+      <div class="fo-ack-filter-group">
+        <select class="fo-ack-select" [(ngModel)]="w6Contrat" (change)="loadWidget6AckAnalysis()">
+          <option value="">Tous les contrats</option>
+          <option *ngFor="let c of contratOptions" [value]="c">{{ c }}</option>
+        </select>
+        <select class="fo-ack-select" [(ngModel)]="w6Workflow" (change)="loadWidget6AckAnalysis()">
+          <option value="">Tous les workflows</option>
+          <option *ngFor="let w of workflowOptions" [value]="w">{{ w }}</option>
+        </select>
+        <button type="button" class="fo-ack-btn-apply" (click)="w6Contrat=''; w6Workflow=''; loadWidget6AckAnalysis()">
+          Actualiser
+        </button>
+      </div>
+    </div>
+
+    <div class="fo-ack-loading" *ngIf="w6Loading">Chargement de l'analyse ACK…</div>
+    <div class="fo-ack-error" *ngIf="!w6Loading && w6Error">{{ w6Error }}</div>
+
+    <div class="fo-ack-grid" *ngIf="!w6Loading && !w6Error">
+      <!-- W6A: Distribution -->
+      <div class="fo-ack-card">
+        <h3 class="fo-ack-card-title">Distribution des flux</h3>
+        <p class="fo-ack-card-sub">Expéditions avec vs sans attente d'ACK</p>
+        <div class="fo-ack-chart-wrap" *ngIf="w6aChartReady">
+          <apx-chart
+            [series]="w6aSeries"
+            [chart]="w6aChart"
+            [labels]="w6aLabels"
+            [colors]="w6aColors"
+            [plotOptions]="w6aPlotOptions"
+            [stroke]="w6aStroke"
+            [legend]="w6aLegend"
+            [dataLabels]="w6aDataLabels">
+          </apx-chart>
+        </div>
+        <div class="fo-ack-empty" *ngIf="!w6aChartReady">Aucune donnée</div>
+      </div>
+
+      <!-- W6B: Confirmations reçues -->
+      <div class="fo-ack-card">
+        <h3 class="fo-ack-card-title">Typologie des confirmations</h3>
+        <p class="fo-ack-card-sub">Succès vs Erreurs (NACK) sur les ACK reçus</p>
+        <div class="fo-ack-chart-wrap" *ngIf="w6bChartReady">
+          <apx-chart
+            [series]="w6bSeries"
+            [chart]="w6bChart"
+            [xaxis]="w6bXAxis"
+            [colors]="w6bColors"
+            [plotOptions]="w6bPlotOptions"
+            [legend]="w6bLegend"
+            [grid]="w6bGrid"
+            [dataLabels]="w6bDataLabels"
+            [tooltip]="w6bTooltip">
+          </apx-chart>
+        </div>
+        <div class="fo-ack-empty" *ngIf="!w6bChartReady">Aucune donnée</div>
+      </div>
+
+      <!-- W6C: ACK Manquants -->
+      <div class="fo-ack-card fo-ack-card-alert">
+        <h3 class="fo-ack-card-title">Zone de Risque : ACK Manquants</h3>
+        <p class="fo-ack-card-sub">Accusés attendus mais jamais reçus</p>
+        
+        <div class="fo-ack-risk-hero">
+          <span class="fo-ack-risk-val">{{ kpi.ackManquants | number }}</span>
+          <span class="fo-ack-risk-label">en attente globale</span>
+          <button type="button" class="fo-btn-investigate" *ngIf="kpi.ackManquants > 0" (click)="jumpToJournalAckManquants()">Détail</button>
+        </div>
+
+        <div class="fo-ack-risk-split">
+          <div class="fo-ack-risk-left" *ngIf="w6cVieillissementReady">
+            <h4 class="fo-ack-risk-sm-title">Vieillissement</h4>
+            <apx-chart
+              [series]="w6cSeries"
+              [chart]="w6cChart"
+              [xaxis]="w6cXAxis"
+              [colors]="w6cColors"
+              [plotOptions]="w6cPlotOptions"
+              [dataLabels]="w6cDataLabels"
+              [tooltip]="w6cTooltip">
+            </apx-chart>
+          </div>
+          
+          <div class="fo-ack-risk-right" *ngIf="w6cTopManquants.length > 0">
+            <h4 class="fo-ack-risk-sm-title">Top Partenaires défaillants</h4>
+            <ul class="fo-ack-top-list">
+              <li *ngFor="let tm of w6cTopManquants.slice(0, 4)">
+                <span class="fo-ack-tm-contrat" [title]="tm.contrat">{{ tm.contrat }}</span>
+                <span class="fo-ack-tm-val">{{ tm.manquants }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== WIDGET 7 — Journal d'expédition ===== -->
-  <div id="fo-journal"
-       class="fo-journal-panel"
-       [class.pop-open]="activeJournalInfo"
-       (click)="closeAllPopovers()">
+  <div id="fo-journal" class="fo-journal-panel" [class.pop-open]="activeJournalInfo" (click)="closeAllPopovers()">
     <div class="fo-journal-head">
       <div class="fo-journal-head-text">
         <h2 class="fo-journal-title">Journal d'expédition</h2>
         <p class="fo-journal-sub">
-          1 ligne = 1 livraison (<code>FLOW_FILEOUT</code>) ou 1 fichier non livré — filtres page + liste détaillée funnel
+          1 ligne = 1 livraison (<code>FLOW_FILEOUT</code>) ou 1 fichier non livré — filtres page + liste détaillée
+          funnel
         </p>
       </div>
       <div class="fo-journal-head-actions">
         <div class="fo-info-wrap fo-journal-panel-info" (click)="toggleJournalInfo($event)">
           <button class="fo-info-btn" type="button" aria-label="Aide journal d'expédition">i</button>
-          <div class="fo-info-popover fo-journal-popover"
-               [class.open]="activeJournalInfo"
-               (click)="$event.stopPropagation()">
+          <div class="fo-info-popover fo-journal-popover" [class.open]="activeJournalInfo"
+            (click)="$event.stopPropagation()">
             <div class="fo-pop-header">
               <span>📋</span>
               <strong>Journal d'expédition</strong>
-              <button class="fo-pop-close" type="button" (click)="activeJournalInfo = false; $event.stopPropagation()">✕</button>
+              <button class="fo-pop-close" type="button"
+                (click)="activeJournalInfo = false; $event.stopPropagation()">✕</button>
             </div>
             <div class="fo-pop-body">
               <div class="fo-pop-row" *ngFor="let row of journalPanelPopRows">
@@ -869,32 +1003,29 @@
 
     <div class="fo-journal-toolbar">
       <div class="fo-journal-tabs">
-        <button type="button"
-                class="fo-jtab"
-                [class.active]="journalView === 'livraisons'"
-                (click)="setJournalView('livraisons'); $event.stopPropagation()">
+        <button type="button" class="fo-jtab" [class.active]="journalView === 'livraisons'"
+          (click)="setJournalView('livraisons'); $event.stopPropagation()">
           Livraisons
         </button>
-        <button type="button"
-                class="fo-jtab"
-                [class.active]="journalView === 'non_livre'"
-                (click)="setJournalView('non_livre'); $event.stopPropagation()">
+        <button type="button" class="fo-jtab" [class.active]="journalView === 'non_livre'"
+          (click)="setJournalView('non_livre'); $event.stopPropagation()">
           Non livrés
         </button>
       </div>
 
       <div class="fo-journal-presets" *ngIf="journalView === 'livraisons'">
-        <button type="button" class="fo-jpreset" [class.active]="!journalPreset" (click)="setJournalPreset(''); $event.stopPropagation()">Toutes</button>
-        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_confirme'" (click)="setJournalPreset('ack_confirme'); $event.stopPropagation()">ACK confirmés</button>
-        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_manquant'" (click)="setJournalPreset('ack_manquant'); $event.stopPropagation()">ACK manquants</button>
+        <button type="button" class="fo-jpreset" [class.active]="!journalPreset"
+          (click)="setJournalPreset(''); $event.stopPropagation()">Toutes</button>
+        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_confirme'"
+          (click)="setJournalPreset('ack_confirme'); $event.stopPropagation()">ACK confirmés</button>
+        <button type="button" class="fo-jpreset" [class.active]="journalPreset === 'ack_manquant'"
+          (click)="setJournalPreset('ack_manquant'); $event.stopPropagation()">ACK manquants</button>
       </div>
 
       <div class="fo-journal-filters" *ngIf="journalView === 'livraisons'">
         <label class="fo-filter-label">ACK attendu</label>
-        <select class="fo-filter-input fo-journal-select"
-                [(ngModel)]="journalAckFilter"
-                (ngModelChange)="loadWidget7Journal(true)"
-                (click)="$event.stopPropagation()">
+        <select class="fo-filter-input fo-journal-select" [(ngModel)]="journalAckFilter"
+          (ngModelChange)="loadWidget7Journal(true)" (click)="$event.stopPropagation()">
           <option [ngValue]="null">Tous</option>
           <option [ngValue]="1">Oui</option>
           <option [ngValue]="0">Non</option>
@@ -902,26 +1033,22 @@
       </div>
 
       <div class="fo-journal-search-wrap">
-        <input type="search"
-               class="fo-filter-input fo-journal-search"
-               [(ngModel)]="journalSearch"
-               placeholder="Rechercher contrat, workflow, ID…"
-               (click)="$event.stopPropagation()">
+        <input type="search" class="fo-filter-input fo-journal-search" [(ngModel)]="journalSearch"
+          placeholder="Rechercher contrat, workflow, ID…" (click)="$event.stopPropagation()">
       </div>
 
       <div class="fo-journal-size">
         <label class="fo-filter-label">Par page</label>
-        <select class="fo-filter-input fo-journal-select"
-                [(ngModel)]="journalSize"
-                (ngModelChange)="onJournalSizeChange()"
-                (click)="$event.stopPropagation()">
+        <select class="fo-filter-input fo-journal-select" [(ngModel)]="journalSize"
+          (ngModelChange)="onJournalSizeChange()" (click)="$event.stopPropagation()">
           <option [ngValue]="25">25</option>
           <option [ngValue]="50">50</option>
           <option [ngValue]="100">100</option>
         </select>
       </div>
 
-      <button type="button" class="fo-btn-apply fo-journal-refresh" (click)="loadWidget7Journal(); $event.stopPropagation()">
+      <button type="button" class="fo-btn-apply fo-journal-refresh"
+        (click)="loadWidget7Journal(); $event.stopPropagation()">
         Actualiser
       </button>
     </div>
@@ -980,8 +1107,11 @@
         <span *ngIf="journalSearch.trim()"> · {{ journalFilteredRows.length }} affichée(s) après recherche locale</span>
       </p>
       <div class="fo-journal-page-btns">
-        <button type="button" class="fo-btn-reset" [disabled]="journalPage === 0 || journalTotal === 0" (click)="onJournalPageChange(-1)">Précédent</button>
-        <button type="button" class="fo-btn-reset" [disabled]="journalTotal === 0 || journalPage >= journalTotalPages - 1" (click)="onJournalPageChange(1)">Suivant</button>
+        <button type="button" class="fo-btn-reset" [disabled]="journalPage === 0 || journalTotal === 0"
+          (click)="onJournalPageChange(-1)">Précédent</button>
+        <button type="button" class="fo-btn-reset"
+          [disabled]="journalTotal === 0 || journalPage >= journalTotalPages - 1"
+          (click)="onJournalPageChange(1)">Suivant</button>
       </div>
     </div>
   </div>
@@ -989,181 +1119,187 @@
   <!-- Ancien prototype (hors périmètre W0–W1) — réactivé widget par widget -->
   <div class="exp-legacy-zone" *ngIf="showLegacyWidgets">
 
-  <!-- ===== TIMELINE ===== -->
-  <div class="section">
-    <div class="section-header">
-      <h2 class="section-title">Évolution des expéditions</h2>
-      <p class="chart-card-sub">Analyse temporelle du volume de livraison par jour</p>
-    </div>
-    <div class="table-filters" style="box-shadow:none;padding:0;background:transparent;margin-bottom:24px;">
-      <div class="table-filter-group">
-        <label class="filter-label">Statut</label>
-        <select [(ngModel)]="timelineFilterStatus" class="filter-select">
-          <option value="">Tous les statuts</option>
-          <option value="Processed">Processed</option>
-          <option value="Blocked">Blocked</option>
-          <option value="In Error">In Error</option>
-          <option value="SentAndWaitingAck">SentAndWaitingAck</option>
-        </select>
+    <!-- ===== TIMELINE ===== -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">Évolution des expéditions</h2>
+        <p class="chart-card-sub">Analyse temporelle du volume de livraison par jour</p>
       </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Date Début</label>
-        <input type="date" [(ngModel)]="timelineFrom" class="filter-input">
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Date Fin</label>
-        <input type="date" [(ngModel)]="timelineTo" class="filter-input">
-      </div>
-      <div class="table-filter-actions">
-        <button class="btn-apply" (click)="loadTimeline()">Appliquer</button>
-        <button class="btn-reset" (click)="resetTimeline()">Reset</button>
-      </div>
-    </div>
-    <apx-chart nonPassiveWheel *ngIf="timelineLoaded && timelineSeries.length > 0"
-      [series]="timelineSeries" [chart]="timelineChart" [xaxis]="timelineXAxis" [yaxis]="timelineYAxis"
-      [stroke]="timelineStroke" [fill]="timelineFill" [grid]="timelineGrid"
-      [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip" [colors]="timelineColors">
-    </apx-chart>
-    <div class="empty-state-mini" *ngIf="timelineLoaded && timelineSeries.length === 0">
-      <span>📉</span> Aucune donnée pour ce filtre
-    </div>
-  </div>
-
-  <!-- ===== DONUT + ACK TRACKER ===== -->
-  <div class="kpi-charts-row">
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <div class="chart-card-icon">🥧</div>
-        <div>
-          <h3 class="chart-card-title">Répartition par Statut</h3>
-          <p class="chart-card-sub">Distribution globale des {{ kpi.total | number }} flux</p>
+      <div class="table-filters" style="box-shadow:none;padding:0;background:transparent;margin-bottom:24px;">
+        <div class="table-filter-group">
+          <label class="filter-label">Statut</label>
+          <select [(ngModel)]="timelineFilterStatus" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="Processed">Processed</option>
+            <option value="Blocked">Blocked</option>
+            <option value="In Error">In Error</option>
+            <option value="SentAndWaitingAck">SentAndWaitingAck</option>
+          </select>
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Date Début</label>
+          <input type="date" [(ngModel)]="timelineFrom" class="filter-input">
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Date Fin</label>
+          <input type="date" [(ngModel)]="timelineTo" class="filter-input">
+        </div>
+        <div class="table-filter-actions">
+          <button class="btn-apply" (click)="loadTimeline()">Appliquer</button>
+          <button class="btn-reset" (click)="resetTimeline()">Reset</button>
         </div>
       </div>
-      <apx-chart *ngIf="donutSeries.length > 0" nonPassiveWheel
-        [series]="donutSeries" [chart]="donutChart" [labels]="donutLabels"
-        [colors]="donutColors" [plotOptions]="donutPlotOptions" [stroke]="donutStroke" [legend]="donutLegend">
+      <apx-chart nonPassiveWheel *ngIf="timelineLoaded && timelineSeries.length > 0" [series]="timelineSeries"
+        [chart]="timelineChart" [xaxis]="timelineXAxis" [yaxis]="timelineYAxis" [stroke]="timelineStroke"
+        [fill]="timelineFill" [grid]="timelineGrid" [dataLabels]="timelineDataLabels" [tooltip]="timelineTooltip"
+        [colors]="timelineColors">
       </apx-chart>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <div class="chart-card-icon">📡</div>
-        <div>
-          <h3 class="chart-card-title">Radar de Confirmation</h3>
-          <p class="chart-card-sub">Suivi des accusés de réception en temps réel</p>
-        </div>
-      </div>
-      <div class="ack-list">
-        <div class="ack-item" *ngFor="let ack of ackTracker">
-          <div style="font-size:20px;">{{ getStatusIcon(ack.status) }}</div>
-          <div>
-            <div class="ack-status">{{ ack.status }}</div>
-            <div class="ack-sub" *ngIf="ack.avgWaitSec > 0">Attente moy. : {{ formatLeadTime(ack.avgWaitSec) }}</div>
-          </div>
-          <div class="ack-val">{{ ack.total | number }}</div>
-        </div>
+      <div class="empty-state-mini" *ngIf="timelineLoaded && timelineSeries.length === 0">
+        <span>📉</span> Aucune donnée pour ce filtre
       </div>
     </div>
-  </div>
 
-  <!-- ===== TABLEAU ===== -->
-  <div class="table-section">
-    <div class="table-section-header">
-      <h2 class="section-title">Mission Critical Board</h2>
-      <span class="record-total">{{ tableRecords.length }} lignes affichées</span>
-    </div>
-    <div class="table-filters">
-      <div class="table-filter-group">
-        <label class="filter-label">Statut</label>
-        <select [(ngModel)]="tableFilterStatus" class="filter-select">
-          <option value="">Tous les statuts</option>
-          <option value="Processed">Processed</option>
-          <option value="Blocked">Blocked</option>
-          <option value="In Error">In Error</option>
-          <option value="SentAndWaitingAck">SentAndWaitingAck</option>
-          <option value="Acked">Acked</option>
-          <option value="Nacked">Nacked</option>
-          <option value="Rejected">Rejected</option>
-        </select>
+    <!-- ===== DONUT + ACK TRACKER ===== -->
+    <div class="kpi-charts-row">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-icon">🥧</div>
+          <div>
+            <h3 class="chart-card-title">Répartition par Statut</h3>
+            <p class="chart-card-sub">Distribution globale des {{ kpi.total | number }} flux</p>
+          </div>
+        </div>
+        <apx-chart *ngIf="donutSeries.length > 0" nonPassiveWheel [series]="donutSeries" [chart]="donutChart"
+          [labels]="donutLabels" [colors]="donutColors" [plotOptions]="donutPlotOptions" [stroke]="donutStroke"
+          [legend]="donutLegend">
+        </apx-chart>
       </div>
-      <div class="table-filter-group">
-        <label class="filter-label">ACK Attendu</label>
-        <select [(ngModel)]="tableFilterAck" class="filter-select">
-          <option [ngValue]="null">Tous</option>
-          <option [ngValue]="1">Oui</option>
-          <option [ngValue]="0">Non</option>
-        </select>
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Expéditeur</label>
-        <input type="text" [(ngModel)]="tableFilterSender" class="filter-input" placeholder="ex: PARTENAIRE_A">
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Type de Flux</label>
-        <input type="text" [(ngModel)]="tableFilterFlowType" class="filter-input" placeholder="ex: VIR_SEPA">
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Début</label>
-        <input type="datetime-local" [(ngModel)]="tableFilterFrom" class="filter-input">
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Fin</label>
-        <input type="datetime-local" [(ngModel)]="tableFilterTo" class="filter-input">
-      </div>
-      <div class="table-filter-group">
-        <label class="filter-label">Lignes</label>
-        <select [(ngModel)]="tableSize" (change)="tablePage=0; loadTable()" class="filter-select">
-          <option [ngValue]="20">20 lignes</option>
-          <option [ngValue]="50">50 lignes</option>
-          <option [ngValue]="100">100 lignes</option>
-          <option [ngValue]="200">200 lignes</option>
-        </select>
-      </div>
-      <div class="table-filter-actions">
-        <button class="btn-apply" (click)="tablePage=0; loadTable()">🔍 Filtrer</button>
-        <button class="btn-reset"
-          (click)="tableFilterStatus=''; tableFilterAck=null; tableFilterSender=''; tableFilterFlowType=''; tableFilterFrom=''; tableFilterTo=''; tablePage=0; loadTable()">✕ Reset</button>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-icon">📡</div>
+          <div>
+            <h3 class="chart-card-title">Radar de Confirmation</h3>
+            <p class="chart-card-sub">Suivi des accusés de réception en temps réel</p>
+          </div>
+        </div>
+        <div class="ack-list">
+          <div class="ack-item" *ngFor="let ack of ackTracker">
+            <div style="font-size:20px;">{{ getStatusIcon(ack.status) }}</div>
+            <div>
+              <div class="ack-status">{{ ack.status }}</div>
+              <div class="ack-sub" *ngIf="ack.avgWaitSec > 0">Attente moy. : {{ formatLeadTime(ack.avgWaitSec) }}</div>
+            </div>
+            <div class="ack-val">{{ ack.total | number }}</div>
+          </div>
+        </div>
       </div>
     </div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>ID Expédition</th><th>Flux / Type</th><th>Expéditeur</th>
-          <th>Destinataire</th><th>Statut</th><th>ACK Attendu</th>
-          <th>Durée (sec)</th><th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of tableRecords">
-          <td style="font-weight:700;">#{{ row.foId }}</td>
-          <td>
-            <div style="font-family:monospace;">{{ row.fileId }}</div>
-            <div style="font-size:10px;color:var(--text-muted);">{{ row.flowTypeName }}</div>
-          </td>
-          <td>{{ row.sender }}</td>
-          <td>{{ row.receiver }}</td>
-          <td>
-            <span class="status-badge" [ngClass]="getStatusBadgeClass(row.status)">
-              {{ getStatusIcon(row.status) }} {{ row.status }}
-            </span>
-          </td>
-          <td>{{ row.ackExpected === 1 ? '✓ Oui' : '— Non' }}</td>
-          <td [style.color]="row.execSec > 3600 ? '#ef4444' : 'inherit'">{{ row.execSec | number:'1.0-0' }}</td>
-          <td style="font-size:11px;">{{ row.creationDate | slice:0:19 }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="pagination">
-      <div class="pagination-info">
-        Affichage de {{ tableRecords.length > 0 ? (tablePage * tableSize) + 1 : 0 }}
-        à {{ (tablePage * tableSize) + tableRecords.length }}
-        sur {{ totalElements | number }} expéditions
+
+    <!-- ===== TABLEAU ===== -->
+    <div class="table-section">
+      <div class="table-section-header">
+        <h2 class="section-title">Mission Critical Board</h2>
+        <span class="record-total">{{ tableRecords.length }} lignes affichées</span>
       </div>
-      <div class="pagination-controls">
-        <button [disabled]="tablePage === 0" (click)="onPageChange(tablePage - 1)">Précédent</button>
-        <button [disabled]="tablePage >= totalPages - 1" (click)="onPageChange(tablePage + 1)">Suivant</button>
+      <div class="table-filters">
+        <div class="table-filter-group">
+          <label class="filter-label">Statut</label>
+          <select [(ngModel)]="tableFilterStatus" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="Processed">Processed</option>
+            <option value="Blocked">Blocked</option>
+            <option value="In Error">In Error</option>
+            <option value="SentAndWaitingAck">SentAndWaitingAck</option>
+            <option value="Acked">Acked</option>
+            <option value="Nacked">Nacked</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">ACK Attendu</label>
+          <select [(ngModel)]="tableFilterAck" class="filter-select">
+            <option [ngValue]="null">Tous</option>
+            <option [ngValue]="1">Oui</option>
+            <option [ngValue]="0">Non</option>
+          </select>
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Expéditeur</label>
+          <input type="text" [(ngModel)]="tableFilterSender" class="filter-input" placeholder="ex: PARTENAIRE_A">
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Type de Flux</label>
+          <input type="text" [(ngModel)]="tableFilterFlowType" class="filter-input" placeholder="ex: VIR_SEPA">
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Début</label>
+          <input type="datetime-local" [(ngModel)]="tableFilterFrom" class="filter-input">
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Fin</label>
+          <input type="datetime-local" [(ngModel)]="tableFilterTo" class="filter-input">
+        </div>
+        <div class="table-filter-group">
+          <label class="filter-label">Lignes</label>
+          <select [(ngModel)]="tableSize" (change)="tablePage=0; loadTable()" class="filter-select">
+            <option [ngValue]="20">20 lignes</option>
+            <option [ngValue]="50">50 lignes</option>
+            <option [ngValue]="100">100 lignes</option>
+            <option [ngValue]="200">200 lignes</option>
+          </select>
+        </div>
+        <div class="table-filter-actions">
+          <button class="btn-apply" (click)="tablePage=0; loadTable()">🔍 Filtrer</button>
+          <button class="btn-reset"
+            (click)="tableFilterStatus=''; tableFilterAck=null; tableFilterSender=''; tableFilterFlowType=''; tableFilterFrom=''; tableFilterTo=''; tablePage=0; loadTable()">✕
+            Reset</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID Expédition</th>
+            <th>Flux / Type</th>
+            <th>Expéditeur</th>
+            <th>Destinataire</th>
+            <th>Statut</th>
+            <th>ACK Attendu</th>
+            <th>Durée (sec)</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of tableRecords">
+            <td style="font-weight:700;">#{{ row.foId }}</td>
+            <td>
+              <div style="font-family:monospace;">{{ row.fileId }}</div>
+              <div style="font-size:10px;color:var(--text-muted);">{{ row.flowTypeName }}</div>
+            </td>
+            <td>{{ row.sender }}</td>
+            <td>{{ row.receiver }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusBadgeClass(row.status)">
+                {{ getStatusIcon(row.status) }} {{ row.status }}
+              </span>
+            </td>
+            <td>{{ row.ackExpected === 1 ? '✓ Oui' : '— Non' }}</td>
+            <td [style.color]="row.execSec > 3600 ? '#ef4444' : 'inherit'">{{ row.execSec | number:'1.0-0' }}</td>
+            <td style="font-size:11px;">{{ row.creationDate | slice:0:19 }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <div class="pagination-info">
+          Affichage de {{ tableRecords.length > 0 ? (tablePage * tableSize) + 1 : 0 }}
+          à {{ (tablePage * tableSize) + tableRecords.length }}
+          sur {{ totalElements | number }} expéditions
+        </div>
+        <div class="pagination-controls">
+          <button [disabled]="tablePage === 0" (click)="onPageChange(tablePage - 1)">Précédent</button>
+          <button [disabled]="tablePage >= totalPages - 1" (click)="onPageChange(tablePage + 1)">Suivant</button>
+        </div>
       </div>
     </div>
-  </div>
 
   </div><!-- /exp-legacy-zone -->
 

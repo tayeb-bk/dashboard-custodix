@@ -32,8 +32,14 @@
   min-width: 200px;
 }
 
-.navbar-right { justify-content: flex-end; }
-.navbar-center { flex: 1; text-align: center; }
+.navbar-right {
+  justify-content: flex-end;
+}
+
+.navbar-center {
+  flex: 1;
+  text-align: center;
+}
 
 /* ===== LOGO ===== */
 .logo {
@@ -52,7 +58,7 @@
   align-items: center;
   justify-content: center;
   color: #f0f6fc;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
 }
 
@@ -124,14 +130,17 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .theme-toggle-track.light .theme-toggle-thumb {
   transform: translateX(14px);
 }
 
-.theme-icon { font-size: 9px; line-height: 1; }
+.theme-icon {
+  font-size: 9px;
+  line-height: 1;
+}
 
 .theme-label {
   font-size: 12px;
@@ -177,7 +186,8 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  pointer-events: none; /* Let clicks pass through the wrapper */
+  pointer-events: none;
+  /* Let clicks pass through the wrapper */
   display: flex;
   justify-content: center;
   width: 100%;
@@ -193,12 +203,13 @@
   border: 1px solid rgba(255, 255, 255, 0.8);
   padding: 8px 12px;
   border-radius: 60px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   gap: 2px;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
   max-width: 95vw;
   overflow-x: auto;
 }
+
 .floating-capsule::-webkit-scrollbar {
   display: none;
 }
@@ -206,16 +217,16 @@
 [data-theme="dark"] .floating-capsule {
   background: rgba(22, 27, 34, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .floating-capsule:hover {
   transform: scale(1.02) translateY(-2px);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 [data-theme="dark"] .floating-capsule:hover {
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.1);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Nodes */
@@ -258,7 +269,7 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
   color: var(--text-secondary);
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -329,7 +340,7 @@
   white-space: nowrap;
 }
 
-.capsule-node.upcoming .node-label, 
+.capsule-node.upcoming .node-label,
 .capsule-node.disabled .node-label {
   color: var(--text-secondary);
   font-weight: 500;
@@ -350,13 +361,14 @@
 }
 
 .node-badge.is-ai {
-  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
   color: #c084fc;
 }
 
 /* Path / Connector */
 .capsule-path {
-  width: 32px; /* Short fixed width to keep capsule compact */
+  width: 32px;
+  /* Short fixed width to keep capsule compact */
   height: 3px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
@@ -387,7 +399,8 @@
 /* ===== CONTENT ===== */
 .content {
   flex: 1;
-  min-height: 0; /* permet le scroll flex enfant */
+  min-height: 0;
+  /* permet le scroll flex enfant */
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -395,28 +408,13 @@
   scroll-padding-bottom: 120px;
   background: var(--bg-primary);
   transition: background 0.3s ease;
-  padding-bottom: 120px; /* capsule flottante + fin de page */
+  padding-bottom: 120px;
+  /* capsule flottante + fin de page */
   box-sizing: border-box;
-  /* Scroll actif, barre discrète (molette / trackpad / touch) */
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.content:hover,
-.content:focus-within {
-  scrollbar-color: rgba(99, 102, 241, 0.22) transparent;
-}
+
 .content::-webkit-scrollbar {
-  width: 6px;
-}
-.content::-webkit-scrollbar-track {
-  background: transparent;
-}
-.content::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 6px;
-  transition: background 0.25s ease;
-}
-.content:hover::-webkit-scrollbar-thumb,
-.content:focus-within::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.28);
+  display: none !important;
 }

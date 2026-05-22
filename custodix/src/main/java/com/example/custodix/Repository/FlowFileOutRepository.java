@@ -41,51 +41,6 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             """, nativeQuery = true)
     List<Object[]> getHeroKpi();
 
-
-
-    // =========================================================================
-    // WIDGET 2 — Funnel pipeline (4 paliers, filtrable)
-    // [0] fichiersRecus, [1] fichiersLivres, [2] livraisons, [3] ackConfirmes
-    // Filtres : contrat, fromDate, toDate sur FLOW_FILEIN.SENDINGDATE_
-    // ackOnly=1 : périmètre livraisons ACKEXPECTED_=1 uniquement
-    // =========================================================================
-    @Query(value = """
-            SELECT
-                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN fi
-                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
-                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
-                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
-                   AND (:ackOnly IS NULL OR EXISTS (
-                       SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo2
-                       WHERE fo2.FILEIN_ID_ = fi.ID_ AND fo2.ACKEXPECTED_ = 1)))     AS fichiers_recus,
-                (SELECT COUNT(DISTINCT fo.FILEIN_ID_) FROM UCUSTOI0.FLOW_FILEOUT fo
-                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
-                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
-                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
-                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
-                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS fichiers_livres,
-                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEOUT fo
-                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
-                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
-                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
-                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
-                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS livraisons,
-                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
-                 JOIN UCUSTOI0.FLOW_FILEOUT fo ON fo.ID_ = ack.ACKEDFILEOUT_ID_
-                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
-                 WHERE ack.ACKEDFILEOUT_ID_ IS NOT NULL
-                   AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
-                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
-                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
-                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS ack_confirmes
-            FROM DUAL
-            """, nativeQuery = true)
-    List<Object[]> getPipelineFunnel(
-            @Param("contrat") String contrat,
-            @Param("fromDate") java.time.LocalDateTime fromDate,
-            @Param("toDate") java.time.LocalDateTime toDate,
-            @Param("ackOnly") Integer ackOnly);
-
     // =========================================================================
     // KPI Hero filtré (mêmes filtres que le funnel)
     // =========================================================================
@@ -140,6 +95,23 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             @Param("toDate") java.time.LocalDateTime toDate,
             @Param("ackOnly") Integer ackOnly);
 
+    // =========================================================================
+    // ACK GLOBAL NON CONFIRMÉ
+    // =========================================================================
+    @Query(value = """
+            SELECT COUNT(*) AS ack_manquants
+            FROM UCUSTOI0.FLOW_FILEOUT fo
+            WHERE fo.ACKEXPECTED_ = 1
+              AND NOT EXISTS (
+                  SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
+                  WHERE ack.ACKEDFILEOUT_ID_ = fo.ID_
+              )
+            """, nativeQuery = true)
+    List<Object[]> getAckManquants();
+
+    // =========================================================================
+    // ACK FILTRÉ NON CONFIRMÉ
+    // =========================================================================
     @Query(value = """
             SELECT COUNT(*) AS ack_manquants
             FROM UCUSTOI0.FLOW_FILEOUT fo
@@ -157,6 +129,9 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             @Param("fromDate") java.time.LocalDateTime fromDate,
             @Param("toDate") java.time.LocalDateTime toDate);
 
+    // =========================================================================
+    // OBTENIR LA LISTE DES CONTRATS DISPONIBLES
+    // =========================================================================
     @Query(value = """
             SELECT DISTINCT fi.PASSEDCONTRACTIDENTIFIER_
             FROM UCUSTOI0.FLOW_FILEIN fi
@@ -165,6 +140,49 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             FETCH FIRST 40 ROWS ONLY
             """, nativeQuery = true)
     List<Object[]> getContratsList();
+
+    // =========================================================================
+    // WIDGET 2 — Funnel pipeline (4 paliers, filtrable)
+    // [0] fichiersRecus, [1] fichiersLivres, [2] livraisons, [3] ackConfirmes
+    // Filtres : contrat, fromDate, toDate sur FLOW_FILEIN.SENDINGDATE_
+    // ackOnly=1 : périmètre livraisons ACKEXPECTED_=1 uniquement
+    // =========================================================================
+    @Query(value = """
+            SELECT
+                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN fi
+                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+                   AND (:ackOnly IS NULL OR EXISTS (
+                       SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo2
+                       WHERE fo2.FILEIN_ID_ = fi.ID_ AND fo2.ACKEXPECTED_ = 1)))     AS fichiers_recus,
+                (SELECT COUNT(DISTINCT fo.FILEIN_ID_) FROM UCUSTOI0.FLOW_FILEOUT fo
+                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS fichiers_livres,
+                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEOUT fo
+                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+                 WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS livraisons,
+                (SELECT COUNT(*) FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
+                 JOIN UCUSTOI0.FLOW_FILEOUT fo ON fo.ID_ = ack.ACKEDFILEOUT_ID_
+                 JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+                 WHERE ack.ACKEDFILEOUT_ID_ IS NOT NULL
+                   AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+                   AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+                   AND (:toDate IS NULL OR fi.SENDINGDATE_ <= :toDate)
+                   AND (:ackOnly IS NULL OR fo.ACKEXPECTED_ = 1))                     AS ack_confirmes
+            FROM DUAL
+            """, nativeQuery = true)
+    List<Object[]> getPipelineFunnel(
+            @Param("contrat") String contrat,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate,
+            @Param("ackOnly") Integer ackOnly);
 
     // =========================================================================
     // TIMELINE DES EXPÉDITIONS (Widget 3)
@@ -194,6 +212,9 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             @Param("toDate")   java.time.LocalDateTime toDate,
             @Param("ackOnly")  Integer ackOnly);
 
+    // =========================================================================
+    // OBTENIR LA LISTE DES WORKFLOWS DISPONIBLES
+    // =========================================================================
     @Query(value = """
             SELECT DISTINCT fi.WORKFLOWID_
             FROM UCUSTOI0.FLOW_FILEOUT fo
@@ -292,13 +313,22 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
     // =========================================================================
     @Query(value = """
             SELECT
-                ACKEXPECTED_    AS type_ack,
+                fo.ACKEXPECTED_ AS type_ack,
                 COUNT(*)        AS total
-            FROM UCUSTOI0.FLOW_FILEOUT
-            GROUP BY ACKEXPECTED_
-            ORDER BY ACKEXPECTED_
+            FROM UCUSTOI0.FLOW_FILEOUT fo
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:workflow IS NULL OR fi.WORKFLOWID_ = :workflow)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+            GROUP BY fo.ACKEXPECTED_
+            ORDER BY fo.ACKEXPECTED_
             """, nativeQuery = true)
-    List<Object[]> getAckDistribution();
+    List<Object[]> getAckDistribution(
+            @Param("contrat") String contrat,
+            @Param("workflow") String workflow,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
 
     // =========================================================================
     // ANALYSE ACK — Confirmations reçues (Widget 6)
@@ -307,31 +337,25 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
     // =========================================================================
     @Query(value = """
             SELECT
-                NVL(ACKNOWLEDGEMENTTYPE_, 'Non défini')             AS type_ack,
-                NVL(ACKNOWLEDGEMENTCATEGORY_NAME_, 'Sans catégorie') AS categorie,
+                NVL(ack.ACKNOWLEDGEMENTTYPE_, 'Non défini')         AS type_ack,
+                'Standard'                                          AS categorie,
                 COUNT(*)                                            AS total,
-                COUNT(CASE WHEN ERRORCODE_ IS NOT NULL THEN 1 END) AS avec_erreur
-            FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT
-            GROUP BY ACKNOWLEDGEMENTTYPE_, ACKNOWLEDGEMENTCATEGORY_NAME_
+                COUNT(CASE WHEN UPPER(ack.ACKNOWLEDGEMENTTYPE_) IN ('NACK', 'ERROR', 'ERR') THEN 1 END) AS avec_erreur
+            FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
+            JOIN UCUSTOI0.FLOW_FILEOUT fo ON fo.ID_ = ack.ACKEDFILEOUT_ID_
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:workflow IS NULL OR fi.WORKFLOWID_ = :workflow)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+            GROUP BY ack.ACKNOWLEDGEMENTTYPE_
             ORDER BY total DESC
             """, nativeQuery = true)
-    List<Object[]> getAckConfirmations();
-
-    // =========================================================================
-    // ACK MANQUANTS (Widget 6 — section intelligence)
-    // FileOut avec ACKEXPECTED_=1 sans aucune confirmation reçue
-    // Retourne : [0] ackManquants
-    // =========================================================================
-    @Query(value = """
-            SELECT COUNT(*) AS ack_manquants
-            FROM UCUSTOI0.FLOW_FILEOUT fo
-            WHERE fo.ACKEXPECTED_ = 1
-              AND NOT EXISTS (
-                  SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
-                  WHERE ack.ACKEDFILEOUT_ID_ = fo.ID_
-              )
-            """, nativeQuery = true)
-    List<Object[]> getAckManquants();
+    List<Object[]> getAckConfirmations(
+            @Param("contrat") String contrat,
+            @Param("workflow") String workflow,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
 
     // =========================================================================
     // TABLE JOURNAL PAGINÉE — livraisons (Widget 7)
@@ -437,4 +461,86 @@ public interface FlowFileOutRepository extends JpaRepository<FlowFileOut, Long> 
             @Param("fromDate") java.time.LocalDateTime fromDate,
             @Param("toDate")   java.time.LocalDateTime toDate,
             org.springframework.data.domain.Pageable pageable);
+
+    // =========================================================================
+    // WIDGET 6 — Intelligence : Top partenaires avec ACK manquants
+    // Retourne : [0] contrat, [1] ackManquants
+    // =========================================================================
+    @Query(value = """
+            SELECT
+                fi.PASSEDCONTRACTIDENTIFIER_                    AS contrat,
+                COUNT(*)                                        AS ack_manquants
+            FROM UCUSTOI0.FLOW_FILEOUT fo
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE fo.ACKEXPECTED_ = 1
+              AND fi.PASSEDCONTRACTIDENTIFIER_ IS NOT NULL
+              AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:workflow IS NULL OR fi.WORKFLOWID_ = :workflow)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND NOT EXISTS (
+                  SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
+                  WHERE ack.ACKEDFILEOUT_ID_ = fo.ID_
+              )
+            GROUP BY fi.PASSEDCONTRACTIDENTIFIER_
+            ORDER BY ack_manquants DESC
+            FETCH FIRST 5 ROWS ONLY
+            """, nativeQuery = true)
+    List<Object[]> getAckTopManquants(
+            @Param("contrat") String contrat,
+            @Param("workflow") String workflow,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
+
+    // =========================================================================
+    // WIDGET 6 — Intelligence : Vieillissement des ACK manquants
+    // Retourne : [0] tranche (label), [1] nb, [2] ordre (pour tri)
+    // =========================================================================
+    @Query(value = """
+            SELECT
+                CASE
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 1  THEN 'Moins de 24h'
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 7  THEN '2-7 jours'
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 30 THEN '8-30 jours'
+                    ELSE '> 30 jours'
+                END                                             AS tranche,
+                COUNT(*)                                        AS nb,
+                CASE
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 1  THEN 1
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 7  THEN 2
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 30 THEN 3
+                    ELSE 4
+                END                                             AS ordre
+            FROM UCUSTOI0.FLOW_FILEOUT fo
+            JOIN UCUSTOI0.FLOW_FILEIN fi ON fi.ID_ = fo.FILEIN_ID_
+            WHERE fo.ACKEXPECTED_ = 1
+              AND fi.SENDINGDATE_ IS NOT NULL
+              AND (:contrat IS NULL OR fi.PASSEDCONTRACTIDENTIFIER_ = :contrat)
+              AND (:workflow IS NULL OR fi.WORKFLOWID_ = :workflow)
+              AND (:fromDate IS NULL OR fi.SENDINGDATE_ >= :fromDate)
+              AND (:toDate   IS NULL OR fi.SENDINGDATE_ <= :toDate)
+              AND NOT EXISTS (
+                  SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack
+                  WHERE ack.ACKEDFILEOUT_ID_ = fo.ID_
+              )
+            GROUP BY
+                CASE
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 1  THEN 'Moins de 24h'
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 7  THEN '2-7 jours'
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 30 THEN '8-30 jours'
+                    ELSE '> 30 jours'
+                END,
+                CASE
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 1  THEN 1
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 7  THEN 2
+                    WHEN TRUNC(SYSDATE - CAST(fi.SENDINGDATE_ AS DATE)) <= 30 THEN 3
+                    ELSE 4
+                END
+            ORDER BY ordre ASC
+            """, nativeQuery = true)
+    List<Object[]> getAckVieillissement(
+            @Param("contrat") String contrat,
+            @Param("workflow") String workflow,
+            @Param("fromDate") java.time.LocalDateTime fromDate,
+            @Param("toDate") java.time.LocalDateTime toDate);
 }

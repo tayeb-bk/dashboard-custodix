@@ -61,6 +61,7 @@ export class FlowFileOutComponent implements OnInit {
     ackOnly: false,
   };
   contratOptions: string[] = [];
+  workflowOptions: string[] = [];
   filtersActive = false;
 
   // ===== Widget 2 — Funnel =====
@@ -93,7 +94,7 @@ export class FlowFileOutComponent implements OnInit {
     { key: '🔗 Funnel', text: '« Voir la liste détaillée » sous le pipeline applique le filtre du palier sélectionné + les dates/contrat de la page.' },
     { key: '✅ ACK', text: 'Presets ACK confirmés / manquants : même logique que les KPI et le funnel (ACKEXPECTED_ + FLOW_INCOMINGACKNOWLEGEMENT).' },
     { key: '📄 Pagination', text: '25 à 100 lignes par page côté serveur. La recherche filtre uniquement la page affichée.' },
-    { key: '📜 Scroll', text: 'Faites défiler la page (molette ou trackpad) pour voir tout le journal ; la barre de scroll reste discrète.' },
+    { key: '📜 Scroll', text: 'Faites défiler la page (molette ou trackpad) pour voir tout le journal ; la barre de scroll est masquée pour un design plus épuré.' },
   ];
 
   journalRows: {
@@ -117,55 +118,55 @@ export class FlowFileOutComponent implements OnInit {
     popTitle: string;
     popRows: { key: string; text: string }[];
   }> = {
-    recus: {
-      icon: '📥',
-      label: 'Fichiers reçus',
-      unit: 'arrivées partenaires',
-      hint: 'Tous les fichiers enregistrés à la réception (étape 1), sur vos filtres.',
-      popTitle: 'Fichiers reçus',
-      popRows: [
-        { key: '📌 Quoi', text: 'Chaque ligne FLOW_FILEIN = un fichier qui entre dans Custodix.' },
-        { key: '🧮 Calcul', text: 'COUNT(*) sur FLOW_FILEIN (dates et contrat appliqués).' },
-        { key: '💡 Suite', text: 'Tous ne partent pas en livraison : une partie reste en traitement ou est filtrée.' },
-      ],
-    },
-    livres: {
-      icon: '📦',
-      label: 'Fichiers livrés',
-      unit: 'dossiers uniques partis',
-      hint: 'Compte chaque fichier reçu une seule fois s’il a eu au moins un envoi.',
-      popTitle: 'Fichier livré ≠ livraison',
-      popRows: [
-        { key: '📦 Fichier livré', text: '1 dossier reçu (FileIn) qui a été expédié au moins une fois. On le compte une seule fois.' },
-        { key: '🧮 Calcul', text: 'COUNT(DISTINCT FILEIN_ID_) dans FLOW_FILEOUT — pas le nombre d’envois.' },
-        { key: '💡 Exemple', text: '1 fichier reçu envoyé vers 3 destinations = 1 fichier livré, pas 3.' },
-      ],
-    },
-    livraisons: {
-      icon: '📤',
-      label: 'Livraisons',
-      unit: 'envois vers destinations',
-      hint: 'Chaque envoi compte : un même fichier peut apparaître plusieurs fois.',
-      popTitle: 'Livraison = un envoi',
-      popRows: [
-        { key: '📤 Livraison', text: '1 ligne FLOW_FILEOUT = 1 envoi physique vers une destination (canal de sortie).' },
-        { key: '🧮 Calcul', text: 'COUNT(*) sur FLOW_FILEOUT (toutes les lignes, pas DISTINCT).' },
-        { key: '💡 Exemple', text: '1 fichier livré vers 3 destinations = 3 livraisons. D’où un total souvent plus élevé que les fichiers livrés.' },
-      ],
-    },
-    ack: {
-      icon: '✅',
-      label: 'ACK confirmés',
-      unit: 'accusés reçus',
-      hint: 'Confirmations enregistrées pour les livraisons filtrées.',
-      popTitle: 'Confirmations ACK',
-      popRows: [
-        { key: '📌 Quoi', text: 'Accusés partenaires enregistrés dans FLOW_INCOMINGACKNOWLEGEMENT.' },
-        { key: '🧮 Calcul', text: 'Lignes ACK liées aux FileOut de la sélection (ACKEDFILEOUT_ID_).' },
-        { key: '💡 Lien W1', text: 'Voir la carte « Taux de Confirmation » pour les livraisons avec ACK obligatoire.' },
-      ],
-    },
-  };
+      recus: {
+        icon: '📥',
+        label: 'Fichiers reçus',
+        unit: 'arrivées partenaires',
+        hint: 'Tous les fichiers enregistrés à la réception (étape 1), sur vos filtres.',
+        popTitle: 'Fichiers reçus',
+        popRows: [
+          { key: '📌 Quoi', text: 'Chaque ligne FLOW_FILEIN = un fichier qui entre dans Custodix.' },
+          { key: '🧮 Calcul', text: 'COUNT(*) sur FLOW_FILEIN (dates et contrat appliqués).' },
+          { key: '💡 Suite', text: 'Tous ne partent pas en livraison : une partie reste en traitement ou est filtrée.' },
+        ],
+      },
+      livres: {
+        icon: '📦',
+        label: 'Fichiers livrés',
+        unit: 'dossiers uniques partis',
+        hint: 'Compte chaque fichier reçu une seule fois s’il a eu au moins un envoi.',
+        popTitle: 'Fichier livré ≠ livraison',
+        popRows: [
+          { key: '📦 Fichier livré', text: '1 dossier reçu (FileIn) qui a été expédié au moins une fois. On le compte une seule fois.' },
+          { key: '🧮 Calcul', text: 'COUNT(DISTINCT FILEIN_ID_) dans FLOW_FILEOUT — pas le nombre d’envois.' },
+          { key: '💡 Exemple', text: '1 fichier reçu envoyé vers 3 destinations = 1 fichier livré, pas 3.' },
+        ],
+      },
+      livraisons: {
+        icon: '📤',
+        label: 'Livraisons',
+        unit: 'envois vers destinations',
+        hint: 'Chaque envoi compte : un même fichier peut apparaître plusieurs fois.',
+        popTitle: 'Livraison = un envoi',
+        popRows: [
+          { key: '📤 Livraison', text: '1 ligne FLOW_FILEOUT = 1 envoi physique vers une destination (canal de sortie).' },
+          { key: '🧮 Calcul', text: 'COUNT(*) sur FLOW_FILEOUT (toutes les lignes, pas DISTINCT).' },
+          { key: '💡 Exemple', text: '1 fichier livré vers 3 destinations = 3 livraisons. D’où un total souvent plus élevé que les fichiers livrés.' },
+        ],
+      },
+      ack: {
+        icon: '✅',
+        label: 'ACK confirmés',
+        unit: 'accusés reçus',
+        hint: 'Confirmations enregistrées pour les livraisons filtrées.',
+        popTitle: 'Confirmations ACK',
+        popRows: [
+          { key: '📌 Quoi', text: 'Accusés partenaires enregistrés dans FLOW_INCOMINGACKNOWLEGEMENT.' },
+          { key: '🧮 Calcul', text: 'Lignes ACK liées aux FileOut de la sélection (ACKEDFILEOUT_ID_).' },
+          { key: '💡 Lien W1', text: 'Voir la carte « Taux de Confirmation » pour les livraisons avec ACK obligatoire.' },
+        ],
+      },
+    };
 
   readonly funnelPanelPopRows = [
     { key: '📦 Fichier livré', text: 'On compte les dossiers : combien de fichiers reçus sont partis au moins une fois.' },
@@ -217,6 +218,7 @@ export class FlowFileOutComponent implements OnInit {
     this.activeTimelineInfo = false;
     this.activeContratsPerfInfo = false;
     this.activeDestInfo = false;
+    this.activeAckInfo = false;
   }
 
   toggleTimelineInfo(event: Event): void {
@@ -489,6 +491,7 @@ export class FlowFileOutComponent implements OnInit {
         this.timelineWorkflowOptions = (res || [])
           .map(r => String(r[0] ?? r).trim())
           .filter(w => w.length > 0);
+        this.workflowOptions = [...this.timelineWorkflowOptions];
       },
     });
   }
@@ -537,6 +540,7 @@ export class FlowFileOutComponent implements OnInit {
     this.clearDestinationsDrill(false);
     this.loadWidget4ContratsPerf();
     this.loadWidget5Destinations();
+    this.loadWidget6AckAnalysis();
     this.loadWidget7Journal(true);
   }
 
@@ -1074,6 +1078,153 @@ export class FlowFileOutComponent implements OnInit {
       params['destination'] = this.journalDestinationFilter;
     }
     return params;
+  }
+
+  // ===== Widget 6 — Analyse ACK =====
+  w6Loading = false;
+  w6Error = '';
+  activeAckInfo = false;
+  w6Contrat = '';
+  w6Workflow = '';
+
+  toggleAckInfo(event: Event): void {
+    event.stopPropagation();
+    this.activeAckInfo = !this.activeAckInfo;
+    if (this.activeAckInfo) {
+      this.activeKpiCard = null;
+      this.activeFunnelInfo = null;
+      this.activeJournalInfo = false;
+      this.activeTimelineInfo = false;
+      this.activeContratsPerfInfo = false;
+      this.activeDestInfo = false;
+    }
+  }
+  
+  // W6A - Distribution
+  w6aChartReady = false;
+  w6aSeries: ApexNonAxisChartSeries = [];
+  w6aLabels: string[] = [];
+  w6aColors = ['#94a3b8', '#6366f1']; // Gris (Sans ACK), Indigo (ACK Requis)
+  w6aChart: ApexChart = { type: 'donut', height: 260, toolbar: { show: false }, animations: { enabled: true } };
+  w6aPlotOptions: ApexPlotOptions = { pie: { donut: { size: '65%', labels: { show: true, name: {show: true}, value: {show: true}, total: { show: true, label: 'Total', fontSize: '12px' } } } } };
+  w6aLegend: ApexLegend = { position: 'bottom', fontSize: '11px' };
+  w6aDataLabels: ApexDataLabels = { enabled: false };
+  w6aStroke: ApexStroke = { width: 0 };
+  
+  // W6B - Confirmations Reçues
+  w6bChartReady = false;
+  w6bSeries: ApexAxisChartSeries = [];
+  w6bXAxis: ApexXAxis = { type: 'category', categories: [], labels: { style: { colors: 'var(--text-muted)', fontSize: '11px' } } };
+  w6bChart: ApexChart = { type: 'bar', height: 260, toolbar: { show: false } };
+  w6bColors = ['#10b981', '#ef4444']; // Vert, Rouge
+  w6bPlotOptions: ApexPlotOptions = { bar: { horizontal: false, columnWidth: '45%', borderRadius: 4 } };
+  w6bDataLabels: ApexDataLabels = { enabled: false };
+  w6bLegend: ApexLegend = { position: 'top', horizontalAlign: 'right', fontSize: '11px' };
+  w6bGrid: ApexGrid = { borderColor: 'rgba(148, 163, 184, 0.1)' };
+  w6bTooltip: ApexTooltip = { theme: 'dark' };
+
+  // W6C - Vieillissement et Top
+  w6cVieillissementReady = false;
+  w6cSeries: ApexAxisChartSeries = [];
+  w6cXAxis: ApexXAxis = { type: 'category', categories: [], labels: { style: { colors: 'var(--text-muted)', fontSize: '11px' } } };
+  w6cChart: ApexChart = { type: 'bar', height: 200, toolbar: { show: false } };
+  w6cColors = ['#f59e0b']; // Ambre
+  w6cPlotOptions: ApexPlotOptions = { bar: { horizontal: true, barHeight: '50%', borderRadius: 4 } };
+  w6cDataLabels: ApexDataLabels = { enabled: true, style: { colors: ['#fff'] } };
+  w6cTooltip: ApexTooltip = { theme: 'dark' };
+
+  w6cTopManquants: { contrat: string; manquants: number }[] = [];
+
+  loadWidget6AckAnalysis(): void {
+    this.w6Loading = true;
+    this.w6Error = '';
+    const params = this.buildFilterParams();
+    
+    // Surcharge avec les filtres locaux de W6
+    if (this.w6Contrat) params['contrat'] = this.w6Contrat;
+    if (this.w6Workflow) params['workflow'] = this.w6Workflow;
+    
+    forkJoin({
+      dist: this.http.get<any[]>(`${this.apiUrl}/ack/distribution`, { params }),
+      conf: this.http.get<any[]>(`${this.apiUrl}/ack/confirmations`, { params }),
+      top: this.http.get<any[]>(`${this.apiUrl}/ack/top-manquants`, { params }),
+      vieil: this.http.get<any[]>(`${this.apiUrl}/ack/vieillissement`, { params })
+    }).subscribe({
+      next: ({ dist, conf, top, vieil }) => {
+        // W6A
+        if (dist && dist.length > 0) {
+          const map = new Map<number, number>();
+          dist.forEach(r => map.set(Number(r[0]), Number(r[1])));
+          const sans = map.get(0) || 0;
+          const avec = map.get(1) || 0;
+          this.w6aSeries = [sans, avec];
+          this.w6aLabels = ['Fire & Forget', 'ACK Obligatoire'];
+          this.w6aChartReady = true;
+        } else {
+          this.w6aChartReady = false;
+        }
+
+        // W6B
+        if (conf && conf.length > 0) {
+          const categories: string[] = [];
+          const successData: number[] = [];
+          const errorData: number[] = [];
+          conf.forEach(r => {
+            categories.push(String(r[0]));
+            const total = Number(r[2]) || 0;
+            const erreurs = Number(r[3]) || 0;
+            errorData.push(erreurs);
+            successData.push(total - erreurs);
+          });
+          this.w6bXAxis = { ...this.w6bXAxis, categories };
+          this.w6bSeries = [
+            { name: 'Succès', data: successData },
+            { name: 'Erreur (NACK)', data: errorData }
+          ];
+          this.w6bChartReady = true;
+        } else {
+          this.w6bChartReady = false;
+        }
+
+        // W6C - Vieillissement
+        if (vieil && vieil.length > 0) {
+          const categories: string[] = [];
+          const data: number[] = [];
+          vieil.forEach(r => {
+            categories.push(String(r[0]));
+            data.push(Number(r[1]));
+          });
+          this.w6cXAxis = { ...this.w6cXAxis, categories };
+          this.w6cSeries = [{ name: 'Manquants', data }];
+          this.w6cVieillissementReady = true;
+        } else {
+          this.w6cVieillissementReady = false;
+        }
+
+        // W6C - Top
+        this.w6cTopManquants = (top || []).map(r => ({
+          contrat: String(r[0] || 'Inconnu'),
+          manquants: Number(r[1] || 0)
+        }));
+
+        this.w6Loading = false;
+      },
+      error: () => {
+        this.w6Error = 'Impossible de charger l\'analyse ACK.';
+        this.w6Loading = false;
+      }
+    });
+  }
+
+  jumpToJournalAckManquants(): void {
+    this.journalView = 'livraisons';
+    this.journalPreset = 'ack_manquant';
+    this.journalAckFilter = null;
+    this.clearDestinationsDrill(false);
+    this.loadWidget7Journal(true);
+    setTimeout(() => {
+      document.getElementById('fo-journal')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
 
   loadWidget7Journal(resetPage = false): void {

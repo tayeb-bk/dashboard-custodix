@@ -73,12 +73,20 @@ public class FlowFileOutService {
                 blankToNull(contrat), from, to, ackOnlyFlag(ackOnly));
     }
 
-    public List<Object[]> getAckDistribution() {
-        return repository.getAckDistribution();
+    public List<Object[]> getAckDistribution(String contrat, String workflow, LocalDateTime from, LocalDateTime to) {
+        return repository.getAckDistribution(blankToNull(contrat), blankToNull(workflow), from, to);
     }
 
-    public List<Object[]> getAckConfirmations() {
-        return repository.getAckConfirmations();
+    public List<Object[]> getAckConfirmations(String contrat, String workflow, LocalDateTime from, LocalDateTime to) {
+        return repository.getAckConfirmations(blankToNull(contrat), blankToNull(workflow), from, to);
+    }
+
+    public List<Object[]> getAckTopManquants(String contrat, String workflow, LocalDateTime from, LocalDateTime to) {
+        return repository.getAckTopManquants(blankToNull(contrat), blankToNull(workflow), from, to);
+    }
+
+    public List<Object[]> getAckVieillissement(String contrat, String workflow, LocalDateTime from, LocalDateTime to) {
+        return repository.getAckVieillissement(blankToNull(contrat), blankToNull(workflow), from, to);
     }
 
     private static String blankPreset(String preset) {

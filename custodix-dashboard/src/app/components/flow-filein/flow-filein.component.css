@@ -12,7 +12,7 @@
   min-height: 100vh;
   animation: fadeIn 0.35s ease;
   background-color: #f8fafc;
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.05) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
@@ -95,6 +95,16 @@
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: all;
+}
+
+/* Alignement à gauche pour les popovers situés en bordure droite d'écran */
+.info-popover.popover-left {
+  left: auto;
+  right: 0;
+  transform: translateY(-6px) scale(0.97);
+}
+.info-popover.popover-left.open {
+  transform: translateY(0) scale(1);
 }
 
 .pop-header {
@@ -230,8 +240,13 @@
 }
 
 @keyframes spinGlobe {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .page-title {
@@ -1358,10 +1373,27 @@
 
 .matrix-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: scroll;
   max-height: 350px;
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+/* Style de la barre de défilement dédié à ce widget pour qu'il soit bien visible et utilisable */
+.matrix-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.matrix-wrapper::-webkit-scrollbar-track {
+  background: rgba(99, 102, 241, 0.02);
+  border-radius: 8px;
+}
+.matrix-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.45);
+  border-radius: 8px;
+}
+.matrix-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.65);
 }
 
 .matrix-table {
@@ -1835,8 +1867,15 @@
 }
 
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== NEW AI UI ENHANCEMENTS ===== */
@@ -1856,8 +1895,10 @@
   box-shadow: 0 2px 10px rgba(168, 85, 247, 0.05);
   cursor: help;
   transition: all 0.3s ease;
-  position: relative; /* Added for tooltip */
-  z-index: 50; /* Added so it sits above KPI cards */
+  position: relative;
+  /* Added for tooltip */
+  z-index: 50;
+  /* Added so it sits above KPI cards */
 }
 
 /* ===== CUSTOM TOOLTIP DESIGN ===== */
@@ -1883,7 +1924,8 @@
   opacity: 0;
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 99999; /* Max z-index */
+  z-index: 99999;
+  /* Max z-index */
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
@@ -1915,8 +1957,15 @@
 }
 
 @keyframes floatSparkle {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-2px) scale(1.1); }
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-2px) scale(1.1);
+  }
 }
 
 .qa-ai {
@@ -1946,8 +1995,9 @@
    DARK MODE ADAPTATION
    ====================================================== */
 :host-context([data-theme="dark"]) .filein-page {
-  background-color: var(--bg-primary); /* Deep dark background */
-  background-image: 
+  background-color: var(--bg-primary);
+  /* Deep dark background */
+  background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
@@ -1956,7 +2006,8 @@
 
 :host-context([data-theme="dark"]) .kpi-card,
 :host-context([data-theme="dark"]) .widget {
-  background: rgba(15, 23, 42, 0.6); /* Dark frosted glass */
+  background: rgba(15, 23, 42, 0.6);
+  /* Dark frosted glass */
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
