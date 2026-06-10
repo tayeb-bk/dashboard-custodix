@@ -73,7 +73,7 @@ export class DashboardComponent implements OnInit {
       label: 'Étape 6 : Traçabilité',
       route: 'traceability',
       iconPath: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35',
-      status: 'disabled'
+      status: 'active'
     },
     {
       id: 'custodix-ai',

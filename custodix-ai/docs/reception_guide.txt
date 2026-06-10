@@ -1,0 +1,82 @@
+DOCUMENTATION - ÉCRAN RÉCEPTION (PHASE 1 - TABLE : FLOW_FILEIN)
+
+RÉSUMÉ DU DASHBOARD DE LA RÉCEPTION :
+La page de Réception comporte au total 7 widgets qui sont :
+- WIDGET 1 : Les cartes KPI (Fichiers reçus, Doublons détectés, Taux de doublons, Intégrations manuelles, Taille totale, Temps moyen d'intégration)
+- WIDGET 2 : La Chronologie & Bande de Normalité (Graphique d'évolution temporelle)
+- WIDGET 3 : La Heatmap d'Activité Horologique (Grille interactive croisant jours et heures)
+- WIDGET 4 : Le Graphique des Anomalies (Courbe des doublons et intégrations manuelles)
+- WIDGET 5 : Le Top Émetteurs (Classements Contrats SLA et Workflows)
+- WIDGET 6 : Le Tableau des Fichiers Reçus (Liste avec recherche, filtres et actions rapides)
+- WIDGET 7 : Le Panneau de Détail Latéral (Drawer coulissant affichant les en-têtes EAI Headers et la Synthèse IA)
+
+1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
+La phase de Réception (Phase 1) est le point d'entrée physique des fichiers financiers dans la plateforme Custodix EAI. Elle collecte, valide et enregistre tous les fichiers envoyés par les partenaires externes avant toute intégration ou routage logique. Cette phase assure deux contrôles cruciaux : la détection des fichiers en doublon (par comparaison de signatures/checksums) et la traçabilité des intégrations manuelles forcées par les administrateurs. La table principale de cette phase est UCUSTOI0.FLOW_FILEIN.
+
+2. MAPPING DES COLONNES DE LA TABLE FLOW_FILEIN (Pour les requêtes SQL) :
+- Identifiant unique du fichier reçu : colonne ID_
+- Date et heure de réception du fichier : colonne SENDINGDATE_ (utiliser TRUNC(SENDINGDATE_) pour filtrer par jour, EXTRACT(HOUR FROM SENDINGDATE_) pour filtrer par heure)
+- Nom du fichier physique reçu : colonne INITIATIONFILE_ (JAMAIS FILENAME_)
+- Identifiant du workflow applicatif (filtre Workflow dans l'UI) : colonne WORKFLOWID_
+- Identifiant du contrat SLA associé (filtre Contrat dans l'UI) : colonne PASSEDCONTRACTIDENTIFIER_
+- Empreinte numérique du fichier / Checksum (filtre Checksum dans l'UI) : colonne CHECKSUM_
+- Identifiant du client émetteur (filtre Client dans l'UI) : colonne CLIENT_IDENTIFIER_ (JAMAIS CLIENTID_)
+- Taille physique du fichier en octets : colonne FILESIZE_
+- Identifiant du doublon détecté (null si pas doublon, non null si doublon) : colonne DUPLICATED_ID_ (JAMAIS DUPLICATEDID_)
+- Identifiant de l'intégration manuelle (null si automatique, non null si manuelle) : colonne MANUALFLOWINTEGRATION_ID_ (JAMAIS MANUALFLOWINTEGRATIONID_)
+
+3. EXEMPLES DE REQUÊTES SQL VALIDES SUR FLOW_FILEIN :
+- Compter les fichiers reçus sur une journée : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Compter les doublons sur une période : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN WHERE DUPLICATED_ID_ IS NOT NULL AND SENDINGDATE_ >= TO_DATE('01-06-2025', 'DD-MM-YYYY')
+- Lister les fichiers d'un workflow sur une journée : SELECT ID_, INITIATIONFILE_, SENDINGDATE_, PASSEDCONTRACTIDENTIFIER_ FROM UCUSTOI0.FLOW_FILEIN WHERE WORKFLOWID_ = 'MON_WORKFLOW' AND TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Trouver les pics d'activité par heure un jour précis : SELECT EXTRACT(HOUR FROM SENDINGDATE_) AS HEURE, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY') GROUP BY EXTRACT(HOUR FROM SENDINGDATE_) ORDER BY TOTAL DESC
+- Calculer le taux de doublons : SELECT ROUND(COUNT(DUPLICATED_ID_) * 100.0 / COUNT(*), 2) AS TAUX_DOUBLONS FROM UCUSTOI0.FLOW_FILEIN WHERE SENDINGDATE_ >= TO_DATE('01-06-2025', 'DD-MM-YYYY')
+- Top workflows par volume de fichiers reçus : SELECT WORKFLOWID_, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FILEIN GROUP BY WORKFLOWID_ ORDER BY TOTAL DESC FETCH FIRST 10 ROWS ONLY
+
+4. DESCRIPTION DÉTAILLÉE DES WIDGETS :
+
+WIDGET 1 : Cartes KPI (Indicateurs Clés de Performance)
+- Fichiers reçus : Volume total de fichiers arrivés dans le système sur la période choisie. Calculé par COUNT(*) sur FLOW_FILEIN.
+- Doublons détectés : Fichiers ayant la même empreinte numérique qu'un fichier déjà enregistré. Calculé par COUNT(*) WHERE DUPLICATED_ID_ IS NOT NULL.
+- Taux de doublons : Proportion en pourcentage (%) des fichiers en doublon. Calculé par (nombre doublons / total) x 100. Un taux supérieur à 10% est considéré critique (couleur rouge dans le dashboard).
+- Intégrations manuelles : Nombre de fichiers forcés manuellement par un administrateur. Calculé par COUNT(*) WHERE MANUALFLOWINTEGRATION_ID_ IS NOT NULL.
+- Taille totale (Go) : Volume physique total des fichiers traités, calculé par SUM(FILESIZE_) converti en gigaoctets.
+- Temps moyen d'intégration : Délai moyen entre l'envoi et l'enregistrement, exprimé en millisecondes (ms).
+
+WIDGET 2 : Chronologie et Bande de Normalité (Graphique d'évolution)
+- Rôle : Affiche la courbe du volume de fichiers reçus au fil du temps (par heure, jour ou mois selon la période choisie).
+- Bande de normalité : Zone colorée qui affiche simultanément la moyenne historique, la borne supérieure et la borne inférieure. Si la courbe réelle dépasse la borne supérieure, cela indique un pic anormal. Si elle est en dessous de la borne inférieure, cela signale un creux inhabituel.
+- Basculement automatique de l'échelle : Période inférieure à 48 heures = affichage par heure. Période entre 2 et 90 jours = affichage par jour. Période supérieure à 90 jours = affichage par mois.
+
+WIDGET 3 : Heatmap d'Activité Horologique (Grille d'activité)
+- Rôle : Grille interactive croisant les jours de la semaine (Lundi à Dimanche) et les heures de la journée (00h à 23h) pour visualiser le volume de fichiers reçus à chaque créneau.
+- Code couleur : Blanc (0 fichiers = aucune activité), Bleu clair (1 à 50 fichiers = activité faible), Violet moyen (51 à 300 fichiers = activité normale), Violet foncé (301 à 2000 fichiers = activité élevée), Violet intense (plus de 2000 fichiers = activité très élevée et potentiellement critique).
+- Utilisation : Permet d'identifier les plages horaires de fort trafic pour planifier les maintenances pendant les heures creuses.
+
+WIDGET 4 : Graphique des Anomalies (Courbe des dysfonctionnements)
+- Rôle : Affiche sur un graphique linéaire uniquement les événements anormaux (doublons et intégrations manuelles) au fil du temps.
+- Lecture : Les trois courbes représentent respectivement le volume total, les doublons et les intégrations manuelles. Un pic sur la courbe des doublons signale une possible attaque ou erreur de l'émetteur.
+
+WIDGET 5 : Top Émetteurs - Classements Contrats et Workflows
+- Rôle : Deux listes de classement affichant les contrats SLA et les workflows qui génèrent le plus de trafic de fichiers reçus.
+- Lecture : Les barres de progression indiquent la proportion relative de chaque élément par rapport au premier du classement. Aide à identifier les partenaires ou flux les plus actifs.
+
+WIDGET 6 : Tableau des Fichiers Reçus avec Filtres et Actions Rapides
+- Rôle : Liste exhaustive et paginée de tous les fichiers physiques reçus, interrogeable avec des filtres combinés.
+- Filtres disponibles dans l'interface : Workflow (filtre sur colonne WORKFLOWID_), Contrat (filtre sur colonne PASSEDCONTRACTIDENTIFIER_), Nom de fichier (filtre sur colonne INITIATIONFILE_), Checksum (filtre sur colonne CHECKSUM_), Client (filtre sur colonne CLIENT_IDENTIFIER_), filtre rapide Doublons uniquement, filtre rapide Intégrations Manuelles uniquement.
+- Filtres combinables : Tous les filtres peuvent être appliqués simultanément pour affiner la recherche.
+- Actions disponibles sur chaque ligne : Bouton ID pour copier l'identifiant du fichier. Bouton Ouvrir (icône oeil) pour ouvrir le panneau de détail. Bouton Analyser AI (icône baguette magique) pour ouvrir les détails et déclencher une synthèse de conformité par l'intelligence artificielle Custodix.
+
+WIDGET 7 : Panneau de Détail Latéral (Drawer coulissant)
+- Rôle : Volet qui s'ouvre sur la droite de l'écran pour afficher les informations complètes d'un fichier sélectionné.
+- Informations affichées : Date et heure de réception, Workflow ID, Contrat SLA, Identifiant du fichier, Signature numérique (Checksum), adresse IP source.
+- Section EAI Headers : Liste des balises d'en-tête (EAI Headers) rattachées au fichier. Un EAI Header est une métadonnée technique ajoutée par le système lors du traitement pour le routage et l'identification du message financier.
+- Section Synthèse IA : Bouton pour lancer une analysis de conformité automatique par l'IA Custodix qui évalue si le fichier est bien qualifié ou s'il manque des informations critiques.
+
+5. TERMES MÉTIER CLÉS DE LA RÉCEPTION :
+- Checksum (Empreinte numérique) : Signature mathématique unique calculée à partir du contenu du fichier. Si deux fichiers ont le même checksum, ils sont identiques. C'est le mécanisme de détection des doublons.
+- Doublon : Un fichier reçu dont le checksum est déjà présent dans la base. Il est enregistré mais marqué comme doublon via la colonne DUPLICATED_ID_ qui pointe vers le fichier original.
+- Intégration Manuelle : Action d'un administrateur pour forcer l'enregistrement d'un fichier en dehors du processus automatique normal. Traçable via la colonne MANUALFLOWINTEGRATION_ID_.
+- Contrat SLA : Accord de niveau de service entre Custodix et un partenaire financier, définissant les délais et volumes attendus pour les échanges de fichiers.
+- Workflow : Définition du traitement applicatif appliqué au fichier après sa réception (routage, transformation, validation).
+- EAI Header : Balise technique attachée à un message financier contenant des métadonnées de routage comme l'émetteur, le destinataire, le type de message et la version du protocole EAI.

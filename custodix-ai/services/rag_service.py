@@ -1,132 +1,241 @@
 import os
+import re
 from langchain_community.llms import Ollama
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain_core.prompts import PromptTemplate
+
+# ============================================================
+# SCHÉMAS CERTIFIÉS - Source de vérité injectée systématiquement
+# dans chaque prompt SQL pour éviter l'hallucination de colonnes.
+# ============================================================
+_CERTIFIED_SCHEMAS = """TABLES ET COLONNES CERTIFIÉES (CRITIQUE - JAMAIS inventer d'autres colonnes) :
+
+1. Table UCUSTOI0.FLOW_FILEIN (Réception des fichiers) :
+- ID_ : Identifiant unique du fichier reçu
+- SENDINGDATE_ : Date/heure de réception (JAMAIS RECEIPT_DATE, JAMAIS TIMESTAMP_, JAMAIS EVENT_DATE)
+- INITIATIONFILE_ : Nom physique du fichier (JAMAIS FILENAME_)
+- CHECKSUM_ : Empreinte numérique / signature du fichier
+- PASSEDCONTRACTIDENTIFIER_ : Identifiant du contrat SLA
+- WORKFLOWID_ : Identifiant du workflow applicatif
+- CLIENT_IDENTIFIER_ : Identifiant du client émetteur (JAMAIS CLIENTID_)
+- DUPLICATED_ID_ : Identifiant du doublon (null si original, non-null si doublon) (JAMAIS DUPLICATEDID_)
+- MANUALFLOWINTEGRATION_ID_ : Identifiant de l'intégration manuelle (null si automatique) (JAMAIS MANUALFLOWINTEGRATIONID_)
+- FILESIZE_ : Taille du fichier en octets
+
+2. Table UCUSTOI0.FLOW_FILEOUT (Expédition des fichiers) :
+- ID_ : Identifiant unique
+- FILEIN_ID_ : Identifiant du fichier reçu lié (FLOW_FILEIN.ID_)
+- FILE_ID_ : Identifiant du fichier physique
+- DESTINATIONINFO_ID_ : Identifiant de destination
+- ACKEXPECTED_ : 1 si acquittement attendu, 0 sinon
+- USEDADDRESS_ : Adresse de livraison
+
+3. Table UCUSTOI0.FLOW_FLOW (Traitement logique des flux) :
+- ID_ : Identifiant unique du flux
+- STATUS_ : Statut (valeurs : Processed, Sent, InTechnicalError, Rejected, Blocked)
+- TYPE_ : Type de flux
+- FLOWTYPE_NAME_ : Nom du type de flux
+- CREATIONDATE_ : Date de création
+- UPDATEDATE_ : Date de mise à jour
+- SENDER_IDENTIFIER_ : Identifiant émetteur
+- RECEIVER_IDENTIFIER_ : Identifiant destinataire
+- ROUTE_ROUTEID_ : Identifiant de la route
+- AMOUNT1_ : Montant financier"""
+
+# ============================================================
+# PROMPT SQL - Dédié uniquement à la génération SQL Oracle
+# ============================================================
+_SQL_PROMPT = """Tu es Custodix AI, un expert de base de données Oracle 21c.
+Génère UNIQUEMENT une requête SQL Oracle valide pour répondre à la question.
+Ta réponse doit être UNIQUEMENT un bloc markdown SQL, sans aucune explication ni point-virgule (;).
+
+RÈGLES ORACLE :
+- Schéma propriétaire : UCUSTOI0. Préfixe TOUJOURS les tables avec le schéma (ex: UCUSTOI0.FLOW_FILEIN).
+- N'utilise `WHERE owner = 'UCUSTOI0'` QUE pour dba_tables ou dba_tab_columns.
+- Les colonnes se terminent TOUJOURS par un underscore.
+- Pour lister les colonnes d'une table : SELECT column_name FROM dba_tab_columns WHERE owner = 'UCUSTOI0' AND table_name = 'NOM'
+
+SYNTAXE DATES ORACLE (CRITIQUE) :
+- Filtrer par jour EXACT : TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Filtrer par heure : EXTRACT(HOUR FROM SENDINGDATE_) BETWEEN 14 AND 16
+- INTERDIT : DATE_TRUNC() (PostgreSQL), DATE 'YYYY-MM-DD' (invalide Oracle)
+
+{schemas}
+
+EXEMPLES :
+- Fichiers reçus un jour : SELECT ID_, INITIATIONFILE_, SENDINGDATE_ FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Doublons du jour : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN WHERE DUPLICATED_ID_ IS NOT NULL AND TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Pics horaires : SELECT EXTRACT(HOUR FROM SENDINGDATE_) AS HEURE, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY') GROUP BY EXTRACT(HOUR FROM SENDINGDATE_) ORDER BY TOTAL DESC
+- Flux en erreur : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FLOW WHERE STATUS_ IN ('InTechnicalError', 'Rejected', 'Blocked')
+
+Question de l'utilisateur : {question}
+Génère la requête SQL dans un bloc markdown complet (```sql ... ```) :"""
+
+# ============================================================
+# PROMPT DOC - Dédié à l'explication du dashboard
+# ============================================================
+_DOC_PROMPT = """Tu es Custodix AI, un expert du dashboard EAI Custodix.
+Réponds à la question de l'utilisateur de manière claire, précise et professionnelle en français.
+Base ta réponse uniquement sur la documentation fournie ci-dessous.
+Ne génère aucune requête SQL. Ta réponse doit être uniquement du texte explicatif.
+
+Documentation de référence :
+{context}
+
+Question de l'utilisateur : {question}
+Réponse en français :"""
+
+
+# Mots-clés qui déclenchent une détection de salutation sans appel LLM
+_GREETING_KEYWORDS = {
+    "bonjour", "salut", "bonsoir", "hello", "hi", "hey", "coucou",
+    "bonne journée", "bonjour !", "salut !"
+}
+
 
 class RagService:
     def __init__(self):
         print("Initialisation du Service RAG...")
-        # Température à 0 pour éviter la créativité inutile (plus rapide)
-        # Gardé simple sans keep_alive car cela fait parfois planter Ollama en local (Runner terminated)
         self.llm = Ollama(model="llama3", temperature=0)
         self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        
-        # Initialisation de notre mémoire Cache
+
+        # Cache pour éviter les appels LLM redondants
         self.sql_cache = {}
         self.format_cache = {}
-        
+
         if os.path.exists("./chroma_index"):
             print("Chargement de Chroma Index...")
             self.vectorstore = Chroma(persist_directory="./chroma_index", embedding_function=self.embeddings)
-            self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 3})
+            self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 5})
             self.index_loaded = True
         else:
             print("ATTENTION: L'index Chroma n'existe pas. Lancez 1_ingest_oracle.py d'abord.")
             self.index_loaded = False
-            
-        template = """Tu es Custodix AI, un assistant d'analyse Oracle 21c (Schéma UCUSTOI0).
-Tu dois utiliser STRICTEMENT l'un de ces deux formats (jamais les deux en même temps) :
 
-CAS 1 : SALUTATIONS ("bonjour", "salut")
-Réponds uniquement avec un bloc texte :
-```text
-Bonjour, je suis Custodix AI. Comment puis-je vous aider ?
-```
+    # ----------------------------------------------------------
+    # ROUTEUR D'INTENTION
+    # Détermine si la question est : GREETING, SQL ou DOC
+    # ----------------------------------------------------------
+    def _classify_intent(self, question: str) -> str:
+        """Retourne 'GREETING', 'SQL' ou 'DOC'."""
+        q_lower = question.strip().lower()
 
-CAS 2 : REQUÊTE BASE DE DONNÉES (Statistiques, listes, métriques)
-Génère OBLIGATOIREMENT un bloc sql contenant la requête, SANS point-virgule (;).
-Exemple :
-```sql
-SELECT COUNT(*) FROM DBA_TABLES WHERE OWNER = 'UCUSTOI0'
-```
+        # 1. Détection de salutation par dictionnaire Python (rapide, sans LLM)
+        if q_lower in _GREETING_KEYWORDS:
+            return "GREETING"
 
-RÈGLES ORACLE (TRÈS IMPORTANT) :
-- Schéma propriétaire : UCUSTOI0
-- Tables existantes : FLOW_FLOW, EAI_HEADER, FLOW_FLOWLOG.
-- Préfixe toujours les tables métier avec le schéma (ex: UCUSTOI0.FLOW_FLOW).
-- N'utilise la condition `WHERE owner = 'UCUSTOI0'` QUE pour lire `dba_tables` ou `dba_tab_columns`. Ne l'utilise JAMAIS sur les tables de données (comme FLOW_FLOW).
-- N'écris JAMAIS les types de données (ex: VARCHAR2, NUMBER) dans la clause SELECT ou FROM de la requête SQL.
-- Les colonnes se terminent en général par un underscore (ex: STATUS_, ID_, AMOUNT1_, TYPE_).
-- Pour avoir le total de tables : SELECT COUNT(*) FROM dba_tables WHERE owner = 'UCUSTOI0'
-- Pour lister ou compter les paramètres/colonnes d'une table : SELECT column_name, data_type FROM dba_tab_columns WHERE owner = 'UCUSTOI0' AND table_name = 'VOTRE_TABLE'
-- Pour avoir les tables avec la plus grande taille ou le plus de lignes : SELECT table_name, num_rows FROM dba_tables WHERE owner = 'UCUSTOI0' ORDER BY num_rows DESC FETCH FIRST 20 ROWS ONLY
-- Ne demande JAMAIS la taille avec la colonne `bytes` ou `size` (elles n'existent pas ici), utilise l'indicateur `num_rows` à la place.
+        # 2. Classification binaire SQL vs DOC par LLM
+        intent_prompt = f"""Détermine si la question suivante nécessite d'écrire une requête SQL pour chercher des données réelles de la base de données (chiffres, fichiers, volumes, statistiques, doublons, dates), ou s'il s'agit d'une question d'explication générale sur le dashboard, le rôle d'un widget, ou la définition d'un terme.
 
-Tables trouvées dans le contexte :
-{context}
+Réponds UNIQUEMENT par l'un de ces deux mots : SQL ou DOC
 
-Question de l'utilisateur : {question}
+Question : {question}
+Réponse :"""
+        raw = self.llm.invoke(intent_prompt).strip().upper()
+        if "SQL" in raw:
+            return "SQL"
+        return "DOC"
 
-Réponse (Un seul bloc) :"""
-        self.prompt = PromptTemplate(template=template, input_variables=["context", "question"])
+    # ----------------------------------------------------------
+    # GÉNÉRATION SQL
+    # Construit et exécute le prompt SQL dédié
+    # ----------------------------------------------------------
+    def _generate_sql_query(self, question: str) -> str:
+        """Appelle le LLM avec le prompt SQL dédié + schémas certifiés."""
+        # On n'ajoute PAS de ```sql dans le prompt pour que le LLM génère le bloc complet lui-même
+        full_prompt = _SQL_PROMPT.format(schemas=_CERTIFIED_SCHEMAS, question=question)
+        response = self.llm.invoke(full_prompt)
 
+        # Extraire le bloc SQL d'un markdown ```sql...```
+        sql_match = re.search(r"```[sS][qQ][lL]?(.*?)```", response, re.DOTALL)
+        if sql_match:
+            sql = sql_match.group(1).replace(";", "").strip()
+            return sql
+
+        # Fallback : extraire le SELECT brut et supprimer tous les artefacts markdown résiduels
+        sql_keywords = ["SELECT ", "FROM ", "WHERE "]
+        if any(kw in response.upper() for kw in sql_keywords):
+            start_idx = response.upper().find("SELECT ")
+            if start_idx >= 0:
+                sql = response[start_idx:].split(";")[0]
+                # Supprimer les backticks résiduels (``` ou `)
+                sql = re.sub(r"`+", "", sql).strip()
+                return sql
+
+        return None
+
+    # ----------------------------------------------------------
+    # GÉNÉRATION DOC
+    # Récupère le contexte RAG + appelle le prompt DOC dédié
+    # ----------------------------------------------------------
+    def _generate_doc_answer(self, question: str) -> str:
+        """Appelle le LLM avec le contexte RAG et le prompt DOC dédié."""
+        docs = self.retriever.invoke(question)
+        context = "\n\n".join([d.page_content for d in docs])
+        full_prompt = _DOC_PROMPT.format(context=context, question=question)
+        response = self.llm.invoke(full_prompt)
+        # Nettoyer les éventuels blocs markdown
+        clean = response.replace("```text", "").replace("```", "").strip()
+        return clean
+
+    # ----------------------------------------------------------
+    # POINT D'ENTRÉE PRINCIPAL
+    # ----------------------------------------------------------
     def generate_sql(self, question: str) -> str:
-        # Vérifier si la question est dans le cache SQL
         cache_key = question.strip().lower()
+
+        # Cache hit
         if cache_key in self.sql_cache:
-            print(f"⚡ [CACHE HIT] Requête SQL trouvée en mémoire pour : '{question}'")
+            print(f"[CACHE HIT] '{question}'")
             return self.sql_cache[cache_key]
 
         if not self.index_loaded:
             return "Erreur : Index Chroma manquant. Lancez l'ingestion Oracle."
-            
-        docs = self.retriever.invoke(question)
-        context_text = "\n\n".join([d.page_content for d in docs])
-        print(f"Tables trouvées par RAG : {[d.metadata['table_name'] for d in docs]}")
-        
-        final_prompt = self.prompt.format(context=context_text, question=question)
-        response = self.llm.invoke(final_prompt)
-        
-        import re
-        
-        # Recherche du bloc SQL prioritaire
-        sql_match = re.search(r"```[sS][qQ][lL](.*?)```", response, re.DOTALL)
-        if sql_match:
-            sql = sql_match.group(1).replace(";", "").strip()
-            return sql
-            
-        # Recherche du bloc Texte
-        text_match = re.search(r"```[tT][eE][xX][tT](.*?)```", response, re.DOTALL)
-        if text_match:
-            clean_text = text_match.group(1).strip()
-            return "GREETINGS: " + clean_text
-            
-        # Fallback de secours si Llama a raté son markdown
-        if "SELECT " in response.upper():
-            start_idx = response.upper().find("SELECT ")
-            sql = response[start_idx:].split(";")[0].strip()
-            return sql
-            
-        # Si rien d'autre, on considère que c'est un message textuel
-        response_clean = response.replace("GREETINGS:", "").replace("```text", "").replace("```", "").strip()
-        final_result = "GREETINGS: " + response_clean
 
-        # Sauvegarder dans le cache avant de retourner
-        self.sql_cache[cache_key] = final_result
-        return final_result
+        # Étape 1 : Routage d'intention
+        intent = self._classify_intent(question)
+        print(f"[INTENT] '{question}' -> {intent}")
 
+        if intent == "GREETING":
+            result = "GREETINGS: Bonjour ! Je suis Custodix AI. Comment puis-je vous aider ?"
+
+        elif intent == "SQL":
+            sql = self._generate_sql_query(question)
+            if sql:
+                result = sql
+            else:
+                # Fallback : on bascule vers une réponse DOC si le LLM n'a rien produit de valide
+                answer = self._generate_doc_answer(question)
+                result = "GREETINGS: " + answer
+
+        else:  # DOC
+            answer = self._generate_doc_answer(question)
+            result = "GREETINGS: " + answer
+
+        self.sql_cache[cache_key] = result
+        return result
+
+    # ----------------------------------------------------------
+    # FORMATEUR DE RÉPONSE HUMAINE (inchangé)
+    # ----------------------------------------------------------
     def format_answer(self, question: str, query: str, results: list) -> str:
-        # Création d'une clé de cache unique basée sur la question ET les résultats
         import json, hashlib
         cache_string = f"{question.strip().lower()}_{json.dumps(results, sort_keys=True)}"
         cache_key = hashlib.md5(cache_string.encode()).hexdigest()
 
-        # Vérifier si on a déjà formaté cette réponse
         if cache_key in self.format_cache:
-            print(f"⚡ [CACHE HIT] Réponse humaine trouvée en mémoire pour : '{question}'")
+            print(f"[CACHE HIT] Réponse humaine pour : '{question}'")
             return self.format_cache[cache_key]
 
         prompt = f"""Tu es l'agent IA Custodix. L'utilisateur a demandé : "{question}"
 La base de données Oracle a répondu (données brutes JSON) : {results}
 
-Rédige une phrase humaine unique, claire et professionnelle en français pour donner la réponse à l'utilisateur. 
-Ne donne AUCUNE explication technique, ne parle pas de la requête SQL ou JSON. 
+Rédige une phrase humaine unique, claire et professionnelle en français pour donner la réponse à l'utilisateur.
+Ne donne AUCUNE explication technique, ne parle pas de la requête SQL ou JSON.
 Si la réponse est une liste complexe, introduis-la simplement (ex: 'Voici la liste demandée :').
 Réponse humaine :"""
         response = self.llm.invoke(prompt)
         final_response = response.strip()
-        
-        # Sauvegarder dans le cache
+
         self.format_cache[cache_key] = final_response
         return final_response

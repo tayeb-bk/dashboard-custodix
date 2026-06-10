@@ -1,0 +1,526 @@
+<div class="traceability-container">
+
+  <!-- ================= GAUCHE : RECHERCHE & PINBOARD ================= -->
+  <div class="left-panel">
+
+    <!-- WIDGET 1 : CONSOLE DE RECHERCHE -->
+    <div class="glass-card search-card">
+      <div class="card-header">
+        <div class="header-title">
+          <span class="icon">🔍</span>
+          <h2>Console de Recherche</h2>
+        </div>
+        <button class="btn-clear" (click)="resetFilters()">Réinitialiser</button>
+      </div>
+
+      <div class="search-form">
+        <div class="form-group">
+          <label>Fichier ID ou Nom</label>
+          <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="search(true)"
+            placeholder="Ex: 96089 ou client_data.csv..." />
+        </div>
+
+        <div class="filter-row">
+          <div class="form-group">
+            <label>Contrat SLA</label>
+            <select [(ngModel)]="selectedContract" (change)="search(true)">
+              <option value="">Tous les contrats</option>
+              <option *ngFor="let c of contracts" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Workflow ID</label>
+            <select [(ngModel)]="selectedWorkflow" (change)="search(true)">
+              <option value="">Tous les workflows</option>
+              <option *ngFor="let w of workflows" [value]="w">{{ w }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des résultats -->
+      <div class="results-container">
+        <div class="loading-state" *ngIf="isSearching">
+          <div class="spinner"></div>
+          <span>Recherche en cours...</span>
+        </div>
+
+        <div class="empty-state" *ngIf="!isSearching && searchResults.length === 0">
+          <span>Aucun fichier trouvé. Modifiez vos filtres.</span>
+        </div>
+
+        <div class="results-list" *ngIf="!isSearching && searchResults.length > 0">
+          <div class="result-item" *ngFor="let r of searchResults" [class.active]="activeId === r.fileInId"
+            (click)="selectTrace(r.fileInId)">
+
+            <div class="item-main">
+              <div class="item-id">#{{ r.fileInId }}</div>
+              <div class="item-name" [title]="r.fileName">{{ r.fileName }}</div>
+            </div>
+
+            <div class="item-meta">
+              <span class="badge badge-workflow">{{ r.workflow || 'NON SPECIFIÉ' }}</span>
+              <span class="badge badge-status" [class]="r.flowStatus">{{ r.flowStatus || 'Non traité' }}</span>
+            </div>
+
+            <button class="btn-pin" (click)="togglePin(r, $event)"
+              [title]="isPinned(r.fileInId) ? 'Désépingler' : 'Épingler'">
+              {{ isPinned(r.fileInId) ? '📌' : '📍' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-footer" *ngIf="totalPages > 0">
+        <button class="btn-page" [disabled]="page === 0" (click)="prevPage()">◀</button>
+        <span class="page-info">Page {{ page + 1 }} sur {{ totalPages }} ({{ totalElements }} fichiers)</span>
+        <button class="btn-page" [disabled]="page === totalPages - 1" (click)="nextPage()">▶</button>
+      </div>
+    </div>
+
+    <!-- WIDGET 6 : PINBOARD DE SURVEILLANCE -->
+    <div class="glass-card pinboard-card">
+      <div class="card-header">
+        <div class="header-title">
+          <span class="icon">📌</span>
+          <h2>Pinboard Actif</h2>
+        </div>
+        <span class="pin-count">{{ pinnedItems.length }} surveillés</span>
+      </div>
+
+      <div class="pinboard-body">
+        <div class="empty-state" *ngIf="pinnedItems.length === 0">
+          <span>Aucun fichier épinglé. Cliquez sur 📍 pour surveiller un flux critique.</span>
+        </div>
+
+        <div class="pinned-list" *ngIf="pinnedItems.length > 0">
+          <div class="pinned-item" *ngFor="let p of pinnedItems" (click)="selectTrace(p.fileInId)">
+            <div class="pinned-info">
+              <span class="pinned-id">#{{ p.fileInId }}</span>
+              <span class="pinned-name" [title]="p.fileName">{{ p.fileName }}</span>
+            </div>
+            <div class="pinned-actions">
+              <span class="badge badge-status" [class]="p.flowStatus">{{ p.flowStatus }}</span>
+              <button class="btn-unpin" (click)="togglePin(p, $event)">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= DROITE : CONSOLE D'AUDIT TECHNIQUE ================= -->
+  <div class="right-panel">
+
+    <!-- État de chargement des détails -->
+    <div class="glass-card detail-loading-card" *ngIf="isLoadingDetails">
+      <div class="spinner-large"></div>
+      <h3>Chargement de la traçabilité...</h3>
+      <p>Extraction des liaisons entre les tables de réception, traitement et expédition.</p>
+    </div>
+
+    <!-- État vide si aucune sélection -->
+    <div class="glass-card empty-detail-card" *ngIf="!isLoadingDetails && !selectedTrace">
+      <div class="empty-icon">🧭</div>
+      <h2>Sélectionnez un fichier</h2>
+      <p>Utilisez la console de recherche à gauche pour inspecter le cycle de vie complet d'un fichier et de ses flux
+        financiers.</p>
+    </div>
+
+    <!-- Contenu de traçabilité complet -->
+    <div class="detail-container" *ngIf="!isLoadingDetails && selectedTrace">
+
+      <!-- ENTÊTE DU FICHIER INSPECTÉ -->
+      <div class="glass-card detail-header-card">
+        <div class="detail-header-main">
+          <div class="header-label">Fichier en cours d'audit</div>
+          <h1 class="file-title">{{ selectedTrace.fileName }}</h1>
+          <div class="header-meta-grid">
+            <div class="meta-cell">
+              <span class="label">ID de Réception</span>
+              <span class="value font-mono">#{{ selectedTrace.fileInId }}</span>
+            </div>
+            <div class="meta-cell">
+              <span class="label">Contrat SLA</span>
+              <span class="value">{{ selectedTrace.contract || 'Sans contrat' }}</span>
+            </div>
+            <div class="meta-cell">
+              <span class="label">Workflow</span>
+              <span class="value badge-workflow">{{ selectedTrace.workflow || 'Aucun' }}</span>
+            </div>
+            <div class="meta-cell">
+              <span class="label">Date de Réception</span>
+              <span class="value">{{ selectedTrace.receivingDate | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WIDGET SANTÉ GLOBALE DU CYCLE -->
+      <div class="glass-card health-banner" [ngClass]="'health-' + computeGlobalHealth().level">
+        <div class="health-main">
+          <span class="health-icon">{{ computeGlobalHealth().icon }}</span>
+          <div class="health-info">
+            <span class="health-label">Santé Globale du Cycle</span>
+            <h3 class="health-value">{{ computeGlobalHealth().label }}</h3>
+          </div>
+        </div>
+        <div class="health-stats">
+          <div class="stat-pill status-ok">
+            <span class="count">{{ countAck('ACK') }}</span>
+            <span class="label">ACK</span>
+          </div>
+          <div class="stat-pill status-warning">
+            <span class="count">{{ countAck('MISSING') }}</span>
+            <span class="label">MISSING</span>
+          </div>
+          <div class="stat-pill status-error">
+            <span class="count">{{ countAck('NACK') }}</span>
+            <span class="label">NACK</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPHE NODAL & DIAGNOSTIC SLA (HORIZONTAL GRID) -->
+      <div class="top-row-grid">
+
+        <!-- WIDGET 3 : PIPELINE DE VIE (DYNAMIQUE ET MULTI-FLUX) -->
+        <div class="glass-card graph-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="icon">🔀</span>
+              <h2>Pipeline de Vie (Flux & Confirmations Réelles)</h2>
+            </div>
+          </div>
+
+          <div class="pipeline-viewport">
+            <!-- Tronc commun : Réception et Traitement -->
+            <div class="pipeline-trunk">
+              <div class="pipeline-node node-file-in">
+                <div class="node-icon">📥</div>
+                <div class="node-label">Réception</div>
+                <div class="node-sub">ID: {{ selectedTrace.fileInId }}</div>
+              </div>
+
+              <div class="pipeline-connector animate-pulse">
+                <div class="arrow"></div>
+              </div>
+
+              <div class="pipeline-node node-flow" [class]="getStatusClass(selectedTrace.flowStatus)">
+                <div class="node-icon">⚙️</div>
+                <div class="node-label">Traitement</div>
+                <div class="node-sub">{{ selectedTrace.flowTypeName || 'Moteur' }}</div>
+              </div>
+            </div>
+
+            <!-- Branchements pour chaque expédition -->
+            <div class="pipeline-branches">
+              <div class="empty-branches" *ngIf="selectedTrace.expeditions.length === 0">
+                <div class="pipeline-connector-dash"></div>
+                <div class="pipeline-node node-empty">
+                  <div class="node-icon">📤</div>
+                  <div class="node-label">Aucun envoi</div>
+                  <div class="node-sub">Attente de routage</div>
+                </div>
+              </div>
+
+              <div class="pipeline-branch" *ngFor="let exp of selectedTrace.expeditions">
+                <div class="pipeline-connector-branch"></div>
+
+                <!-- Envoi -->
+                <div class="pipeline-node node-file-out sent">
+                  <div class="node-icon">📤</div>
+                  <div class="node-label">{{ exp.destination }}</div>
+                  <div class="node-sub">ID: #{{ exp.fileOutId }}</div>
+                </div>
+
+                <div class="pipeline-connector animate-pulse">
+                  <div class="arrow"></div>
+                </div>
+
+                <!-- Acquittement -->
+                <div class="pipeline-node node-ack" [class]="getStatusClass(exp.ackStatus)">
+                  <div class="node-icon">⚖️</div>
+                  <div class="node-label">Confirmation</div>
+                  <div class="node-sub">{{ exp.ackStatus }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- WIDGET 5 : DIAGNOSTIC TEMPS (SLA) -->
+        <div class="glass-card duration-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="icon">⏱️</span>
+              <h2>Diagnostic Latences (SLA)</h2>
+            </div>
+          </div>
+
+          <div class="duration-body">
+            <div class="duration-item">
+              <div class="duration-info">
+                <span class="name">Découpage & Intégration</span>
+                <span class="desc">Réception physique ➔ Traitement logique</span>
+              </div>
+              <span class="value">{{ formatDuration(selectedTrace.integrationDurationMs) }}</span>
+            </div>
+
+            <div class="duration-item">
+              <div class="duration-info">
+                <span class="name">Traitement Interne</span>
+                <span class="desc">Durée d'exécution du moteur</span>
+              </div>
+              <span class="value">{{ formatDuration(selectedTrace.processingDurationMs) }}</span>
+            </div>
+
+            <div class="duration-item" *ngIf="selectedTrace.expeditions.length > 0">
+              <div class="duration-info">
+                <span class="name">Délai d'Acquittement (ACK)</span>
+                <span class="desc">Temps de réponse du destinataire</span>
+              </div>
+              <span class="value">{{ formatDuration(selectedTrace.expeditions[0].ackDurationMs) }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- STEPPER & TERMINAL LOGS (HORIZONTAL GRID) -->
+      <div class="bottom-row-grid">
+
+        <!-- WIDGET 2 : MASTER STEPPER -->
+        <div class="glass-card stepper-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="icon">🪜</span>
+              <h2>Timeline d'Audit Unitaire</h2>
+            </div>
+          </div>
+
+          <div class="stepper-body">
+
+            <!-- Étape 1 : Réception -->
+            <div class="step-item completed">
+              <div class="step-marker">
+                <span class="dot"></span>
+                <span class="line"></span>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Réception du Fichier</div>
+                <div class="step-desc">Fichier physiquement reçu par le module d'intégration.</div>
+                <div class="step-time">{{ selectedTrace.receivingDate | date:'dd/MM/yyyy HH:mm:ss' }}</div>
+              </div>
+            </div>
+
+            <!-- Étape 2 : Traitement -->
+            <div class="step-item"
+              [class.completed]="selectedTrace.flowStatus === 'Processed' || selectedTrace.flowStatus === 'Sent' || selectedTrace.flowStatus === 'Acked'">
+              <div class="step-marker">
+                <span class="dot"></span>
+                <span class="line"></span>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Découpage & Traitement</div>
+                <div class="step-desc">
+                  Création et routage logique du flux.
+                  <span class="sub-detail" *ngIf="selectedTrace.routeId">Route : <strong>{{ selectedTrace.routeId
+                      }}</strong></span>
+                  <span class="sub-detail" *ngIf="selectedTrace.amount">Montant : <strong>{{ selectedTrace.amount |
+                      number:'1.2-2' }} €</strong></span>
+                </div>
+                <div class="step-time" *ngIf="selectedTrace.flowCreationDate">{{ selectedTrace.flowCreationDate |
+                  date:'dd/MM/yyyy HH:mm:ss' }}</div>
+              </div>
+            </div>
+
+            <!-- Étape 3 : Expéditions -->
+            <div class="step-item" [class.completed]="selectedTrace.expeditions.length > 0">
+              <div class="step-marker">
+                <span class="dot"></span>
+                <span class="line"></span>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Expéditions aux destinataires</div>
+                <div class="step-desc">
+                  <span *ngIf="selectedTrace.expeditions.length === 0">Aucun flux de sortie expédié pour le
+                    moment.</span>
+                  <div class="expeditions-list" *ngIf="selectedTrace.expeditions.length > 0">
+                    <div class="exp-row" *ngFor="let exp of selectedTrace.expeditions">
+                      <span>Destination : <strong>{{ exp.destination }}</strong> ({{ exp.address || 'Adresse non
+                        spécifiée' }})</span>
+                      <span class="badge badge-status" [class]="exp.status">{{ exp.status }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Étape 4 : Acquittement (ACK) -->
+            <div class="step-item" *ngIf="selectedTrace.expeditions.length > 0"
+              [class.completed]="selectedTrace.expeditions[0].ackStatus === 'ACK'"
+              [class.failed]="selectedTrace.expeditions[0].ackStatus === 'NACK'">
+              <div class="step-marker">
+                <span class="dot"></span>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Confirmation Financière (ACK)</div>
+                <div class="step-desc">
+                  <span *ngIf="selectedTrace.expeditions[0].ackStatus === 'MISSING'">En attente de l'acquittement de la
+                    banque.</span>
+                  <span *ngIf="selectedTrace.expeditions[0].ackStatus === 'ACK'">Acquittement reçu et validé avec
+                    succès.</span>
+                  <div class="nack-detail" *ngIf="selectedTrace.expeditions[0].ackStatus === 'NACK'">
+                    <span class="error-msg">⚠️ Rejeté : {{ selectedTrace.expeditions[0].errorReason || 'Erreur inconnue'
+                      }}</span>
+                    <span class="error-code">Code d'erreur :
+                      <code>{{ selectedTrace.expeditions[0].errorCode }}</code></span>
+                  </div>
+                </div>
+                <div class="step-time" *ngIf="selectedTrace.expeditions[0].ackDate">{{
+                  selectedTrace.expeditions[0].ackDate | date:'dd/MM/yyyy HH:mm:ss' }}</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- WIDGET 4 : CHRONOGRAMME (TERMINAL LOGS) -->
+        <div class="glass-card terminal-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="icon">💻</span>
+              <h2>Chronogramme (Terminal Logs d'Audit)</h2>
+            </div>
+          </div>
+
+          <div class="terminal-body font-mono">
+            <div class="log-line">
+              <span class="log-time">[{{ selectedTrace.receivingDate | date:'HH:mm:ss.SSS' }}]</span>
+              <span class="log-tag tag-info">INFO</span>
+              <span class="log-message">Fichier entrant <span class="highlight">{{ selectedTrace.fileName }}</span>
+                intercepté sur l'étape de réception.</span>
+            </div>
+
+            <div class="log-line" *ngIf="selectedTrace.flowCreationDate">
+              <span class="log-time">[{{ selectedTrace.flowCreationDate | date:'HH:mm:ss.SSS' }}]</span>
+              <span class="log-tag tag-success">SUCC</span>
+              <span class="log-message">Découpage & Intégration terminés. Création logique du flux (Type: <span
+                  class="highlight">{{ selectedTrace.flowTypeName }}</span>).</span>
+            </div>
+
+            <div class="log-line" *ngIf="selectedTrace.routeId">
+              <span class="log-time">[{{ selectedTrace.flowCreationDate | date:'HH:mm:ss.SSS' }}]</span>
+              <span class="log-tag tag-info">INFO</span>
+              <span class="log-message">Affectation à la route logique de supervision : <span class="highlight">{{
+                  selectedTrace.routeId }}</span>.</span>
+            </div>
+
+            <div class="log-line" *ngIf="selectedTrace.amount">
+              <span class="log-time">[{{ selectedTrace.flowCreationDate | date:'HH:mm:ss.SSS' }}]</span>
+              <span class="log-tag tag-info">INFO</span>
+              <span class="log-message">Validation financière. Montant détecté : <span class="highlight">{{
+                  selectedTrace.amount | number:'1.2-2' }} €</span>.</span>
+            </div>
+
+            <div *ngFor="let exp of selectedTrace.expeditions">
+              <div class="log-line">
+                <span class="log-time">[{{ selectedTrace.flowUpdateDate | date:'HH:mm:ss.SSS' }}]</span>
+                <span class="log-tag tag-info">INFO</span>
+                <span class="log-message">Flux de sortie généré (ID: <span class="highlight">#{{ exp.fileOutId
+                    }}</span>). Tentative d'expédition vers <span class="highlight">{{ exp.destination }}</span> ({{
+                  exp.address }}).</span>
+              </div>
+              <div class="log-line">
+                <span class="log-time">[{{ selectedTrace.flowUpdateDate | date:'HH:mm:ss.SSS' }}]</span>
+                <span class="log-tag tag-success">SUCC</span>
+                <span class="log-message">Statut de la livraison mis à jour : <span class="highlight-status"
+                    [class]="exp.status">{{ exp.status }}</span>.</span>
+              </div>
+              <div class="log-line" *ngIf="exp.ackStatus !== 'MISSING'">
+                <span class="log-time">[{{ exp.ackDate | date:'HH:mm:ss.SSS' }}]</span>
+                <span class="log-tag" [class.tag-success]="exp.ackStatus === 'ACK'"
+                  [class.tag-error]="exp.ackStatus === 'NACK'">
+                  {{ exp.ackStatus === 'ACK' ? 'SUCC' : 'ERR' }}
+                </span>
+                <span class="log-message" *ngIf="exp.ackStatus === 'ACK'">
+                  Confirmation financière (ACK) reçue du système distant. Transaction validée.
+                </span>
+                <span class="log-message" *ngIf="exp.ackStatus === 'NACK'">
+                  Rejet financier (NACK) reçu. Code: <span class="highlight-err">{{ exp.errorCode }}</span>, Raison:
+                  <span class="highlight-err">{{ exp.errorReason }}</span>.
+                </span>
+              </div>
+            </div>
+
+            <div class="log-line flash-cursor">
+              <span class="log-time">[{{ selectedTrace.flowUpdateDate | date:'HH:mm:ss.SSS' }}]</span>
+              <span class="log-tag tag-info">INFO</span>
+              <span class="log-message">Console d'Audit en attente de nouvelles transactions...<span
+                  class="cursor">_</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- WIDGET : MATRICE D'ÉTAT DES EXPÉDITIONS -->
+      <div class="glass-card matrix-card" *ngIf="selectedTrace.expeditions && selectedTrace.expeditions.length > 0">
+        <div class="card-header">
+          <div class="header-title">
+            <span class="icon">📊</span>
+            <h2>Matrice d'État des Expéditions</h2>
+          </div>
+          <span class="badge badge-workflow">{{ selectedTrace.expeditions.length }} Expédition(s)</span>
+        </div>
+
+        <div class="matrix-table-container">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th>ID Envoi</th>
+                <th>Destination</th>
+                <th>Adresse IP/Port</th>
+                <th>Statut Flux</th>
+                <th>Statut ACK</th>
+                <th>Date d'Envoi</th>
+                <th>SLA / Délai ACK</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let exp of selectedTrace.expeditions">
+                <td class="font-mono">#{{ exp.fileOutId }}</td>
+                <td><strong>{{ exp.destination }}</strong></td>
+                <td class="font-mono text-secondary">{{ exp.address || '—' }}</td>
+                <td>
+                  <span class="badge badge-status" [class]="getStatusClass(exp.status)">
+                    {{ exp.status || 'Non initié' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-status" [class]="getStatusClass(exp.ackStatus)">
+                    {{ exp.ackStatus }}
+                  </span>
+                </td>
+                <td class="font-mono">{{ exp.ackDate ? (exp.ackDate | date:'dd/MM/yyyy HH:mm:ss') : 'En attente' }}</td>
+                <td>
+                  <span class="sla-pill" [ngClass]="getSlaClass(exp.ackDurationMs)">
+                    {{ formatDuration(exp.ackDurationMs) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -48,7 +48,7 @@ def fetch_oracle_schema():
             doc = Document(page_content=content, metadata={"table_name": table_name})
             documents.append(doc)
             
-        print(f"✅ {len(documents)} tables extraites avec succès depuis Oracle !")
+        print(f"[OK] {len(documents)} tables extraites avec succes depuis Oracle !")
         return documents
         
     except Exception as e:
@@ -70,8 +70,43 @@ def create_chroma_index(documents):
         embedding=embeddings, 
         persist_directory="./chroma_index"
     )
-    print("✅ Index Chroma RAG créé avec succès dans ./chroma_index !")
+    print("[OK] Index Chroma RAG cree avec succes dans ./chroma_index !")
+
+def fetch_local_documentation():
+    documents = []
+    docs_dir = "./docs"
+    if os.path.exists(docs_dir):
+        print(f"Chargement de la documentation locale depuis {docs_dir}...")
+        for filename in os.listdir(docs_dir):
+            if filename.endswith(".txt") or filename.endswith(".md"):
+                file_path = os.path.join(docs_dir, filename)
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                
+                # Document complet pour les questions globales (ex: compter les widgets de la page)
+                doc_full = Document(
+                    page_content=content,
+                    metadata={"source": filename, "chunk": "full", "table_name": "N/A (Documentation)"}
+                )
+                documents.append(doc_full)
+                
+                # Découpage par double retour à la ligne pour avoir des paragraphes précis
+                paragraphs = content.split("\n\n")
+                for i, para in enumerate(paragraphs):
+                    para = para.strip()
+                    if len(para) > 10:
+                        doc = Document(
+                            page_content=para,
+                            metadata={"source": filename, "chunk": f"part_{i}", "table_name": "N/A (Documentation)"}
+                        )
+                        documents.append(doc)
+        print(f"[OK] {len(documents)} fragments de documentation charges !")
+    else:
+        print("Dossier ./docs introuvable.")
+    return documents
 
 if __name__ == "__main__":
-    docs = fetch_oracle_schema()
-    create_chroma_index(docs)
+    docs_db = fetch_oracle_schema()
+    docs_local = fetch_local_documentation()
+    all_docs = docs_db + docs_local
+    create_chroma_index(all_docs)

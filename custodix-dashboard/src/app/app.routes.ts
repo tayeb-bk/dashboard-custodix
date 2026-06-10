@@ -6,6 +6,7 @@ import { EaiHeaderComponent } from './components/eai-header/eai-header.component
 import { ChatCustodixaiComponent } from './components/chat-custodixai/chat-custodixai.component';
 import { FlowFileInComponent } from './components/flow-filein/flow-filein.component';
 import { FlowFileOutComponent } from './components/flow-fileout/flow-fileout.component';
+import { TraceabilityComponent } from './components/traceability/traceability.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -20,6 +21,8 @@ export const routes: Routes = [
       { path: 'custodix-ai', component: ChatCustodixaiComponent },
       { path: 'file-in',    component: FlowFileInComponent },
       { path: 'file-out',   component: FlowFileOutComponent },
+      { path: 'traceability', component: TraceabilityComponent },
     ]
   }
 ];
+
