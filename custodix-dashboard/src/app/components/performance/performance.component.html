@@ -1,0 +1,639 @@
+<div class="noc-container">
+  
+  <!-- HEADER -->
+  <header class="noc-header">
+    <div class="noc-header-left">
+      <h1>Audit des Temps de Traitement</h1>
+      <p class="subtitle">Sur ce jeu de données, est-ce que les fichiers ont été traités dans un temps acceptable ?</p>
+    </div>
+    
+    <div class="noc-header-actions">
+      <button class="btn btn-mode" (click)="toggleViewMode()">
+        <span class="icon">🔄</span> {{ viewMode === 'noc' ? 'Mode Métier (Business)' : 'Mode Technique (NOC)' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- FILTRES GLOBAUX -->
+  <section class="filters-card glass-card">
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>Rechercher par ID</label>
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFiltersAndAudit()" placeholder="ID Fichier / Flux..." class="form-input">
+      </div>
+      <div class="filter-group">
+        <label>Contrat SLA</label>
+        <select [(ngModel)]="selectedContract" (change)="applyFiltersAndAudit()" class="form-select">
+          <option value="">Tous les Contrats</option>
+          <option *ngFor="let c of contracts" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Workflow</label>
+        <select [(ngModel)]="selectedWorkflow" (change)="applyFiltersAndAudit()" class="form-select">
+          <option value="">Tous les Workflows</option>
+          <option *ngFor="let w of workflows" [value]="w">{{ w }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Date Début</label>
+        <input type="date" [(ngModel)]="startDate" (change)="fetchData()" class="form-input">
+      </div>
+      <div class="filter-group">
+        <label>Date Fin</label>
+        <input type="date" [(ngModel)]="endDate" (change)="fetchData()" class="form-input">
+      </div>
+    </div>
+  </section>
+
+  <!-- AXE 1 : TELEMETRIE LINÉAIRE & COMPACTE -->
+  <section class="telemetry-banner">
+    <!-- Jauge Linéaire de Respect SLA -->
+    <div class="telemetry-card glass-card kpi-compliance">
+      <div class="kpi-header">
+        <div class="kpi-title-group">
+          <span class="kpi-title">RESPECT DES ENGAGEMENTS (SLA)</span>
+          <div class="info-btn-wrap" (click)="toggleWidget('conformite', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <span class="kpi-value" [ngClass]="{
+          'text-success': complianceRate >= 98,
+          'text-warning': complianceRate >= 95 && complianceRate < 98,
+          'text-danger': complianceRate < 95
+        }">{{ complianceRate }}%</span>
+      </div>
+      <!-- Barre horizontale lumineuse ultra-fine -->
+      <div class="linear-gauge-container">
+        <div class="linear-gauge-fill" [style.width.%]="complianceRate" [ngClass]="{
+          'bg-success': complianceRate >= 98,
+          'bg-warning': complianceRate >= 95 && complianceRate < 98,
+          'bg-danger': complianceRate < 95
+        }"></div>
+      </div>
+      <p class="kpi-footer">{{ totalCount - breachedCount }} flux conformes sur {{ totalCount }} au total</p>
+    </div>
+
+    <!-- Volume de l'Échantillon -->
+    <div class="telemetry-card glass-card kpi-volume">
+      <div class="kpi-header">
+        <div class="kpi-title-group">
+          <span class="kpi-title">FICHIERS ANALYSÉS</span>
+          <div class="info-btn-wrap" (click)="toggleWidget('volume', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <span class="kpi-value text-info">{{ totalCount | number }}</span>
+      </div>
+      <div class="linear-gauge-container transparent"></div>
+      <p class="kpi-footer">Volume total de l'échantillon sélectionné</p>
+    </div>
+
+    <!-- Latence Moyenne Globale -->
+    <div class="telemetry-card glass-card kpi-latency">
+      <div class="kpi-header">
+        <div class="kpi-title-group">
+          <span class="kpi-title">TEMPS DE TRAITEMENT MOYEN</span>
+          <div class="info-btn-wrap" (click)="toggleWidget('tempsMoyen', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <span class="kpi-value text-primary">{{ (avgT1 + avgT2 + avgT3) | number:'1.1-1' }}s</span>
+      </div>
+      <div class="linear-gauge-container transparent"></div>
+      <p class="kpi-footer">Cumul moyen des étapes d'intégration et de traitement</p>
+    </div>
+  </section>
+
+  <!-- GRILLE PRINCIPALE (SIMULATION & PIPELINE) -->
+  <div class="main-noc-grid">
+    
+    <!-- SEUILS D'ÉVALUATION -->
+    <section class="playground-card glass-card">
+      <div class="card-header">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h2>📊 SEUILS D'ÉVALUATION</h2>
+          <div class="info-btn-wrap" (click)="toggleWidget('seuils', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <span class="badge-scenario">Niveau Standard</span>
+      </div>
+      
+      <div class="presets-row">
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'gold'}" (click)="selectScenario('gold')">Exigence haute</button>
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'silver'}" (click)="selectScenario('silver')">Standard</button>
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'bronze'}" (click)="selectScenario('bronze')">Souple</button>
+      </div>
+
+      <div class="audit-standards-display">
+        <p class="audit-text">Seuils appliqués pour qualifier un fichier "hors délai" :</p>
+        <ul class="audit-list">
+          <li><strong>Intégration :</strong> <span class="text-primary">{{ t1SlaSec }} s max</span></li>
+          <li><strong>Traitement Custodix :</strong> <span class="text-primary">{{ t2SlaSec }} s max</span></li>
+          <li><strong>Attente partenaire :</strong> <span class="text-primary">{{ t3SlaMin }} min max</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- AXE 2 : ANALYSE DES GOULOTS D'ÉTRANGLEMENT -->
+    <section class="pipeline-card glass-card">
+      <div class="card-header">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h2>🔍 ANALYSE DES GOULOTS D'ÉTRANGLEMENT</h2>
+          <div class="info-btn-wrap" (click)="toggleWidget('goulots', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <span class="badge-pipeline-scope" *ngIf="pipelineSearchId && pipelineCount > 0">
+          {{ pipelineCount }} flux isolé(s)
+        </span>
+      </div>
+
+      <!-- Corps scrollable -->
+      <div class="pipeline-card-body">
+
+      <!-- Recherche ID propre au widget -->
+      <div class="pipeline-search-wrap">
+        <div class="pipeline-search-inner">
+          <span class="search-icon-pl">🔎</span>
+          <input type="text"
+                 [(ngModel)]="pipelineSearchId"
+                 (ngModelChange)="onPipelineSearchChange()"
+                 placeholder="Isoler un flux par son ID..."
+                 class="pipeline-search-input">
+          <button *ngIf="pipelineSearchId" class="pipeline-search-clear" (click)="clearPipelineSearch()" title="Effacer">✕</button>
+        </div>
+        <div class="pipeline-search-hint warn" *ngIf="pipelineSearchId && pipelineCount === 0">
+          ⚠️ Aucun flux trouvé pour l'ID "{{ pipelineSearchId }}"
+        </div>
+        <div class="pipeline-search-hint ok" *ngIf="pipelineSearchId && pipelineCount > 0">
+          ✔ {{ pipelineCount }} flux analysé(s) — statistiques ci-dessous isolées
+        </div>
+      </div>
+
+      <!-- Barres de violation par étape -->
+      <div class="bottleneck-list">
+
+        <!-- T1 : Intégration -->
+        <div class="bottleneck-step" (click)="setPipelineStepFilter('t1')" [class.active]="stepFilter === 't1'">
+          <div class="step-header">
+            <span class="step-icon-pl">📥</span>
+            <div class="step-info">
+              <span class="step-name">Intégration</span>
+              <span class="step-sla">seuil max : {{ t1SlaSec }}s</span>
+            </div>
+            <div class="step-metrics">
+              <span class="step-pct"
+                [ngClass]="{
+                  'pct-ok':       breachedT1Count === 0,
+                  'pct-warn':     breachedT1Count > 0 && pipelineCount > 0 && (breachedT1Count / pipelineCount) <= 0.2,
+                  'pct-critical': pipelineCount > 0 && (breachedT1Count / pipelineCount) > 0.2
+                }">
+                {{ pipelineCount > 0 ? (breachedT1Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+              </span>
+              <span class="step-sub">{{ breachedT1Count }} / {{ pipelineCount }}</span>
+            </div>
+          </div>
+          <div class="step-bar">
+            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT1Count) / pipelineCount * 100 : 100"></div>
+            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT1Count / pipelineCount * 100 : 0"></div>
+          </div>
+          <div class="step-footer">
+            <span class="step-avg">⌀ {{ avgT1 | number:'1.1-1' }}s</span>
+            <span class="step-click-hint" *ngIf="stepFilter !== 't1'">Cliquer pour filtrer le journal →</span>
+            <span class="step-click-hint-active" *ngIf="stepFilter === 't1'">✓ Filtre actif — journal filtré</span>
+          </div>
+        </div>
+
+        <!-- T2 : Traitement -->
+        <div class="bottleneck-step" (click)="setPipelineStepFilter('t2')" [class.active]="stepFilter === 't2'">
+          <div class="step-header">
+            <span class="step-icon-pl">⚙️</span>
+            <div class="step-info">
+              <span class="step-name">Traitement EAI</span>
+              <span class="step-sla">seuil max : {{ t2SlaSec }}s</span>
+            </div>
+            <div class="step-metrics">
+              <span class="step-pct"
+                [ngClass]="{
+                  'pct-ok':       breachedT2Count === 0,
+                  'pct-warn':     breachedT2Count > 0 && pipelineCount > 0 && (breachedT2Count / pipelineCount) <= 0.2,
+                  'pct-critical': pipelineCount > 0 && (breachedT2Count / pipelineCount) > 0.2
+                }">
+                {{ pipelineCount > 0 ? (breachedT2Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+              </span>
+              <span class="step-sub">{{ breachedT2Count }} / {{ pipelineCount }}</span>
+            </div>
+          </div>
+          <div class="step-bar">
+            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT2Count) / pipelineCount * 100 : 100"></div>
+            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT2Count / pipelineCount * 100 : 0"></div>
+          </div>
+          <div class="step-footer">
+            <span class="step-avg">⌀ {{ avgT2 | number:'1.1-1' }}s</span>
+            <span class="step-click-hint" *ngIf="stepFilter !== 't2'">Cliquer pour filtrer le journal →</span>
+            <span class="step-click-hint-active" *ngIf="stepFilter === 't2'">✓ Filtre actif — journal filtré</span>
+          </div>
+        </div>
+
+        <!-- T3 : Attente partenaire -->
+        <div class="bottleneck-step" (click)="setPipelineStepFilter('t3')" [class.active]="stepFilter === 't3'">
+          <div class="step-header">
+            <span class="step-icon-pl">📤</span>
+            <div class="step-info">
+              <span class="step-name">Attente partenaire</span>
+              <span class="step-sla">seuil max : {{ t3SlaMin }} min</span>
+            </div>
+            <div class="step-metrics">
+              <span class="step-pct"
+                [ngClass]="{
+                  'pct-ok':       breachedT3Count === 0,
+                  'pct-warn':     breachedT3Count > 0 && pipelineCount > 0 && (breachedT3Count / pipelineCount) <= 0.2,
+                  'pct-critical': pipelineCount > 0 && (breachedT3Count / pipelineCount) > 0.2
+                }">
+                {{ pipelineCount > 0 ? (breachedT3Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+              </span>
+              <span class="step-sub">{{ breachedT3Count }} / {{ pipelineCount }}</span>
+            </div>
+          </div>
+          <div class="step-bar">
+            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT3Count) / pipelineCount * 100 : 100"></div>
+            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT3Count / pipelineCount * 100 : 0"></div>
+          </div>
+          <div class="step-footer">
+            <span class="step-avg">⌀ {{ (avgT3 / 60) | number:'1.1-1' }} min</span>
+            <span class="step-click-hint" *ngIf="stepFilter !== 't3'">Cliquer pour filtrer le journal →</span>
+            <span class="step-click-hint-active" *ngIf="stepFilter === 't3'">✓ Filtre actif — journal filtré</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ ZONE D'AFFICHAGE CONTEXTUELLE ═══════════════════════════════ -->
+
+      <!-- Mode 3 : Recherche ID active → Fiche détaillée du/des fichier(s) trouvé(s) -->
+      <div class="pipeline-results" *ngIf="pipelineSearchId && pipelineCount > 0">
+        <div class="results-header">
+          <strong>📄 Résultat pour l'ID "{{ pipelineSearchId }}"</strong>
+          <span class="results-count">{{ searchedFiles.length }} flux trouvé(s)</span>
+        </div>
+        <div class="result-file-card" *ngFor="let f of searchedFiles">
+          <div class="result-file-id">#{{ f.fileInId }}
+            <span class="result-global-badge" [ngClass]="f.isBreached ? 'badge-danger' : 'badge-success'">
+              {{ f.isBreached ? 'Hors délais' : 'Conforme' }}
+            </span>
+          </div>
+          <div class="result-file-steps">
+
+            <!-- Intégration -->
+            <div class="result-step" [ngClass]="f.t1 > t1SlaSec ? 'step-breach' : 'step-ok'">
+              <span class="rs-label">📥 Intégration</span>
+              <span class="rs-val">{{ f.t1 | number:'1.1-1' }}s</span>
+              <span class="rs-seuil">seuil : {{ t1SlaSec }}s</span>
+              <span class="rs-badge">{{ f.t1 > t1SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+            </div>
+
+            <!-- Traitement EAI -->
+            <div class="result-step" [ngClass]="f.t2 > t2SlaSec ? 'step-breach' : 'step-ok'">
+              <span class="rs-label">⚙️ Traitement EAI</span>
+              <span class="rs-val">{{ f.t2 | number:'1.1-1' }}s</span>
+              <span class="rs-seuil">seuil : {{ t2SlaSec }}s</span>
+              <span class="rs-badge">{{ f.t2 > t2SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+            </div>
+
+            <!-- Attente partenaire (seulement si ACK attendu) -->
+            <div class="result-step" *ngIf="f.ackExpected === 1"
+                 [ngClass]="f.t3 > (t3SlaMin * 60) ? 'step-breach' : 'step-ok'">
+              <span class="rs-label">📤 Attente partenaire</span>
+              <span class="rs-val">{{ f.t3 | number:'1.1-1' }}s</span>
+              <span class="rs-seuil">seuil : {{ t3SlaMin * 60 }}s</span>
+              <span class="rs-badge">{{ f.t3 > (t3SlaMin * 60) ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+            </div>
+            <div class="result-step step-na" *ngIf="f.ackExpected !== 1">
+              <span class="rs-label">📤 Attente partenaire</span>
+              <span class="rs-badge">Non requis pour ce flux</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 2 : Filtre par étape actif et pas de recherche ID → Top 5 -->
+      <div class="pipeline-top5" *ngIf="stepFilter && !pipelineSearchId">
+        <div class="top5-header">
+          <strong>🏆 Top 5 — {{ stepFilterLabel }}</strong>
+          <button class="top5-clear" (click)="clearPipelineStepFilter()">✕ Réinitialiser</button>
+        </div>
+        <div class="top5-list">
+          <div class="top5-item" *ngFor="let f of top5ForStep; let i = index">
+            <span class="top5-rank">{{ i + 1 }}</span>
+            <span class="top5-id">#{{ f.fileInId }}</span>
+            <span class="top5-val">{{ getStepLatency(f) | number:'1.1-1' }}s</span>
+            <span class="top5-seuil">seuil : {{ thresholdForStep }}s</span>
+          </div>
+          <div class="top5-empty" *ngIf="top5ForStep.length === 0">
+            ✅ Aucun fichier en violation pour cette étape.
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 1 : Aucun filtre actif → Message d'aide -->
+      <div class="pipeline-hint" *ngIf="!stepFilter && !pipelineSearchId">
+        <p>💡 Cliquez sur une étape ci-dessus pour voir les fichiers en violation.</p>
+        <p class="hint-sub">Ou recherchez un ID de flux — les IDs valides sont visibles dans la colonne <strong>"ID Flux/Fichier"</strong> du journal ci-dessous.</p>
+      </div>
+
+      </div><!-- /.pipeline-card-body -->
+    </section>
+  </div>
+
+
+
+  <!-- AXE 3 & 4 : GRAPHIIQUES ET IA DIAGNOSTIC -->
+  <div class="insights-grid">
+    <!-- GRAPHIQUES TECHNIQUES (AFFICHÉS UNIQUEMENT EN MODE NOC) -->
+    <div class="charts-card glass-card" *ngIf="viewMode === 'noc'">
+      <div class="card-header">
+        <h2>📈 DISPERSION DE LATENCE & ANALYSE PAR CONTRAT</h2>
+      </div>
+      <div class="charts-wrapper" *ngIf="chartsLoaded">
+        <div class="chart-item">
+          <h3> Dispersion des Latences (Scatter Plot)</h3>
+          <apx-chart 
+            [series]="scatterChartOptions.series" 
+            [chart]="scatterChartOptions.chart" 
+            [xaxis]="scatterChartOptions.xaxis" 
+            [yaxis]="scatterChartOptions.yaxis"
+            [grid]="scatterChartOptions.grid"
+            [markers]="scatterChartOptions.markers"
+            [tooltip]="scatterChartOptions.tooltip"
+            [colors]="scatterChartOptions.colors">
+          </apx-chart>
+        </div>
+        <div class="chart-item">
+          <h3>Décomposition Moyenne par Contrat</h3>
+          <apx-chart 
+            [series]="barChartOptions.series" 
+            [chart]="barChartOptions.chart" 
+            [xaxis]="barChartOptions.xaxis"
+            [yaxis]="barChartOptions.yaxis"
+            [grid]="barChartOptions.grid"
+            [legend]="barChartOptions.legend"
+            [tooltip]="barChartOptions.tooltip"
+            [colors]="barChartOptions.colors">
+          </apx-chart>
+        </div>
+      </div>
+      <div *ngIf="!chartsLoaded" class="no-data-msg">
+        Chargement des graphiques...
+      </div>
+    </div>
+
+    <!-- IA COPILOTE DE DIAGNOSTIC & CONVERSATION -->
+    <section class="ai-card glass-card">
+      <div class="ai-header-layout">
+        <h2>🤖 CUSTODIX AI : ASSISTANT DE COCKPIT</h2>
+        <div class="ai-header-buttons">
+          <button class="btn btn-preset" (click)="askPreset('Quels contrats ont le plus de violations ?')">Contrats critiques</button>
+          <button class="btn btn-preset" (click)="askPreset('Montre les latences moyennes par contrat')">Latences moyennes</button>
+          <button class="btn btn-ai" [disabled]="isAnalyzing" (click)="generateAiDiagnostic()">
+            {{ isAnalyzing ? 'Audit...' : 'Audit SLA Global' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="ai-content-box">
+        <div *ngIf="isAnalyzing" class="ai-loader">
+          <span class="pulse-ring"></span>
+          <p>L'IA analyse les données de performance et prépare la réponse...</p>
+        </div>
+        
+        <div *ngIf="!isAnalyzing && !aiDiagnostic" class="ai-placeholder">
+          <p>Posez une question sur les performances ou lancez l'audit global ci-dessus.</p>
+          <div class="ai-examples">
+            <span>Suggestions :</span>
+            <ul>
+              <li><a (click)="userAiQuery = 'Combien de fichiers dans la table FLOW_FLOW aujourd\'hui ?'; askAi()">"Combien de fichiers dans la table FLOW_FLOW aujourd'hui ?"</a></li>
+              <li><a (click)="userAiQuery = 'Affiche les 5 derniers flux en erreur'; askAi()">"Affiche les 5 derniers flux en erreur"</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div *ngIf="!isAnalyzing && aiDiagnostic" class="ai-result markdown-content" [innerHTML]="aiDiagnostic">
+        </div>
+      </div>
+
+      <div class="ai-chat-input-wrapper">
+        <input type="text" 
+               [(ngModel)]="userAiQuery" 
+               (keyup.enter)="askAi()" 
+               placeholder="Posez une question en langage naturel (ex: Combien de flux aujourd'hui ?)..." 
+               class="form-input ai-input-field" 
+               [disabled]="isAnalyzing">
+        <button class="btn btn-ai send-chat-btn" [disabled]="isAnalyzing || !userAiQuery" (click)="askAi()">
+          Poser à l'IA
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- BANDEAU FILTRE ACTIF -->
+  <div class="filter-banner" *ngIf="stepFilter">
+    <span>🔍 {{ stepFilterLabel }}</span>
+    <button class="btn btn-link" (click)="clearPipelineStepFilter()">✕ Réinitialiser</button>
+  </div>
+
+  <!-- AXE 3 : JOURNAL DES VIOLATIONS & DÉRIVES -->
+  <section class="journal-card glass-card">
+    <div class="card-header">
+      <h2>📋 JOURNAL DES DÉRIVES ET VIOLATIONS DE SLA</h2>
+      <div class="pagination-controls">
+        <button class="btn btn-nav" (click)="prevPage()" [disabled]="currentPage === 1">Précédent</button>
+        <span class="page-num">Page {{ currentPage }} sur {{ totalPages }}</span>
+        <button class="btn btn-nav" (click)="nextPage()" [disabled]="currentPage === totalPages">Suivant</button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="noc-table">
+        <thead>
+          <tr>
+            <th>ID Flux/Fichier</th>
+            <th>Contrat</th>
+            <th>Workflow</th>
+            <th>Intégration</th>
+            <th>Traitement</th>
+            <th>Attente partenaire</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let item of displayedLatencies; trackBy: trackByFileId">
+            <tr [ngClass]="{'breached-row': item.isBreached}">
+              <td class="font-mono">{{ item.fileInId }}</td>
+              <td>{{ item.contract || '—' }}</td>
+              <td>{{ item.workflow || '—' }}</td>
+              <td>{{ item.t1 | number:'1.1-1' }}s</td>
+              <td>
+                {{ item.t2 | number:'1.1-1' }}s
+              </td>
+              <td>
+                <span *ngIf="item.ackExpected === 1">{{ item.t3 | number:'1.1-1' }}s</span>
+                <span *ngIf="item.ackExpected === 0" class="text-muted">Non requis</span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="item.isBreached ? 'badge-danger' : 'badge-success'">
+                  {{ item.isBreached ? 'Hors délais' : 'Conforme' }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-table-action" (click)="toggleExpandRow(item.fileInId)" title="Voir les expéditions">
+                  {{ expandedFileId === item.fileInId ? '▲' : '▼' }}
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="expandedFileId === item.fileInId" class="sub-table-row">
+              <td colspan="8">
+                <div class="sub-table-container">
+                  <h4>📦 Détail des expéditions physiques pour la transaction #{{ item.fileInId }}</h4>
+                  <table class="sub-table">
+                    <thead>
+                      <tr>
+                        <th>ID Expédition</th>
+                        <th>Destination SFTP/FTP</th>
+                        <th>Délai ACK</th>
+                        <th>Statut ACK</th>
+                        <th>Type ACK</th>
+                        <th>Date de réception ACK</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let sub of subDeliveries">
+                        <td>{{ sub.deliveryId }}</td>
+                        <td>{{ sub.destId }}</td>
+                        <td>{{ sub.t3 | number:'1.1-1' }}s</td>
+                        <td>
+                          <span class="status-badge" [ngClass]="sub.status === 'CONFIRMÉ' ? 'badge-success' : 'badge-warning'">
+                            {{ sub.status }}
+                          </span>
+                        </td>
+                        <td>{{ sub.ackType }}</td>
+                        <td>{{ sub.dateAck }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- POPOVERS D'INFORMATION (niveau racine pour position:fixed correct) -->
+  <div class="popover-backdrop" *ngIf="activeWidget" (click)="closeWidget()"></div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='conformite'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['conformite'].icon }}</span>
+      <strong>{{ widgetInfo['conformite'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition</span>
+      <p>{{ widgetInfo['conformite'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Calcul</span>
+      <p>{{ widgetInfo['conformite'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 À surveiller</span>
+      <p>{{ widgetInfo['conformite'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='volume'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['volume'].icon }}</span>
+      <strong>{{ widgetInfo['volume'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition</span>
+      <p>{{ widgetInfo['volume'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Calcul</span>
+      <p>{{ widgetInfo['volume'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 À surveiller</span>
+      <p>{{ widgetInfo['volume'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='tempsMoyen'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['tempsMoyen'].icon }}</span>
+      <strong>{{ widgetInfo['tempsMoyen'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition</span>
+      <p>{{ widgetInfo['tempsMoyen'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Calcul</span>
+      <p>{{ widgetInfo['tempsMoyen'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 À surveiller</span>
+      <p>{{ widgetInfo['tempsMoyen'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='seuils'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['seuils'].icon }}</span>
+      <strong>{{ widgetInfo['seuils'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition</span>
+      <p>{{ widgetInfo['seuils'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Calcul</span>
+      <p>{{ widgetInfo['seuils'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 À surveiller</span>
+      <p>{{ widgetInfo['seuils'].action }}</p>
+    </div>
+  </div>
+  <div class="info-popover open" *ngIf="activeWidget==='goulots'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['goulots'].icon }}</span>
+      <strong>{{ widgetInfo['goulots'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition</span>
+      <p>{{ widgetInfo['goulots'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Calcul</span>
+      <p>{{ widgetInfo['goulots'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 À surveiller</span>
+      <p>{{ widgetInfo['goulots'].action }}</p>
+    </div>
+  </div>
+
+</div>

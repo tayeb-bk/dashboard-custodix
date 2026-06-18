@@ -40,14 +40,23 @@ _CERTIFIED_SCHEMAS = """TABLES ET COLONNES CERTIFIÉES (CRITIQUE - JAMAIS invent
 - SENDER_IDENTIFIER_ : Identifiant émetteur
 - RECEIVER_IDENTIFIER_ : Identifiant destinataire
 - ROUTE_ROUTEID_ : Identifiant de la route
-- AMOUNT1_ : Montant financier"""
+- AMOUNT1_ : Montant financier
 
-# ============================================================
-# PROMPT SQL - Dédié uniquement à la génération SQL Oracle
-# ============================================================
+4. Table UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT (Acquittements réseau) :
+- ID_ : Identifiant unique
+- ACKEDFILEOUT_ID_ : Identifiant du fichier expédié (FLOW_FILEOUT.ID_)
+- FILEOUTSENDINGDATE_ : Date/heure d'acquittement (JAMAIS ACK_DATE)"""
+
 _SQL_PROMPT = """Tu es Custodix AI, un expert de base de données Oracle 21c.
 Génère UNIQUEMENT une requête SQL Oracle valide pour répondre à la question.
 Ta réponse doit être UNIQUEMENT un bloc markdown SQL, sans aucune explication ni point-virgule (;).
+
+RÈGLES DE CALCUL DE LATENCE & VIOLATION (SLA) :
+- Latence T2 (Traitement logique) = (ff.UPDATEDATE_ - ff.CREATIONDATE_) * 86400 en secondes (tables UCUSTOI0.FLOW_FLOW ff)
+- Latence T3 (Acquittement externe réseau) = (ack.FILEOUTSENDINGDATE_ - fi.SENDINGDATE_) * 86400 en secondes (tables UCUSTOI0.FLOW_FILEIN fi, UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack)
+- Une violation de SLA (Breach / Retard) survient si :
+  - La latence T2 dépasse le seuil cible T2 (ex: T2 > 15 secondes)
+  - OU la latence T3 dépasse le seuil cible T3 (ex: T3 > 120 secondes, soit 2 minutes) pour les flux où fo.ACKEXPECTED_ = 1 (table UCUSTOI0.FLOW_FILEOUT fo)
 
 RÈGLES ORACLE :
 - Schéma propriétaire : UCUSTOI0. Préfixe TOUJOURS les tables avec le schéma (ex: UCUSTOI0.FLOW_FILEIN).
@@ -56,17 +65,30 @@ RÈGLES ORACLE :
 - Pour lister les colonnes d'une table : SELECT column_name FROM dba_tab_columns WHERE owner = 'UCUSTOI0' AND table_name = 'NOM'
 
 SYNTAXE DATES ORACLE (CRITIQUE) :
-- Filtrer par jour EXACT : TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
+- Filtrer par jour actuel (aujourd'hui) : TRUNC(SENDINGDATE_) = TRUNC(SYSDATE)
+- Si l'utilisateur demande "par jour", "les latences moyennes" (sans mentionner de date précise), ne restreins pas à une date fixe, ou utilise TRUNC(SYSDATE) pour aujourd'hui.
+- Filtrer par un jour précis (seulement si spécifié dans la question, par exemple le 5 juin 2025) : TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
 - Filtrer par heure : EXTRACT(HOUR FROM SENDINGDATE_) BETWEEN 14 AND 16
 - INTERDIT : DATE_TRUNC() (PostgreSQL), DATE 'YYYY-MM-DD' (invalide Oracle)
 
 {schemas}
 
 EXEMPLES :
-- Fichiers reçus un jour : SELECT ID_, INITIATIONFILE_, SENDINGDATE_ FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
-- Doublons du jour : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN WHERE DUPLICATED_ID_ IS NOT NULL AND TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY')
-- Pics horaires : SELECT EXTRACT(HOUR FROM SENDINGDATE_) AS HEURE, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TO_DATE('05-06-2025', 'DD-MM-YYYY') GROUP BY EXTRACT(HOUR FROM SENDINGDATE_) ORDER BY TOTAL DESC
-- Flux en erreur : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FLOW WHERE STATUS_ IN ('InTechnicalError', 'Rejected', 'Blocked')
+- Fichiers reçus aujourd'hui : SELECT ID_, INITIATIONFILE_, SENDINGDATE_ FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TRUNC(SYSDATE)
+- Contrats avec le plus de violations (seuil T2=15s, T3=120s) :
+  SELECT fi.PASSEDCONTRACTIDENTIFIER_, COUNT(*) AS TOTAL_VIOLATIONS
+  FROM UCUSTOI0.FLOW_FILEIN fi
+  LEFT JOIN UCUSTOI0.FLOW_FLOW ff ON ff.ID_ = fi.ID_
+  LEFT JOIN UCUSTOI0.FLOW_FILEOUT fo ON fo.FILEIN_ID_ = fi.ID_
+  LEFT JOIN UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack ON ack.ACKEDFILEOUT_ID_ = fo.ID_
+  WHERE ((ff.UPDATEDATE_ - ff.CREATIONDATE_) * 86400 > 15)
+     OR (fo.ACKEXPECTED_ = 1 AND (ack.FILEOUTSENDINGDATE_ - fi.SENDINGDATE_) * 86400 > 120)
+  GROUP BY fi.PASSEDCONTRACTIDENTIFIER_
+  ORDER BY TOTAL_VIOLATIONS DESC
+- Doublons aujourd'hui : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN WHERE DUPLICATED_ID_ IS NOT NULL AND TRUNC(SENDINGDATE_) = TRUNC(SYSDATE)
+- Pics horaires aujourd'hui : SELECT EXTRACT(HOUR FROM SENDINGDATE_) AS HEURE, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FILEIN WHERE TRUNC(SENDINGDATE_) = TRUNC(SYSDATE) GROUP BY EXTRACT(HOUR FROM SENDINGDATE_) ORDER BY TOTAL DESC
+- Flux en erreur globaux : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FLOW WHERE STATUS_ IN ('InTechnicalError', 'Rejected', 'Blocked')
+- Latence moyenne par contrat : SELECT PASSEDCONTRACTIDENTIFIER_, AVG(FILESIZE_) FROM UCUSTOI0.FLOW_FILEIN GROUP BY PASSEDCONTRACTIDENTIFIER_
 
 Question de l'utilisateur : {question}
 Génère la requête SQL dans un bloc markdown complet (```sql ... ```) :"""

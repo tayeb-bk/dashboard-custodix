@@ -54,19 +54,11 @@ export class DashboardComponent implements OnInit {
       status: 'active'
     },
     {
-      id: 'eai-header',
-      label: 'Étape 4 : Alertes',
-      route: 'eai-header',
-      iconPath: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
-      status: 'active',
-      badge: 'En cours'
-    },
-    {
       id: 'perf',
       label: 'Étape 5 : Performance',
       route: 'performance',
       iconPath: 'M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-      status: 'disabled'
+      status: 'active'
     },
     {
       id: 'trace',

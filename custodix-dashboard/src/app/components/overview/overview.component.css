@@ -868,3 +868,274 @@
   box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.1);
 }
 
+/* ===================================================================== */
+/* ===== PHASE 3 — EXPÉDITION Widget (Premium Violet Theme) ============ */
+/* ===================================================================== */
+
+.phase-expedition {
+  border-top: 3px solid #8b5cf6;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.phase-expedition:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px rgba(139, 92, 246, 0.15), 0 0 30px rgba(139, 92, 246, 0.1);
+  border-color: #a78bfa;
+}
+
+.phase-step-violet {
+  color: #c084fc !important;
+}
+
+.btn-violet {
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(167, 139, 250, 0.3) !important;
+}
+
+.btn-violet:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
+  border-color: transparent !important;
+  transform: translateY(-2px);
+}
+
+/* ---- Expedition Balance & Timeline Chart ---- */
+.expedition-balance {
+  background: rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 18px 20px;
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.expedition-balance.filtered {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.1);
+}
+
+.ack-health-badge {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.ack-health-badge.badge-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+.ack-health-badge.badge-warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
+.ack-health-badge.badge-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+/* ---- Custom Interactive Delivery Flow Visualizer ---- */
+.exp-flow-visualizer {
+  border-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.exp-node .rv-icon {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+  color: #c084fc !important;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2) !important;
+}
+
+.exp-node:hover .rv-icon {
+  background: rgba(139, 92, 246, 0.25) !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.4) !important;
+}
+
+.exp-node.middle-node .rv-icon {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  color: #818cf8 !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2) !important;
+}
+
+.exp-node.middle-node:hover .rv-icon {
+  background: rgba(99, 102, 241, 0.25) !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.4) !important;
+}
+
+.exp-line {
+  background: linear-gradient(90deg, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0.8) 50%, rgba(139,92,246,0.1) 100%) !important;
+}
+
+.exp-packet {
+  background: #8b5cf6 !important;
+  box-shadow: 0 0 10px #8b5cf6 !important;
+}
+
+.rv-badge.purple {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* ---- Active Filter Badge ---- */
+.exp-active-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #c084fc;
+  margin-top: 15px;
+  align-self: flex-start;
+}
+
+/* ---- Color classes for percentages ---- */
+.pct-green {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.pct-amber {
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+.pct-red {
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  animation: expPulseRed 1.8s infinite ease-in-out;
+}
+
+@keyframes expPulseRed {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ---- Side panel ---- */
+.exp-side {
+  border-color: rgba(139, 92, 246, 0.15) !important;
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+.exp-widget-title::before {
+  background: #8b5cf6 !important;
+  box-shadow: 0 0 10px #8b5cf6 !important;
+}
+
+.exp-contrat-list {
+  flex: 1;
+  gap: 8px !important;
+  margin-bottom: 16px;
+}
+
+.exp-contrat-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exp-contrat-chip:hover {
+  background: rgba(139, 92, 246, 0.07);
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateX(4px);
+}
+
+.exp-contrat-chip.selected {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+}
+
+.exp-chip-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.exp-chip-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exp-chip-arrow {
+  color: #a78bfa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---- Toggle ACK Only ---- */
+.exp-ack-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.exp-ack-toggle:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.exp-toggle-track {
+  width: 38px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.exp-toggle-track.on {
+  background: #8b5cf6;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.exp-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.exp-toggle-track.on .exp-toggle-thumb {
+  left: 21px;
+}
+
+.exp-toggle-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+

@@ -304,6 +304,166 @@
       </div>
     </div>
 
+    <!-- PHASE 3 : EXPÉDITION -->
+    <div class="phase-card phase-expedition">
+      <div class="phase-header">
+        <div class="phase-title-wrap">
+          <span class="phase-step phase-step-violet">Phase 3</span>
+          <h2 class="phase-title">Expédition des Fichiers</h2>
+        </div>
+        <button class="btn-investigate btn-violet" (click)="navigateToExpedition()">
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div *ngIf="!expeditionLoaded" style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8;">
+        Chargement de l'expédition...
+      </div>
+
+      <div class="phase-body" *ngIf="expeditionLoaded">
+
+        <!-- COLONNE GAUCHE : Fonctionnel + Bilan Visuel -->
+        <div class="phase-main-metric" style="justify-content: space-between; gap: 15px;">
+
+          <!-- Objectif Métier -->
+          <div class="functional-objective" style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.15);">
+            <div class="obj-icon-wrap" style="background: rgba(139, 92, 246, 0.1);"><span class="obj-icon" style="color: #c084fc;">📡</span></div>
+            <div class="obj-text">
+              <strong style="color: #c084fc;">Livraison & Confirmation Finale</strong>
+              <p>Expédition physique vers les destinataires et collecte des accusés de réception (ACK).</p>
+            </div>
+          </div>
+
+          <!-- Bilan Visuel d'Expédition -->
+          <div class="expedition-balance" [class.filtered]="selectedExpContrat !== null" style="display: flex; flex-direction: column; width: 100%;">
+            <div class="balance-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 class="phase-title" style="margin: 0;" [title]="selectedExpContrat ? selectedExpContrat : 'Activité des Expéditions'">
+                  {{ selectedExpContrat ? 'Bilan : ' + (selectedExpContrat | slice:0:22) + (selectedExpContrat.length > 22 ? '…' : '') : 'Activité des Expéditions (Livraisons/j)' }}
+                </h3>
+                <button *ngIf="selectedExpContrat" class="btn-clear-filter" (click)="selectExpContrat(selectedExpContrat)" title="Revenir à la vue globale">✕</button>
+              </div>
+
+              <!-- Indicateur de Taux d'ACK -->
+              <div class="health-badge ack-health-badge" 
+                   style="cursor: help; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"
+                   [class.badge-success]="expeditionAckPct >= 80"
+                   [class.badge-warning]="expeditionAckPct >= 50 && expeditionAckPct < 80"
+                   [class.badge-error]="expeditionAckPct < 50"
+                   title="Indice de Complétude ACK : {{ expeditionAckPct }}% des accusés attendus ont été reçus.">
+                <span class="health-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"
+                      [style.background]="expeditionAckPct >= 80 ? '#10b981' : (expeditionAckPct >= 50 ? '#f59e0b' : '#ef4444')"></span> 
+                <span style="font-size: 11px; font-weight: 700; color: #cbd5e1;">ACK: {{ expeditionAckPct }}%</span>
+              </div>
+            </div>
+
+            <!-- TIMELINE CHART (Global only) -->
+            <div class="chart-container" style="margin-top: 0; padding: 5px 0 0 0; border: none; box-shadow: none; background: transparent; height: 160px;" *ngIf="expeditionChartLoaded && !selectedExpContrat">
+              <apx-chart 
+                [series]="expeditionChartOptions.series"
+                [chart]="expeditionChartOptions.chart"
+                [xaxis]="expeditionChartOptions.xaxis"
+                [yaxis]="expeditionChartOptions.yaxis"
+                [stroke]="expeditionChartOptions.stroke"
+                [colors]="expeditionChartOptions.colors"
+                [fill]="expeditionChartOptions.fill"
+                [dataLabels]="expeditionChartOptions.dataLabels"
+                [grid]="expeditionChartOptions.grid"
+                [tooltip]="expeditionChartOptions.tooltip">
+              </apx-chart>
+            </div>
+            <div class="chart-container loading" *ngIf="!expeditionChartLoaded && !selectedExpContrat" style="display:flex; justify-content:center; align-items:center; height: 160px; color:#94a3b8; margin-top:0; border: none; background: transparent;">
+              Chargement de la chronologie...
+            </div>
+
+            <!-- Custom Interactive Delivery Flow Visualizer (Only when filtered) -->
+            <div *ngIf="selectedExpContrat" class="route-visualizer exp-flow-visualizer" style="margin-bottom: 5px;">
+              <!-- GAUCHE : Fichiers Reçus -->
+              <div class="rv-node exp-node">
+                <span class="rv-icon">📥</span>
+                <span class="rv-name">REÇUS</span>
+                <span style="font-size: 11px; color: #c084fc; font-weight: 700;">{{ expeditionFunnel.recus | number }}</span>
+              </div>
+              
+              <div class="rv-path exp-path">
+                 <div class="rv-line exp-line"></div>
+                 <div class="rv-packet packet-1 exp-packet"></div>
+                 <div class="rv-packet packet-2 exp-packet"></div>
+                 <div class="rv-badge purple" title="Taux de livraison">{{ expeditionCouverturePct }}% Livrés</div>
+              </div>
+
+              <!-- MILIEU : Fichiers Livrés & Livraisons -->
+              <div class="rv-node exp-node middle-node">
+                <span class="rv-icon">📤</span>
+                <span class="rv-name">LIVRÉS</span>
+                <span style="font-size: 11px; color: #c084fc; font-weight: 700; text-align: center;">{{ expeditionFunnel.livres | number }} <span style="font-size: 9px; color:#94a3b8; display:block;">({{ expeditionFunnel.livraisons | number }} envois)</span></span>
+              </div>
+
+              <div class="rv-path exp-path">
+                 <div class="rv-line exp-line"></div>
+                 <div class="rv-packet packet-3 exp-packet"></div>
+                 <div class="rv-badge" [class.success]="expeditionAckPct >= 80" [class.warn]="expeditionAckPct < 80" title="Taux ACK">
+                    ACK: {{ expeditionAckPct }}%
+                 </div>
+              </div>
+
+              <!-- DROITE : ACK Confirmés -->
+              <div class="rv-node exp-node">
+                <span class="rv-icon">✅</span>
+                <span class="rv-name">CONFIRMÉS</span>
+                <span style="font-size: 11px; color: #c084fc; font-weight: 700;">{{ expeditionFunnel.ackConfirmes | number }}</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Dynamic Status Insight (Bottom text area) -->
+          <div class="ai-insight exp-insight" [class.active]="true" style="border-color: rgba(139, 92, 246, 0.2); background: rgba(139, 92, 246, 0.04); margin-top: 5px; width: 100%;">
+             <span class="ai-icon" style="color: #c084fc;">✨</span>
+             <span style="font-size: 13px; color: #cbd5e1; line-height: 1.4;">
+               <strong>Bilan Expéditions :</strong> 
+               <span *ngIf="!selectedExpContrat">
+                 Sur l'ensemble des partenaires, la couverture de livraison atteint <strong>{{ expeditionCouverturePct }}%</strong>, avec <strong>{{ expeditionAckPct }}%</strong> d'accusés de réception confirmés.
+               </span>
+               <span *ngIf="selectedExpContrat">
+                 Pour le contrat <strong>{{ selectedExpContrat }}</strong>, la couverture est de <strong>{{ expeditionCouverturePct }}%</strong> ({{ expeditionFunnel.livres }} dossiers livrés sur {{ expeditionFunnel.recus }} reçus) avec un taux d'ACK de <strong>{{ expeditionAckPct }}%</strong>.
+               </span>
+             </span>
+          </div>
+
+        </div>
+
+        <!-- COLONNE DROITE : Filtres Contrats -->
+        <div class="phase-side-widget exp-side">
+          <h4 class="widget-title exp-widget-title">Contrats (Filtres)</h4>
+          <p class="widget-subtitle">Cliquer pour isoler un partenaire</p>
+
+          <div class="top-list exp-contrat-list">
+            <div class="exp-contrat-chip"
+                 *ngFor="let c of expeditionContrats"
+                 [class.selected]="selectedExpContrat === c"
+                 (click)="selectExpContrat(c)">
+              <span class="exp-chip-icon">📋</span>
+              <span class="exp-chip-name">{{ c }}</span>
+              <span class="exp-chip-arrow" *ngIf="selectedExpContrat === c">✓</span>
+            </div>
+            <div *ngIf="expeditionContrats.length === 0" style="color:#94a3b8;font-size:12px;text-align:center;padding:10px;">
+              Aucun contrat disponible
+            </div>
+          </div>
+
+          <div class="exp-ack-toggle" (click)="toggleExpAckOnly()">
+            <div class="exp-toggle-track" [class.on]="expeditionAckOnly">
+              <div class="exp-toggle-thumb"></div>
+            </div>
+            <span class="exp-toggle-label">ACK requis uniquement</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
 </div>
+

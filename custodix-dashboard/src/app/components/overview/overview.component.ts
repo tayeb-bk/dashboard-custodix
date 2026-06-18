@@ -58,14 +58,27 @@ export class OverviewComponent implements OnInit {
   public selectedRoute: RouteDisplay | null = null;
   public processingLoaded: boolean = false;
 
+  // ===== PHASE 3 : EXPÉDITION =====
+  public expeditionFunnel = { recus: 0, livres: 0, livraisons: 0, ackConfirmes: 0 };
+  public expeditionContrats: string[] = [];
+  public selectedExpContrat: string | null = null;
+  public expeditionAckOnly: boolean = false;
+  public expeditionLoaded: boolean = false;
+  public expeditionCouverturePct: number = 0;
+  public expeditionAckPct: number = 0;
+  public expeditionChartOptions!: Partial<ChartOptions> | any;
+  public expeditionChartLoaded: boolean = false;
+
   private baseUrl = 'http://localhost:8080/api/filein';
   private flowUrl = 'http://localhost:8080/api/flows';
+  private expeditionUrl = 'http://localhost:8080/api/expedition';
 
   constructor(private router: Router, private http: HttpClient) {}
 
   ngOnInit() {
     this.loadRealData();
     this.loadProcessingData();
+    this.loadExpeditionData();
   }
 
   loadRealData() {
@@ -316,5 +329,180 @@ export class OverviewComponent implements OnInit {
 
   navigateTo(route: string) {
     this.router.navigate([route]);
+  }
+
+  // ===== PHASE 3 : EXPÉDITION =====
+  loadExpeditionData() {
+    this.http.get<any[]>(`${this.expeditionUrl}/contrats`).subscribe({
+      next: (res) => {
+        if (res && res.length > 0) {
+          this.expeditionContrats = res
+            .map((r: any) => r[0]?.toString() || '')
+            .filter(c => c !== '')
+            .slice(0, 5);
+        }
+      }
+    });
+    this.loadExpeditionFunnel();
+    this.loadExpeditionTimeline();
+  }
+
+  loadExpeditionFunnel() {
+    this.expeditionLoaded = false;
+    const params: any = {};
+    if (this.selectedExpContrat) params['contrat'] = this.selectedExpContrat;
+    if (this.expeditionAckOnly) params['ackOnly'] = 'true';
+
+    this.http.get<any[]>(`${this.expeditionUrl}/funnel`, { params }).subscribe({
+      next: (res) => {
+        if (res && res[0]) {
+          const r = res[0];
+          const recus      = Number(r[0]) || 0;
+          const livres     = Number(r[1]) || 0;
+          const livraisons = Number(r[2]) || 0;
+          const ackConf    = Number(r[3]) || 0;
+          this.expeditionFunnel = { recus, livres, livraisons, ackConfirmes: ackConf };
+          this.expeditionCouverturePct = recus > 0 ? Math.round((livres / recus) * 100) : 0;
+          this.loadExpeditionHero(params);
+        }
+        this.expeditionLoaded = true;
+      },
+      error: () => {
+        this.expeditionLoaded = true;
+      }
+    });
+  }
+
+  loadExpeditionHero(params: any) {
+    this.http.get<any[]>(`${this.expeditionUrl}/kpi/hero`, { params }).subscribe({
+      next: (res) => {
+        if (res && res[0]) {
+          const ackAttendu = Number(res[0][1]) || 0;
+          const ackRecus   = Number(res[0][2]) || 0;
+          this.expeditionAckPct = ackAttendu > 0 ? Math.round((ackRecus / ackAttendu) * 100) : 0;
+        }
+      }
+    });
+  }
+
+  loadExpeditionTimeline() {
+    this.expeditionChartLoaded = false;
+    const params: any = {};
+    if (this.selectedExpContrat) params['contrat'] = this.selectedExpContrat;
+    if (this.expeditionAckOnly) params['ackOnly'] = 'true';
+
+    this.http.get<any[]>(`${this.expeditionUrl}/timeline`, { params }).subscribe({
+      next: (res) => {
+        if (res && res.length > 0) {
+          const totalSeries: any[] = [];
+          const ackSeries: any[] = [];
+          
+          res.forEach(point => {
+            let t = point[0]; // jour
+            let d: Date;
+            if (Array.isArray(t)) {
+              d = new Date(t[0], t[1] - 1, t[2], t[3] || 0, t[4] || 0);
+            } else {
+              d = new Date(t);
+            }
+            const time = d.getTime();
+            totalSeries.push([time, Number(point[1]) || 0]);
+            ackSeries.push([time, Number(point[2]) || 0]);
+          });
+          
+          totalSeries.sort((a, b) => a[0] - b[0]);
+          ackSeries.sort((a, b) => a[0] - b[0]);
+          
+          this.initExpeditionChart(totalSeries, ackSeries);
+        } else {
+          this.initExpeditionChart([], []);
+        }
+        this.expeditionChartLoaded = true;
+      },
+      error: (err) => {
+        console.error("Erreur chargement timeline expédition:", err);
+        this.initExpeditionChart([], []);
+        this.expeditionChartLoaded = true;
+      }
+    });
+  }
+
+  initExpeditionChart(totalData: any[], ackData: any[]) {
+    this.expeditionChartOptions = {
+      series: [
+        { name: 'Total Livraisons', data: totalData },
+        { name: 'Avec ACK requis', data: ackData }
+      ],
+      chart: {
+        type: 'area',
+        height: 160,
+        toolbar: { show: false },
+        background: 'transparent',
+        sparkline: { enabled: false }
+      },
+      colors: ['#8b5cf6', '#6366f1'],
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0.05,
+          stops: [0, 100]
+        }
+      },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
+      xaxis: {
+        type: 'datetime',
+        labels: { style: { colors: '#cbd5e1', fontSize: '10px' } },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        show: false
+      },
+      grid: {
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+        strokeDashArray: 4,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } }
+      },
+      tooltip: { theme: 'dark', x: { format: 'dd MMM yyyy' } }
+    };
+  }
+
+  selectExpContrat(contrat: string) {
+    this.selectedExpContrat = this.selectedExpContrat === contrat ? null : contrat;
+    this.loadExpeditionFunnel();
+    this.loadExpeditionTimeline();
+  }
+
+  toggleExpAckOnly() {
+    this.expeditionAckOnly = !this.expeditionAckOnly;
+    this.loadExpeditionFunnel();
+    this.loadExpeditionTimeline();
+  }
+
+  navigateToExpedition() {
+    this.router.navigate(['/dashboard/file-out']);
+  }
+
+  getExpPctClass(pct: number): string {
+    if (pct >= 80) return 'pct-green';
+    if (pct >= 50) return 'pct-amber';
+    return 'pct-red';
+  }
+
+  // Arc SVG pour jauges circulaires : rayon=36, circ=226.2
+  getGaugeDashArray(pct: number): string {
+    const circ = 226.2;
+    const filled = Math.min(Math.max(pct, 0), 100) * (circ / 100);
+    return `${filled.toFixed(1)} ${(circ - filled).toFixed(1)}`;
+  }
+
+  getGaugeColor(pct: number): string {
+    if (pct >= 80) return '#34d399';
+    if (pct >= 50) return '#fbbf24';
+    return '#f87171';
   }
 }
