@@ -91,6 +91,13 @@ public class FlowFlowController {
     }
 
     // Endpoint paginé avec filtres complets
+    @GetMapping("/stats/timeline")
+    public List<TimelinePointDTO> statsTimeline(
+            @RequestParam(required = false, defaultValue = "day") String bucket) {
+        // Agrège tous les flux (tous statuts) par jour pour la vue Overview
+        return service.getTimeline(null, null, null, bucket, null, null, null, null, null);
+    }
+
     @GetMapping("/paginated")
     public Page<FlowFlow> getFlowsPaginated(
             @RequestParam(defaultValue = "0")  int page,

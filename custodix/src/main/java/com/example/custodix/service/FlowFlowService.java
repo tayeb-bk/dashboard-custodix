@@ -42,11 +42,22 @@ public class FlowFlowService {
     public List<TimelinePointDTO> getTimeline(String status, LocalDateTime from, LocalDateTime to, String bucket,
             String type, String flowType, String routeId, String sender, String receiver) {
 
-        List<Object[]> rows = switch (bucket) {
-            case "hour" -> repository.timelineHour(status, from, to, type, flowType, routeId, sender, receiver);
-            case "month" -> repository.timelineMonth(status, from, to, type, flowType, routeId, sender, receiver);
-            default -> repository.timelineDay(status, from, to, type, flowType, routeId, sender, receiver);
-        };
+        List<Object[]> rows;
+
+        if (status == null) {
+            // Vue globale Overview : tous statuts, sans filtre
+            rows = switch (bucket) {
+                case "hour"  -> repository.timelineAllHour();
+                case "month" -> repository.timelineAllMonth();
+                default      -> repository.timelineAllDay();
+            };
+        } else {
+            rows = switch (bucket) {
+                case "hour"  -> repository.timelineHour(status, from, to, type, flowType, routeId, sender, receiver);
+                case "month" -> repository.timelineMonth(status, from, to, type, flowType, routeId, sender, receiver);
+                default      -> repository.timelineDay(status, from, to, type, flowType, routeId, sender, receiver);
+            };
+        }
 
         return rows.stream()
                 .map(r -> {

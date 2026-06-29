@@ -1,12 +1,12 @@
 <div class="noc-container">
-  
+
   <!-- HEADER -->
   <header class="noc-header">
     <div class="noc-header-left">
       <h1>Audit des Temps de Traitement</h1>
       <p class="subtitle">Sur ce jeu de données, est-ce que les fichiers ont été traités dans un temps acceptable ?</p>
     </div>
-    
+
     <div class="noc-header-actions">
       <button class="btn btn-mode" (click)="toggleViewMode()">
         <span class="icon">🔄</span> {{ viewMode === 'noc' ? 'Mode Métier (Business)' : 'Mode Technique (NOC)' }}
@@ -19,7 +19,8 @@
     <div class="filters-grid">
       <div class="filter-group">
         <label>Rechercher par ID</label>
-        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFiltersAndAudit()" placeholder="ID Fichier / Flux..." class="form-input">
+        <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFiltersAndAudit()"
+          placeholder="ID Fichier / Flux..." class="form-input">
       </div>
       <div class="filter-group">
         <label>Contrat SLA</label>
@@ -107,7 +108,7 @@
 
   <!-- GRILLE PRINCIPALE (SIMULATION & PIPELINE) -->
   <div class="main-noc-grid">
-    
+
     <!-- SEUILS D'ÉVALUATION -->
     <section class="playground-card glass-card">
       <div class="card-header">
@@ -119,11 +120,14 @@
         </div>
         <span class="badge-scenario">Niveau Standard</span>
       </div>
-      
+
       <div class="presets-row">
-        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'gold'}" (click)="selectScenario('gold')">Exigence haute</button>
-        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'silver'}" (click)="selectScenario('silver')">Standard</button>
-        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'bronze'}" (click)="selectScenario('bronze')">Souple</button>
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'gold'}"
+          (click)="selectScenario('gold')">Exigence haute</button>
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'silver'}"
+          (click)="selectScenario('silver')">Standard</button>
+        <button class="btn btn-preset" [ngClass]="{'active': activePreset === 'bronze'}"
+          (click)="selectScenario('bronze')">Souple</button>
       </div>
 
       <div class="audit-standards-display">
@@ -153,196 +157,201 @@
       <!-- Corps scrollable -->
       <div class="pipeline-card-body">
 
-      <!-- Recherche ID propre au widget -->
-      <div class="pipeline-search-wrap">
-        <div class="pipeline-search-inner">
-          <span class="search-icon-pl">🔎</span>
-          <input type="text"
-                 [(ngModel)]="pipelineSearchId"
-                 (ngModelChange)="onPipelineSearchChange()"
-                 placeholder="Isoler un flux par son ID..."
-                 class="pipeline-search-input">
-          <button *ngIf="pipelineSearchId" class="pipeline-search-clear" (click)="clearPipelineSearch()" title="Effacer">✕</button>
+        <!-- Recherche ID propre au widget -->
+        <div class="pipeline-search-wrap">
+          <div class="pipeline-search-inner">
+            <span class="search-icon-pl">🔎</span>
+            <input type="text" [(ngModel)]="pipelineSearchId" (ngModelChange)="onPipelineSearchChange()"
+              placeholder="Isoler un flux par son ID..." class="pipeline-search-input">
+            <button *ngIf="pipelineSearchId" class="pipeline-search-clear" (click)="clearPipelineSearch()"
+              title="Effacer">✕</button>
+          </div>
+          <div class="pipeline-search-hint warn" *ngIf="pipelineSearchId && pipelineCount === 0">
+            ⚠️ Aucun flux trouvé pour l'ID "{{ pipelineSearchId }}"
+          </div>
+          <div class="pipeline-search-hint ok" *ngIf="pipelineSearchId && pipelineCount > 0">
+            ✔ {{ pipelineCount }} flux analysé(s) — statistiques ci-dessous isolées
+          </div>
         </div>
-        <div class="pipeline-search-hint warn" *ngIf="pipelineSearchId && pipelineCount === 0">
-          ⚠️ Aucun flux trouvé pour l'ID "{{ pipelineSearchId }}"
-        </div>
-        <div class="pipeline-search-hint ok" *ngIf="pipelineSearchId && pipelineCount > 0">
-          ✔ {{ pipelineCount }} flux analysé(s) — statistiques ci-dessous isolées
-        </div>
-      </div>
 
-      <!-- Barres de violation par étape -->
-      <div class="bottleneck-list">
+        <!-- Barres de violation par étape -->
+        <div class="bottleneck-list">
 
-        <!-- T1 : Intégration -->
-        <div class="bottleneck-step" (click)="setPipelineStepFilter('t1')" [class.active]="stepFilter === 't1'">
-          <div class="step-header">
-            <span class="step-icon-pl">📥</span>
-            <div class="step-info">
-              <span class="step-name">Intégration</span>
-              <span class="step-sla">seuil max : {{ t1SlaSec }}s</span>
-            </div>
-            <div class="step-metrics">
-              <span class="step-pct"
-                [ngClass]="{
+          <!-- T1 : Intégration -->
+          <div class="bottleneck-step" (click)="setPipelineStepFilter('t1')" [class.active]="stepFilter === 't1'">
+            <div class="step-header">
+              <span class="step-icon-pl">📥</span>
+              <div class="step-info">
+                <span class="step-name">Intégration</span>
+                <span class="step-sla">seuil max : {{ t1SlaSec }}s</span>
+              </div>
+              <div class="step-metrics">
+                <span class="step-pct" [ngClass]="{
                   'pct-ok':       breachedT1Count === 0,
                   'pct-warn':     breachedT1Count > 0 && pipelineCount > 0 && (breachedT1Count / pipelineCount) <= 0.2,
                   'pct-critical': pipelineCount > 0 && (breachedT1Count / pipelineCount) > 0.2
                 }">
-                {{ pipelineCount > 0 ? (breachedT1Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
-              </span>
-              <span class="step-sub">{{ breachedT1Count }} / {{ pipelineCount }}</span>
+                  {{ pipelineCount > 0 ? (breachedT1Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+                </span>
+                <span class="step-sub">{{ breachedT1Count }} / {{ pipelineCount }}</span>
+              </div>
+            </div>
+            <div class="step-bar">
+              <div class="bar-ok"
+                [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT1Count) / pipelineCount * 100 : 100">
+              </div>
+              <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT1Count / pipelineCount * 100 : 0">
+              </div>
+            </div>
+            <div class="step-footer">
+              <span class="step-avg">⌀ {{ avgT1 | number:'1.1-1' }}s</span>
+              <span class="step-click-hint" *ngIf="stepFilter !== 't1'">Cliquer pour filtrer le journal →</span>
+              <span class="step-click-hint-active" *ngIf="stepFilter === 't1'">✓ Filtre actif — journal filtré</span>
             </div>
           </div>
-          <div class="step-bar">
-            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT1Count) / pipelineCount * 100 : 100"></div>
-            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT1Count / pipelineCount * 100 : 0"></div>
-          </div>
-          <div class="step-footer">
-            <span class="step-avg">⌀ {{ avgT1 | number:'1.1-1' }}s</span>
-            <span class="step-click-hint" *ngIf="stepFilter !== 't1'">Cliquer pour filtrer le journal →</span>
-            <span class="step-click-hint-active" *ngIf="stepFilter === 't1'">✓ Filtre actif — journal filtré</span>
-          </div>
-        </div>
 
-        <!-- T2 : Traitement -->
-        <div class="bottleneck-step" (click)="setPipelineStepFilter('t2')" [class.active]="stepFilter === 't2'">
-          <div class="step-header">
-            <span class="step-icon-pl">⚙️</span>
-            <div class="step-info">
-              <span class="step-name">Traitement EAI</span>
-              <span class="step-sla">seuil max : {{ t2SlaSec }}s</span>
-            </div>
-            <div class="step-metrics">
-              <span class="step-pct"
-                [ngClass]="{
+          <!-- T2 : Traitement -->
+          <div class="bottleneck-step" (click)="setPipelineStepFilter('t2')" [class.active]="stepFilter === 't2'">
+            <div class="step-header">
+              <span class="step-icon-pl">⚙️</span>
+              <div class="step-info">
+                <span class="step-name">Traitement EAI</span>
+                <span class="step-sla">seuil max : {{ t2SlaSec }}s</span>
+              </div>
+              <div class="step-metrics">
+                <span class="step-pct" [ngClass]="{
                   'pct-ok':       breachedT2Count === 0,
                   'pct-warn':     breachedT2Count > 0 && pipelineCount > 0 && (breachedT2Count / pipelineCount) <= 0.2,
                   'pct-critical': pipelineCount > 0 && (breachedT2Count / pipelineCount) > 0.2
                 }">
-                {{ pipelineCount > 0 ? (breachedT2Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
-              </span>
-              <span class="step-sub">{{ breachedT2Count }} / {{ pipelineCount }}</span>
+                  {{ pipelineCount > 0 ? (breachedT2Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+                </span>
+                <span class="step-sub">{{ breachedT2Count }} / {{ pipelineCount }}</span>
+              </div>
+            </div>
+            <div class="step-bar">
+              <div class="bar-ok"
+                [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT2Count) / pipelineCount * 100 : 100">
+              </div>
+              <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT2Count / pipelineCount * 100 : 0">
+              </div>
+            </div>
+            <div class="step-footer">
+              <span class="step-avg">⌀ {{ avgT2 | number:'1.1-1' }}s</span>
+              <span class="step-click-hint" *ngIf="stepFilter !== 't2'">Cliquer pour filtrer le journal →</span>
+              <span class="step-click-hint-active" *ngIf="stepFilter === 't2'">✓ Filtre actif — journal filtré</span>
             </div>
           </div>
-          <div class="step-bar">
-            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT2Count) / pipelineCount * 100 : 100"></div>
-            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT2Count / pipelineCount * 100 : 0"></div>
-          </div>
-          <div class="step-footer">
-            <span class="step-avg">⌀ {{ avgT2 | number:'1.1-1' }}s</span>
-            <span class="step-click-hint" *ngIf="stepFilter !== 't2'">Cliquer pour filtrer le journal →</span>
-            <span class="step-click-hint-active" *ngIf="stepFilter === 't2'">✓ Filtre actif — journal filtré</span>
-          </div>
-        </div>
 
-        <!-- T3 : Attente partenaire -->
-        <div class="bottleneck-step" (click)="setPipelineStepFilter('t3')" [class.active]="stepFilter === 't3'">
-          <div class="step-header">
-            <span class="step-icon-pl">📤</span>
-            <div class="step-info">
-              <span class="step-name">Attente partenaire</span>
-              <span class="step-sla">seuil max : {{ t3SlaMin }} min</span>
-            </div>
-            <div class="step-metrics">
-              <span class="step-pct"
-                [ngClass]="{
+          <!-- T3 : Attente partenaire -->
+          <div class="bottleneck-step" (click)="setPipelineStepFilter('t3')" [class.active]="stepFilter === 't3'">
+            <div class="step-header">
+              <span class="step-icon-pl">📤</span>
+              <div class="step-info">
+                <span class="step-name">Attente partenaire</span>
+                <span class="step-sla">seuil max : {{ t3SlaMin }} min</span>
+              </div>
+              <div class="step-metrics">
+                <span class="step-pct" [ngClass]="{
                   'pct-ok':       breachedT3Count === 0,
                   'pct-warn':     breachedT3Count > 0 && pipelineCount > 0 && (breachedT3Count / pipelineCount) <= 0.2,
                   'pct-critical': pipelineCount > 0 && (breachedT3Count / pipelineCount) > 0.2
                 }">
-                {{ pipelineCount > 0 ? (breachedT3Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+                  {{ pipelineCount > 0 ? (breachedT3Count / pipelineCount * 100 | number:'1.0-0') : 0 }}%
+                </span>
+                <span class="step-sub">{{ breachedT3Count }} / {{ pipelineCount }}</span>
+              </div>
+            </div>
+            <div class="step-bar">
+              <div class="bar-ok"
+                [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT3Count) / pipelineCount * 100 : 100">
+              </div>
+              <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT3Count / pipelineCount * 100 : 0">
+              </div>
+            </div>
+            <div class="step-footer">
+              <span class="step-avg">⌀ {{ (avgT3 / 60) | number:'1.1-1' }} min</span>
+              <span class="step-click-hint" *ngIf="stepFilter !== 't3'">Cliquer pour filtrer le journal →</span>
+              <span class="step-click-hint-active" *ngIf="stepFilter === 't3'">✓ Filtre actif — journal filtré</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ═══ ZONE D'AFFICHAGE CONTEXTUELLE ═══════════════════════════════ -->
+
+        <!-- Mode 3 : Recherche ID active → Fiche détaillée du/des fichier(s) trouvé(s) -->
+        <div class="pipeline-results" *ngIf="pipelineSearchId && pipelineCount > 0">
+          <div class="results-header">
+            <strong>📄 Résultat pour l'ID "{{ pipelineSearchId }}"</strong>
+            <span class="results-count">{{ searchedFiles.length }} flux trouvé(s)</span>
+          </div>
+          <div class="result-file-card" *ngFor="let f of searchedFiles">
+            <div class="result-file-id">#{{ f.fileInId }}
+              <span class="result-global-badge" [ngClass]="f.isBreached ? 'badge-danger' : 'badge-success'">
+                {{ f.isBreached ? 'Hors délais' : 'Conforme' }}
               </span>
-              <span class="step-sub">{{ breachedT3Count }} / {{ pipelineCount }}</span>
             </div>
-          </div>
-          <div class="step-bar">
-            <div class="bar-ok"     [style.width.%]="pipelineCount > 0 ? (pipelineCount - breachedT3Count) / pipelineCount * 100 : 100"></div>
-            <div class="bar-breach" [style.width.%]="pipelineCount > 0 ? breachedT3Count / pipelineCount * 100 : 0"></div>
-          </div>
-          <div class="step-footer">
-            <span class="step-avg">⌀ {{ (avgT3 / 60) | number:'1.1-1' }} min</span>
-            <span class="step-click-hint" *ngIf="stepFilter !== 't3'">Cliquer pour filtrer le journal →</span>
-            <span class="step-click-hint-active" *ngIf="stepFilter === 't3'">✓ Filtre actif — journal filtré</span>
+            <div class="result-file-steps">
+
+              <!-- Intégration -->
+              <div class="result-step" [ngClass]="f.t1 > t1SlaSec ? 'step-breach' : 'step-ok'">
+                <span class="rs-label">📥 Intégration</span>
+                <span class="rs-val">{{ f.t1 | number:'1.1-1' }}s</span>
+                <span class="rs-seuil">seuil : {{ t1SlaSec }}s</span>
+                <span class="rs-badge">{{ f.t1 > t1SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+              </div>
+
+              <!-- Traitement EAI -->
+              <div class="result-step" [ngClass]="f.t2 > t2SlaSec ? 'step-breach' : 'step-ok'">
+                <span class="rs-label">⚙️ Traitement EAI</span>
+                <span class="rs-val">{{ f.t2 | number:'1.1-1' }}s</span>
+                <span class="rs-seuil">seuil : {{ t2SlaSec }}s</span>
+                <span class="rs-badge">{{ f.t2 > t2SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+              </div>
+
+              <!-- Attente partenaire (seulement si ACK attendu) -->
+              <div class="result-step" *ngIf="f.ackExpected === 1"
+                [ngClass]="f.t3 > (t3SlaMin * 60) ? 'step-breach' : 'step-ok'">
+                <span class="rs-label">📤 Attente partenaire</span>
+                <span class="rs-val">{{ f.t3 | number:'1.1-1' }}s</span>
+                <span class="rs-seuil">seuil : {{ t3SlaMin * 60 }}s</span>
+                <span class="rs-badge">{{ f.t3 > (t3SlaMin * 60) ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+              </div>
+              <div class="result-step step-na" *ngIf="f.ackExpected !== 1">
+                <span class="rs-label">📤 Attente partenaire</span>
+                <span class="rs-badge">Non requis pour ce flux</span>
+              </div>
+
+            </div>
           </div>
         </div>
 
-      </div>
-
-      <!-- ═══ ZONE D'AFFICHAGE CONTEXTUELLE ═══════════════════════════════ -->
-
-      <!-- Mode 3 : Recherche ID active → Fiche détaillée du/des fichier(s) trouvé(s) -->
-      <div class="pipeline-results" *ngIf="pipelineSearchId && pipelineCount > 0">
-        <div class="results-header">
-          <strong>📄 Résultat pour l'ID "{{ pipelineSearchId }}"</strong>
-          <span class="results-count">{{ searchedFiles.length }} flux trouvé(s)</span>
-        </div>
-        <div class="result-file-card" *ngFor="let f of searchedFiles">
-          <div class="result-file-id">#{{ f.fileInId }}
-            <span class="result-global-badge" [ngClass]="f.isBreached ? 'badge-danger' : 'badge-success'">
-              {{ f.isBreached ? 'Hors délais' : 'Conforme' }}
-            </span>
+        <!-- Mode 2 : Filtre par étape actif et pas de recherche ID → Top 5 -->
+        <div class="pipeline-top5" *ngIf="stepFilter && !pipelineSearchId">
+          <div class="top5-header">
+            <strong>🏆 Top 5 — {{ stepFilterLabel }}</strong>
+            <button class="top5-clear" (click)="clearPipelineStepFilter()">✕ Réinitialiser</button>
           </div>
-          <div class="result-file-steps">
-
-            <!-- Intégration -->
-            <div class="result-step" [ngClass]="f.t1 > t1SlaSec ? 'step-breach' : 'step-ok'">
-              <span class="rs-label">📥 Intégration</span>
-              <span class="rs-val">{{ f.t1 | number:'1.1-1' }}s</span>
-              <span class="rs-seuil">seuil : {{ t1SlaSec }}s</span>
-              <span class="rs-badge">{{ f.t1 > t1SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+          <div class="top5-list">
+            <div class="top5-item" *ngFor="let f of top5ForStep; let i = index">
+              <span class="top5-rank">{{ i + 1 }}</span>
+              <span class="top5-id">#{{ f.fileInId }}</span>
+              <span class="top5-val">{{ getStepLatency(f) | number:'1.1-1' }}s</span>
+              <span class="top5-seuil">seuil : {{ thresholdForStep }}s</span>
             </div>
-
-            <!-- Traitement EAI -->
-            <div class="result-step" [ngClass]="f.t2 > t2SlaSec ? 'step-breach' : 'step-ok'">
-              <span class="rs-label">⚙️ Traitement EAI</span>
-              <span class="rs-val">{{ f.t2 | number:'1.1-1' }}s</span>
-              <span class="rs-seuil">seuil : {{ t2SlaSec }}s</span>
-              <span class="rs-badge">{{ f.t2 > t2SlaSec ? '⚠ Hors délais' : '✓ Conforme' }}</span>
+            <div class="top5-empty" *ngIf="top5ForStep.length === 0">
+              ✅ Aucun fichier en violation pour cette étape.
             </div>
-
-            <!-- Attente partenaire (seulement si ACK attendu) -->
-            <div class="result-step" *ngIf="f.ackExpected === 1"
-                 [ngClass]="f.t3 > (t3SlaMin * 60) ? 'step-breach' : 'step-ok'">
-              <span class="rs-label">📤 Attente partenaire</span>
-              <span class="rs-val">{{ f.t3 | number:'1.1-1' }}s</span>
-              <span class="rs-seuil">seuil : {{ t3SlaMin * 60 }}s</span>
-              <span class="rs-badge">{{ f.t3 > (t3SlaMin * 60) ? '⚠ Hors délais' : '✓ Conforme' }}</span>
-            </div>
-            <div class="result-step step-na" *ngIf="f.ackExpected !== 1">
-              <span class="rs-label">📤 Attente partenaire</span>
-              <span class="rs-badge">Non requis pour ce flux</span>
-            </div>
-
           </div>
         </div>
-      </div>
 
-      <!-- Mode 2 : Filtre par étape actif et pas de recherche ID → Top 5 -->
-      <div class="pipeline-top5" *ngIf="stepFilter && !pipelineSearchId">
-        <div class="top5-header">
-          <strong>🏆 Top 5 — {{ stepFilterLabel }}</strong>
-          <button class="top5-clear" (click)="clearPipelineStepFilter()">✕ Réinitialiser</button>
+        <!-- Mode 1 : Aucun filtre actif → Message d'aide -->
+        <div class="pipeline-hint" *ngIf="!stepFilter && !pipelineSearchId">
+          <p>💡 Cliquez sur une étape ci-dessus pour voir les fichiers en violation.</p>
+          <p class="hint-sub">Ou recherchez un ID de flux — les IDs valides sont visibles dans la colonne <strong>"ID
+              Flux/Fichier"</strong> du journal ci-dessous.</p>
         </div>
-        <div class="top5-list">
-          <div class="top5-item" *ngFor="let f of top5ForStep; let i = index">
-            <span class="top5-rank">{{ i + 1 }}</span>
-            <span class="top5-id">#{{ f.fileInId }}</span>
-            <span class="top5-val">{{ getStepLatency(f) | number:'1.1-1' }}s</span>
-            <span class="top5-seuil">seuil : {{ thresholdForStep }}s</span>
-          </div>
-          <div class="top5-empty" *ngIf="top5ForStep.length === 0">
-            ✅ Aucun fichier en violation pour cette étape.
-          </div>
-        </div>
-      </div>
-
-      <!-- Mode 1 : Aucun filtre actif → Message d'aide -->
-      <div class="pipeline-hint" *ngIf="!stepFilter && !pipelineSearchId">
-        <p>💡 Cliquez sur une étape ci-dessus pour voir les fichiers en violation.</p>
-        <p class="hint-sub">Ou recherchez un ID de flux — les IDs valides sont visibles dans la colonne <strong>"ID Flux/Fichier"</strong> du journal ci-dessous.</p>
-      </div>
 
       </div><!-- /.pipeline-card-body -->
     </section>
@@ -354,36 +363,113 @@
   <div class="insights-grid">
     <!-- GRAPHIQUES TECHNIQUES (AFFICHÉS UNIQUEMENT EN MODE NOC) -->
     <div class="charts-card glass-card" *ngIf="viewMode === 'noc'">
+
+      <!-- En-tête + filtres locaux -->
       <div class="card-header">
-        <h2>📈 DISPERSION DE LATENCE & ANALYSE PAR CONTRAT</h2>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <h2>🔬 DÉTECTION DES ANOMALIES & CONTRATS À RISQUE</h2>
+          <div class="info-btn-wrap" (click)="toggleWidget('anomaliesCharts', $event)">
+            <button class="info-btn" type="button">i</button>
+          </div>
+        </div>
+        <div class="charts-filters">
+          <select class="form-select charts-select" [(ngModel)]="chartsContractFilter"
+            (change)="onChartsFilterChange()">
+            <option value="">Tous les contrats</option>
+            <option *ngFor="let c of chartContractsList" [value]="c">{{ c }}</option>
+          </select>
+          <label class="charts-toggle-label">
+            <input type="checkbox" [(ngModel)]="showViolationsOnly" (change)="onChartsFilterChange()">
+            Violations seulement
+          </label>
+          <button *ngIf="chartsContractFilter || showViolationsOnly" class="charts-clear-btn"
+            (click)="clearChartsFilter()">✕ Réinitialiser</button>
+        </div>
       </div>
+
+      <!-- Explication du widget -->
+      <p class="charts-explain">
+        Ce module détecte les fichiers dont le temps de traitement dépasse les seuils SLA configurés
+        <strong>(Traitement : {{ t2SlaSec }}s, Attente partenaire : {{ t3SlaMin }} min)</strong>.
+        Utilisez le filtre contrat pour isoler un client précis.
+      </p>
+
+      <!-- 3 indicateurs de détection -->
+      <div class="detection-strip" *ngIf="chartsLoaded">
+        <div class="detection-kpi" [ngClass]="detectedAnomaliesCount > 0 ? 'dkpi-red' : 'dkpi-green'">
+          <span class="dkpi-icon">{{ detectedAnomaliesCount > 0 ? '⚠️' : '✅' }}</span>
+          <div class="dkpi-body">
+            <span class="dkpi-val">{{ detectedAnomaliesCount }}</span>
+            <span class="dkpi-label">anomalie(s) détectée(s)</span>
+          </div>
+        </div>
+        <div class="detection-kpi dkpi-amber">
+          <span class="dkpi-icon">🏢</span>
+          <div class="dkpi-body">
+            <span class="dkpi-val" style="font-size: 0.88rem; line-height: 1.2;">{{ activeContractTitle }}</span>
+            <span class="dkpi-label">{{ activeContractSubtitle }}</span>
+          </div>
+        </div>
+        <div class="detection-kpi dkpi-blue">
+          <span class="dkpi-icon">🔩</span>
+          <div class="dkpi-body">
+            <span class="dkpi-val">{{ mainBottleneckStep }}</span>
+            <span class="dkpi-label">étape goulot principale</span>
+          </div>
+        </div>
+      </div>
+
       <div class="charts-wrapper" *ngIf="chartsLoaded">
+
+        <!-- Scatter plot -->
         <div class="chart-item">
-          <h3> Dispersion des Latences (Scatter Plot)</h3>
-          <apx-chart 
-            [series]="scatterChartOptions.series" 
-            [chart]="scatterChartOptions.chart" 
-            [xaxis]="scatterChartOptions.xaxis" 
-            [yaxis]="scatterChartOptions.yaxis"
-            [grid]="scatterChartOptions.grid"
-            [markers]="scatterChartOptions.markers"
-            [tooltip]="scatterChartOptions.tooltip"
-            [colors]="scatterChartOptions.colors">
+          <div class="chart-title-row">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <h3>📍 Carte des Anomalies de Latence</h3>
+              <div class="info-btn-wrap" (click)="toggleWidget('scatterChartInfo', $event)">
+                <button class="info-btn" type="button">i</button>
+              </div>
+            </div>
+            <span class="chart-note">Max 500 fichiers récents — 🟢 Conforme / 🔴 Hors délais SLA</span>
+          </div>
+          <apx-chart [series]="scatterChartOptions.series" [chart]="scatterChartOptions.chart"
+            [xaxis]="scatterChartOptions.xaxis" [yaxis]="scatterChartOptions.yaxis" [grid]="scatterChartOptions.grid"
+            [markers]="scatterChartOptions.markers" [tooltip]="scatterChartOptions.tooltip"
+            [colors]="scatterChartOptions.colors" [annotations]="scatterChartOptions.annotations"
+            [legend]="scatterChartOptions.legend">
           </apx-chart>
+          <p class="chart-explain-sub">
+            Chaque point représente un fichier. La ligne rouge horizontale est le seuil SLA total
+            ({{ t2SlaSec }}s + {{ t3SlaMin * 60 }}s = {{ t2SlaSec + t3SlaMin * 60 }}s).
+            Les points <strong style="color:#ef4444">au-dessus</strong> ont dépassé leur délai.
+          </p>
         </div>
-        <div class="chart-item">
-          <h3>Décomposition Moyenne par Contrat</h3>
-          <apx-chart 
-            [series]="barChartOptions.series" 
-            [chart]="barChartOptions.chart" 
-            [xaxis]="barChartOptions.xaxis"
-            [yaxis]="barChartOptions.yaxis"
-            [grid]="barChartOptions.grid"
-            [legend]="barChartOptions.legend"
-            [tooltip]="barChartOptions.tooltip"
-            [colors]="barChartOptions.colors">
+
+        <!-- Bar chart -->
+        <div class="chart-item chart-scroll">
+          <div class="chart-title-row">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <h3>📊 Classement des Contrats par Taux de Violation</h3>
+              <div class="info-btn-wrap" (click)="toggleWidget('barChartInfo', $event)">
+                <button class="info-btn" type="button">i</button>
+              </div>
+            </div>
+            <span class="chart-note">
+              🔴 &gt;20% critique &nbsp;|&nbsp; 🟡 5–20% attention &nbsp;|&nbsp; 🟢 &lt;5% stable
+              <span *ngIf="chartsContractFilter"> — Filtre actif : <strong>{{ chartsContractFilter }}</strong></span>
+            </span>
+          </div>
+          <apx-chart [series]="barChartOptions.series" [chart]="barChartOptions.chart" [xaxis]="barChartOptions.xaxis"
+            [yaxis]="barChartOptions.yaxis" [grid]="barChartOptions.grid" [plotOptions]="barChartOptions.plotOptions"
+            [dataLabels]="barChartOptions.dataLabels" [colors]="barChartOptions.colors"
+            [tooltip]="barChartOptions.tooltip" [legend]="barChartOptions.legend">
           </apx-chart>
+          <p class="chart-explain-sub">
+            Tous vos contrats sont classés du plus problématique au plus stable.
+            Cliquez sur une barre pour isoler ce contrat dans les deux graphiques.
+          </p>
         </div>
+
       </div>
       <div *ngIf="!chartsLoaded" class="no-data-msg">
         Chargement des graphiques...
@@ -395,8 +481,10 @@
       <div class="ai-header-layout">
         <h2>🤖 CUSTODIX AI : ASSISTANT DE COCKPIT</h2>
         <div class="ai-header-buttons">
-          <button class="btn btn-preset" (click)="askPreset('Quels contrats ont le plus de violations ?')">Contrats critiques</button>
-          <button class="btn btn-preset" (click)="askPreset('Montre les latences moyennes par contrat')">Latences moyennes</button>
+          <button class="btn btn-preset" (click)="askPreset('Quels contrats ont le plus de violations ?')">Contrats
+            critiques</button>
+          <button class="btn btn-preset" (click)="askPreset('Montre les latences moyennes par contrat')">Latences
+            moyennes</button>
           <button class="btn btn-ai" [disabled]="isAnalyzing" (click)="generateAiDiagnostic()">
             {{ isAnalyzing ? 'Audit...' : 'Audit SLA Global' }}
           </button>
@@ -408,14 +496,17 @@
           <span class="pulse-ring"></span>
           <p>L'IA analyse les données de performance et prépare la réponse...</p>
         </div>
-        
+
         <div *ngIf="!isAnalyzing && !aiDiagnostic" class="ai-placeholder">
           <p>Posez une question sur les performances ou lancez l'audit global ci-dessus.</p>
           <div class="ai-examples">
             <span>Suggestions :</span>
             <ul>
-              <li><a (click)="userAiQuery = 'Combien de fichiers dans la table FLOW_FLOW aujourd\'hui ?'; askAi()">"Combien de fichiers dans la table FLOW_FLOW aujourd'hui ?"</a></li>
-              <li><a (click)="userAiQuery = 'Affiche les 5 derniers flux en erreur'; askAi()">"Affiche les 5 derniers flux en erreur"</a></li>
+              <li><a
+                  (click)="userAiQuery = 'Combien de fichiers dans la table FLOW_FLOW aujourd\'hui ?'; askAi()">"Combien
+                  de fichiers dans la table FLOW_FLOW aujourd'hui ?"</a></li>
+              <li><a (click)="userAiQuery = 'Affiche les 5 derniers flux en erreur'; askAi()">"Affiche les 5 derniers
+                  flux en erreur"</a></li>
             </ul>
           </div>
         </div>
@@ -425,12 +516,9 @@
       </div>
 
       <div class="ai-chat-input-wrapper">
-        <input type="text" 
-               [(ngModel)]="userAiQuery" 
-               (keyup.enter)="askAi()" 
-               placeholder="Posez une question en langage naturel (ex: Combien de flux aujourd'hui ?)..." 
-               class="form-input ai-input-field" 
-               [disabled]="isAnalyzing">
+        <input type="text" [(ngModel)]="userAiQuery" (keyup.enter)="askAi()"
+          placeholder="Posez une question en langage naturel (ex: Combien de flux aujourd'hui ?)..."
+          class="form-input ai-input-field" [disabled]="isAnalyzing">
         <button class="btn btn-ai send-chat-btn" [disabled]="isAnalyzing || !userAiQuery" (click)="askAi()">
           Poser à l'IA
         </button>
@@ -516,7 +604,8 @@
                         <td>{{ sub.destId }}</td>
                         <td>{{ sub.t3 | number:'1.1-1' }}s</td>
                         <td>
-                          <span class="status-badge" [ngClass]="sub.status === 'CONFIRMÉ' ? 'badge-success' : 'badge-warning'">
+                          <span class="status-badge"
+                            [ngClass]="sub.status === 'CONFIRMÉ' ? 'badge-success' : 'badge-warning'">
                             {{ sub.status }}
                           </span>
                         </td>
@@ -537,7 +626,8 @@
   <!-- POPOVERS D'INFORMATION (niveau racine pour position:fixed correct) -->
   <div class="popover-backdrop" *ngIf="activeWidget" (click)="closeWidget()"></div>
 
-  <div class="info-popover open" *ngIf="activeWidget==='conformite'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+  <div class="info-popover open" *ngIf="activeWidget==='conformite'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
     <div class="pop-header">
       <span>{{ widgetInfo['conformite'].icon }}</span>
       <strong>{{ widgetInfo['conformite'].title }}</strong>
@@ -557,7 +647,8 @@
     </div>
   </div>
 
-  <div class="info-popover open" *ngIf="activeWidget==='volume'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+  <div class="info-popover open" *ngIf="activeWidget==='volume'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
     <div class="pop-header">
       <span>{{ widgetInfo['volume'].icon }}</span>
       <strong>{{ widgetInfo['volume'].title }}</strong>
@@ -577,7 +668,8 @@
     </div>
   </div>
 
-  <div class="info-popover open" *ngIf="activeWidget==='tempsMoyen'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+  <div class="info-popover open" *ngIf="activeWidget==='tempsMoyen'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
     <div class="pop-header">
       <span>{{ widgetInfo['tempsMoyen'].icon }}</span>
       <strong>{{ widgetInfo['tempsMoyen'].title }}</strong>
@@ -597,7 +689,8 @@
     </div>
   </div>
 
-  <div class="info-popover open" *ngIf="activeWidget==='seuils'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+  <div class="info-popover open" *ngIf="activeWidget==='seuils'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
     <div class="pop-header">
       <span>{{ widgetInfo['seuils'].icon }}</span>
       <strong>{{ widgetInfo['seuils'].title }}</strong>
@@ -616,7 +709,8 @@
       <p>{{ widgetInfo['seuils'].action }}</p>
     </div>
   </div>
-  <div class="info-popover open" *ngIf="activeWidget==='goulots'" [style.top.px]="popoverPos?.top" [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+  <div class="info-popover open" *ngIf="activeWidget==='goulots'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
     <div class="pop-header">
       <span>{{ widgetInfo['goulots'].icon }}</span>
       <strong>{{ widgetInfo['goulots'].title }}</strong>
@@ -633,6 +727,69 @@
     <div class="pop-row">
       <span class="pop-key">🎯 À surveiller</span>
       <p>{{ widgetInfo['goulots'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='anomaliesCharts'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['anomaliesCharts'].icon }}</span>
+      <strong>{{ widgetInfo['anomaliesCharts'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Définition / Objectif</span>
+      <p>{{ widgetInfo['anomaliesCharts'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Analyse & Idée</span>
+      <p>{{ widgetInfo['anomaliesCharts'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 Actions recommandées</span>
+      <p>{{ widgetInfo['anomaliesCharts'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='scatterChartInfo'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['scatterChartInfo'].icon }}</span>
+      <strong>{{ widgetInfo['scatterChartInfo'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Objectif</span>
+      <p>{{ widgetInfo['scatterChartInfo'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Règle</span>
+      <p>{{ widgetInfo['scatterChartInfo'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 Action</span>
+      <p>{{ widgetInfo['scatterChartInfo'].action }}</p>
+    </div>
+  </div>
+
+  <div class="info-popover open" *ngIf="activeWidget==='barChartInfo'" [style.top.px]="popoverPos?.top"
+    [style.left.px]="popoverPos?.left" (click)="$event.stopPropagation()">
+    <div class="pop-header">
+      <span>{{ widgetInfo['barChartInfo'].icon }}</span>
+      <strong>{{ widgetInfo['barChartInfo'].title }}</strong>
+      <button class="pop-close" type="button" (click)="closeWidget()">✕</button>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">📌 Objectif</span>
+      <p>{{ widgetInfo['barChartInfo'].what }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🧮 Règle</span>
+      <p>{{ widgetInfo['barChartInfo'].how }}</p>
+    </div>
+    <div class="pop-row">
+      <span class="pop-key">🎯 Action</span>
+      <p>{{ widgetInfo['barChartInfo'].action }}</p>
     </div>
   </div>
 

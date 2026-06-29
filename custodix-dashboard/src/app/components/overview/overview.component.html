@@ -1,5 +1,5 @@
 <div class="overview-container">
-  
+
   <!-- "ThreeJS" style animated background elements -->
   <div class="bg-orb orb-1"></div>
   <div class="bg-orb orb-2"></div>
@@ -15,28 +15,28 @@
   <!-- ===== CYCLE DE VIE (VISUAL PIPELINE) ===== -->
   <div class="pipeline-section" style="position: relative; z-index: 10;">
     <h3 class="section-heading">Cycle de Vie des Flux</h3>
-    
+
     <div class="pipeline-grid">
-      
+
       <!-- SVG Connexions Animées -->
       <svg class="pipeline-svg" preserveAspectRatio="none">
         <!-- Main horizontal line -->
         <line x1="16.6%" y1="50%" x2="83.3%" y2="50%" class="pipe-line" />
         <line x1="16.6%" y1="50%" x2="83.3%" y2="50%" class="pipe-flow main-flow" />
-        
+
         <!-- Branch to Alert (Bottom) -->
         <line x1="50%" y1="50%" x2="50%" y2="85%" class="pipe-line" />
         <line x1="50%" y1="50%" x2="50%" y2="85%" class="pipe-flow error-flow" />
 
         <!-- Branch to Perf (Top) -->
         <line x1="50%" y1="15%" x2="50%" y2="50%" class="pipe-line" />
-        
+
         <!-- Branch to Trace (Top Right) -->
         <line x1="83.3%" y1="15%" x2="83.3%" y2="50%" class="pipe-line" />
       </svg>
 
-      <!-- TOP ROW: Perf & Trace -->
-      <div class="pipe-node node-perf">
+      <div class="pipe-node node-perf node-clickable" (click)="navigateTo('/dashboard/performance')">
+        <div class="node-badge">Cliquer pour accéder →</div>
         <div class="node-icon">⏱️</div>
         <div class="node-title">Performance & SLAs</div>
         <div class="node-definition">
@@ -98,7 +98,7 @@
 
   <!-- ===== WIDGETS DÉTAILLÉS ===== -->
   <div class="dashboard-grid" style="position: relative; z-index: 2; margin-top: 40px;">
-    
+
     <!-- PHASE 1 : RECEPTION -->
     <div class="phase-card phase-reception">
       <div class="phase-header">
@@ -107,7 +107,10 @@
           <h2 class="phase-title">Réception des Fichiers</h2>
         </div>
         <button class="btn-investigate" (click)="navigateTo('/dashboard/file-in')">
-          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
 
@@ -119,20 +122,15 @@
             <span class="kpi-value text-blue">{{ totalFiles | number }}</span>
           </div>
           <div class="chart-container" *ngIf="chartLoaded">
-            <apx-chart 
-              [series]="receptionChartOptions.series"
-              [chart]="receptionChartOptions.chart"
-              [xaxis]="receptionChartOptions.xaxis"
-              [yaxis]="receptionChartOptions.yaxis"
-              [stroke]="receptionChartOptions.stroke"
-              [colors]="receptionChartOptions.colors"
-              [fill]="receptionChartOptions.fill"
-              [dataLabels]="receptionChartOptions.dataLabels"
-              [grid]="receptionChartOptions.grid"
-              [tooltip]="receptionChartOptions.tooltip">
+            <apx-chart [series]="receptionChartOptions.series" [chart]="receptionChartOptions.chart"
+              [xaxis]="receptionChartOptions.xaxis" [yaxis]="receptionChartOptions.yaxis"
+              [stroke]="receptionChartOptions.stroke" [colors]="receptionChartOptions.colors"
+              [fill]="receptionChartOptions.fill" [dataLabels]="receptionChartOptions.dataLabels"
+              [grid]="receptionChartOptions.grid" [tooltip]="receptionChartOptions.tooltip">
             </apx-chart>
           </div>
-          <div class="chart-container loading" *ngIf="!chartLoaded" style="display:flex; justify-content:center; align-items:center; height: 280px; color:#94a3b8">
+          <div class="chart-container loading" *ngIf="!chartLoaded"
+            style="display:flex; justify-content:center; align-items:center; height: 280px; color:#94a3b8">
             Chargement des données...
           </div>
         </div>
@@ -146,7 +144,8 @@
               <span class="top-name">{{ sender.name }}</span>
               <span class="top-val">{{ sender.value | number }}</span>
             </div>
-            <div *ngIf="topSenders.length === 0" style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+            <div *ngIf="topSenders.length === 0"
+              style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
               Aucune donnée
             </div>
           </div>
@@ -162,7 +161,10 @@
           <h2 class="phase-title">Traitement des Flux</h2>
         </div>
         <button class="btn-investigate btn-cyan" (click)="navigateTo('/dashboard/flows')">
-          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
 
@@ -182,50 +184,54 @@
 
           <!-- Bilan Visuel du Moteur -->
           <div class="processing-balance" [class.filtered]="currentDisplayStats.isFiltered">
-            <div class="balance-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="balance-header"
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 class="phase-title" style="margin: 0;" [title]="selectedRoute ? selectedRoute.name : 'Activité Moteur'">
-                  {{ selectedRoute ? 'Bilan : ' + (selectedRoute.name | slice:0:22) + (selectedRoute.name.length > 22 ? '…' : '') : 'Activité Moteur (Flux/j)' }}
+                <h3 class="phase-title" style="margin: 0;"
+                  [title]="selectedRoute ? selectedRoute.name : 'Activité Moteur'">
+                  {{ selectedRoute ? 'Bilan : ' + (selectedRoute.name | slice:0:22) + (selectedRoute.name.length > 22 ?
+                  '…' : '') : 'Activité Moteur (Flux/j)' }}
                 </h3>
-                <button *ngIf="selectedRoute" class="btn-clear-filter" (click)="selectRoute(null)" title="Revenir à la vue globale">✕</button>
+                <button *ngIf="selectedRoute" class="btn-clear-filter" (click)="selectRoute(null)"
+                  title="Revenir à la vue globale">✕</button>
               </div>
-              
-              <div class="health-badge ai-evaluated" 
-                   *ngIf="selectedRoute"
-                   style="cursor: help; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"
-                   [class.badge-error]="currentDisplayStats.tauxErreur > 5"
-                   [class.badge-warning]="currentDisplayStats.tauxErreur > 0 && currentDisplayStats.tauxErreur <= 5"
-                   title="Évaluation Custodix AI ✨ : Score de criticité calculé selon le taux d'erreurs ({{ currentDisplayStats.tauxErreur | number:'1.1-1' }}%) et le volume bloqué.">
+
+              <div class="health-badge ai-evaluated" *ngIf="selectedRoute"
+                style="cursor: help; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"
+                [class.badge-error]="currentDisplayStats.tauxErreur > 5"
+                [class.badge-warning]="currentDisplayStats.tauxErreur > 0 && currentDisplayStats.tauxErreur <= 5"
+                title="Évaluation Custodix AI ✨ : Score de criticité calculé selon le taux d'erreurs ({{ currentDisplayStats.tauxErreur | number:'1.1-1' }}%) et le volume bloqué.">
                 <span class="health-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"
-                      [style.background]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')"></span> 
+                  [style.background]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')"></span>
                 <span>✨</span>
-                <span [style.color]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')">
-                  {{ currentDisplayStats.tauxErreur > 5 ? 'Critique' : (currentDisplayStats.tauxErreur > 0 ? 'Sous tension' : 'Optimal') }}
+                <span
+                  [style.color]="currentDisplayStats.tauxErreur > 5 ? '#ef4444' : (currentDisplayStats.tauxErreur > 0 ? '#f59e0b' : '#10b981')">
+                  {{ currentDisplayStats.tauxErreur > 5 ? 'Critique' : (currentDisplayStats.tauxErreur > 0 ? 'Sous
+                  tension' : 'Optimal') }}
                 </span>
               </div>
             </div>
-            
+
             <div class="balance-labels" style="margin-bottom: 10px;">
-              <span class="lbl-success">{{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }} Traités</span>
-              <span class="lbl-error">{{ currentDisplayStats.bloques | number }} Anomalies ({{ currentDisplayStats.tauxErreur | number:'1.1-1' }}%)</span>
+              <span class="lbl-success">{{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }}
+                Traités</span>
+              <span class="lbl-error">{{ currentDisplayStats.bloques | number }} Anomalies ({{
+                currentDisplayStats.tauxErreur | number:'1.1-1' }}%)</span>
             </div>
 
             <!-- TIMELINE CHART (Global only) -->
-            <div class="chart-container" style="margin-top: 0; padding: 5px 0 0 0; border: none; box-shadow: none; background: transparent; height: 160px;" *ngIf="processingChartLoaded && !currentDisplayStats.isFiltered">
-              <apx-chart 
-                [series]="processingChartOptions.series"
-                [chart]="processingChartOptions.chart"
-                [xaxis]="processingChartOptions.xaxis"
-                [yaxis]="processingChartOptions.yaxis"
-                [stroke]="processingChartOptions.stroke"
-                [colors]="processingChartOptions.colors"
-                [fill]="processingChartOptions.fill"
-                [dataLabels]="processingChartOptions.dataLabels"
-                [grid]="processingChartOptions.grid"
-                [tooltip]="processingChartOptions.tooltip">
+            <div class="chart-container"
+              style="margin-top: 0; padding: 5px 0 0 0; border: none; box-shadow: none; background: transparent; height: 160px;"
+              *ngIf="processingChartLoaded && !currentDisplayStats.isFiltered">
+              <apx-chart [series]="processingChartOptions.series" [chart]="processingChartOptions.chart"
+                [xaxis]="processingChartOptions.xaxis" [yaxis]="processingChartOptions.yaxis"
+                [stroke]="processingChartOptions.stroke" [colors]="processingChartOptions.colors"
+                [fill]="processingChartOptions.fill" [dataLabels]="processingChartOptions.dataLabels"
+                [grid]="processingChartOptions.grid" [tooltip]="processingChartOptions.tooltip">
               </apx-chart>
             </div>
-            <div class="chart-container loading" *ngIf="!processingChartLoaded && !currentDisplayStats.isFiltered" style="display:flex; justify-content:center; align-items:center; height: 160px; color:#94a3b8; margin-top:0; border: none; background: transparent;">
+            <div class="chart-container loading" *ngIf="!processingChartLoaded && !currentDisplayStats.isFiltered"
+              style="display:flex; justify-content:center; align-items:center; height: 160px; color:#94a3b8; margin-top:0; border: none; background: transparent;">
               Chargement de la chronologie...
             </div>
             <div *ngIf="currentDisplayStats.isFiltered" class="route-visualizer">
@@ -233,14 +239,16 @@
               <div class="rv-node">
                 <span class="rv-icon" title="Émetteur : {{ selectedRoute?.sender }}">📥</span>
                 <span class="rv-name">RÉCEPTION</span>
-                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.sender | slice:0:10 }}{{ (selectedRoute?.sender?.length || 0) > 10 ? '…' : '' }}</span>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.sender | slice:0:10
+                  }}{{ (selectedRoute?.sender?.length || 0) > 10 ? '…' : '' }}</span>
               </div>
-              
+
               <div class="rv-path">
-                 <div class="rv-line"></div>
-                 <div class="rv-packet packet-1"></div>
-                 <div class="rv-packet packet-2"></div>
-                 <div class="rv-badge blue" title="Depuis {{ selectedRoute?.sender }}">{{ currentDisplayStats.total | number }} Flux</div>
+                <div class="rv-line"></div>
+                <div class="rv-packet packet-1"></div>
+                <div class="rv-packet packet-2"></div>
+                <div class="rv-badge blue" title="Depuis {{ selectedRoute?.sender }}">{{ currentDisplayStats.total |
+                  number }} Flux</div>
               </div>
 
               <!-- MILIEU : Phase 2 - Traitement -->
@@ -250,27 +258,32 @@
               </div>
 
               <div class="rv-path">
-                 <div class="rv-line"></div>
-                 <div class="rv-packet packet-3"></div>
-                 <div class="rv-badge" [class.success]="currentDisplayStats.tauxErreur === 0" [class.warn]="currentDisplayStats.tauxErreur > 0" title="Vers {{ selectedRoute?.receiver }}">
-                    {{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }} OK
-                 </div>
+                <div class="rv-line"></div>
+                <div class="rv-packet packet-3"></div>
+                <div class="rv-badge" [class.success]="currentDisplayStats.tauxErreur === 0"
+                  [class.warn]="currentDisplayStats.tauxErreur > 0" title="Vers {{ selectedRoute?.receiver }}">
+                  {{ (currentDisplayStats.total - currentDisplayStats.bloques) | number }} OK
+                </div>
               </div>
 
               <!-- DROITE : Phase 3 - Expédition -->
               <div class="rv-node">
                 <span class="rv-icon" title="Récepteur : {{ selectedRoute?.receiver }}">📤</span>
                 <span class="rv-name">EXPÉDITION</span>
-                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.receiver | slice:0:10 }}{{ (selectedRoute?.receiver?.length || 0) > 10 ? '…' : '' }}</span>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">{{ selectedRoute?.receiver | slice:0:10
+                  }}{{ (selectedRoute?.receiver?.length || 0) > 10 ? '…' : '' }}</span>
               </div>
             </div>
           </div>
 
           <!-- Insight IA -->
           <div class="ai-insight" [class.active]="currentDisplayStats.bloques > 0">
-             <span class="ai-icon">✨</span>
-             <span *ngIf="currentDisplayStats.bloques > 0" style="font-size: 13px;"><strong>Analyse IA requise :</strong> {{ currentDisplayStats.bloques }} flux bloqués attendent une évaluation de criticité métier.</span>
-             <span *ngIf="currentDisplayStats.bloques === 0" style="font-size: 13px;"><strong>Validation IA :</strong> Aucun blocage critique détecté pour {{ currentDisplayStats.isFiltered ? 'cette route' : 'le moment' }}.</span>
+            <span class="ai-icon">✨</span>
+            <span *ngIf="currentDisplayStats.bloques > 0" style="font-size: 13px;"><strong>Analyse IA requise :</strong>
+              {{ currentDisplayStats.bloques }} flux bloqués attendent une évaluation de criticité métier.</span>
+            <span *ngIf="currentDisplayStats.bloques === 0" style="font-size: 13px;"><strong>Validation IA :</strong>
+              Aucun blocage critique détecté pour {{ currentDisplayStats.isFiltered ? 'cette route' : 'le moment'
+              }}.</span>
           </div>
 
         </div>
@@ -280,11 +293,10 @@
           <h4 class="widget-title">Top Routes Actives (Filtres)</h4>
           <p class="widget-subtitle">Sélectionnez une route pour l'isoler.</p>
           <div class="top-list">
-            
-            <div class="route-filter-card" *ngFor="let route of topRoutes" 
-                 [class.selected]="selectedRoute?.id === route.id"
-                 (click)="selectRoute(route, $event)">
-              
+
+            <div class="route-filter-card" *ngFor="let route of topRoutes"
+              [class.selected]="selectedRoute?.id === route.id" (click)="selectRoute(route, $event)">
+
               <div class="route-filter-header">
                 <span class="rf-name">{{ route.name }}</span>
                 <span class="rf-badge-err" *ngIf="route.errors > 0">⚠ {{ route.errors }} Err</span>
@@ -299,7 +311,8 @@
 
       </div>
 
-      <div class="phase-body" *ngIf="!processingLoaded" style="display:flex; align-items:center; justify-content:center; height:200px; color:#94a3b8;">
+      <div class="phase-body" *ngIf="!processingLoaded"
+        style="display:flex; align-items:center; justify-content:center; height:200px; color:#94a3b8;">
         Chargement du moteur...
       </div>
     </div>
@@ -312,158 +325,245 @@
           <h2 class="phase-title">Expédition des Fichiers</h2>
         </div>
         <button class="btn-investigate btn-violet" (click)="navigateToExpedition()">
-          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
 
-      <div *ngIf="!expeditionLoaded" style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8;">
+      <div *ngIf="!expeditionLoaded"
+        style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8;">
         Chargement de l'expédition...
       </div>
 
-      <div class="phase-body" *ngIf="expeditionLoaded">
+      <div class="phase-body exp-new-body" *ngIf="expeditionLoaded">
 
-        <!-- COLONNE GAUCHE : Fonctionnel + Bilan Visuel -->
-        <div class="phase-main-metric" style="justify-content: space-between; gap: 15px;">
+        <!-- ============================================================ -->
+        <!-- COLONNE GAUCHE : Objectif + Pipeline permanent + Barres      -->
+        <!-- ============================================================ -->
+        <div class="exp-left-col">
 
           <!-- Objectif Métier -->
-          <div class="functional-objective" style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.15);">
-            <div class="obj-icon-wrap" style="background: rgba(139, 92, 246, 0.1);"><span class="obj-icon" style="color: #c084fc;">📡</span></div>
+          <div class="functional-objective"
+            style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.15);">
+            <div class="obj-icon-wrap" style="background: rgba(139, 92, 246, 0.1);"><span class="obj-icon"
+                style="color: #c084fc;">📡</span></div>
             <div class="obj-text">
-              <strong style="color: #c084fc;">Livraison & Confirmation Finale</strong>
+              <strong style="color: #c084fc;">Livraison &amp; Confirmation Finale</strong>
               <p>Expédition physique vers les destinataires et collecte des accusés de réception (ACK).</p>
             </div>
           </div>
 
-          <!-- Bilan Visuel d'Expédition -->
-          <div class="expedition-balance" [class.filtered]="selectedExpContrat !== null" style="display: flex; flex-direction: column; width: 100%;">
-            <div class="balance-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 class="phase-title" style="margin: 0;" [title]="selectedExpContrat ? selectedExpContrat : 'Activité des Expéditions'">
-                  {{ selectedExpContrat ? 'Bilan : ' + (selectedExpContrat | slice:0:22) + (selectedExpContrat.length > 22 ? '…' : '') : 'Activité des Expéditions (Livraisons/j)' }}
-                </h3>
-                <button *ngIf="selectedExpContrat" class="btn-clear-filter" (click)="selectExpContrat(selectedExpContrat)" title="Revenir à la vue globale">✕</button>
+          <!-- ===== PIPELINE PERMANENT (toujours visible) ===== -->
+          <div class="exp-pipeline-permanent">
+            <div class="exp-pp-title">Bilan global des flux</div>
+
+            <!-- Nœuds + flèches animées -->
+            <div class="exp-pp-flow">
+
+              <!-- REÇUS -->
+              <div class="exp-pp-node">
+                <div class="exp-pp-icon">📥</div>
+                <div class="exp-pp-count">{{ expeditionFunnel.recus | number }}</div>
+                <div class="exp-pp-label">Reçus</div>
               </div>
 
-              <!-- Indicateur de Taux d'ACK -->
-              <div class="health-badge ack-health-badge" 
-                   style="cursor: help; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"
-                   [class.badge-success]="expeditionAckPct >= 80"
-                   [class.badge-warning]="expeditionAckPct >= 50 && expeditionAckPct < 80"
-                   [class.badge-error]="expeditionAckPct < 50"
-                   title="Indice de Complétude ACK : {{ expeditionAckPct }}% des accusés attendus ont été reçus.">
-                <span class="health-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"
-                      [style.background]="expeditionAckPct >= 80 ? '#10b981' : (expeditionAckPct >= 50 ? '#f59e0b' : '#ef4444')"></span> 
-                <span style="font-size: 11px; font-weight: 700; color: #cbd5e1;">ACK: {{ expeditionAckPct }}%</span>
+              <!-- Flèche 1 + taux couverture -->
+              <div class="exp-pp-arrow">
+                <div class="exp-pp-arrow-track">
+                  <div class="exp-pp-arrow-packet p1"></div>
+                  <div class="exp-pp-arrow-packet p2"></div>
+                </div>
+                <div class="exp-pp-arrow-badge" [class.badge-good]="expeditionCouverturePct >= 80"
+                  [class.badge-warn]="expeditionCouverturePct >= 50 && expeditionCouverturePct < 80"
+                  [class.badge-bad]="expeditionCouverturePct < 50">
+                  {{ expeditionCouverturePct }}%
+                </div>
+              </div>
+
+              <!-- LIVRÉS -->
+              <div class="exp-pp-node">
+                <div class="exp-pp-icon">📦</div>
+                <div class="exp-pp-count">{{ expeditionFunnel.livres | number }}</div>
+                <div class="exp-pp-label">Livrés</div>
+              </div>
+
+              <!-- Flèche 2 + taux ACK -->
+              <div class="exp-pp-arrow">
+                <div class="exp-pp-arrow-track">
+                  <div class="exp-pp-arrow-packet p3"></div>
+                  <div class="exp-pp-arrow-packet p4"></div>
+                </div>
+                <div class="exp-pp-arrow-badge" [class.badge-good]="expeditionAckPct >= 80"
+                  [class.badge-warn]="expeditionAckPct >= 50 && expeditionAckPct < 80"
+                  [class.badge-bad]="expeditionAckPct < 50">
+                  ACK {{ expeditionAckPct }}%
+                </div>
+              </div>
+
+              <!-- CONFIRMÉS -->
+              <div class="exp-pp-node" [class.node-alert-pulse]="expeditionAckManquants > 0">
+                <div class="exp-pp-icon">{{ expeditionAckManquants > 0 ? '⚠️' : '✅' }}</div>
+                <div class="exp-pp-count" [style.color]="expeditionAckManquants > 0 ? '#f87171' : '#34d399'">
+                  {{ expeditionFunnel.ackConfirmes | number }}
+                </div>
+                <div class="exp-pp-label">Confirmés</div>
+              </div>
+
+            </div>
+
+            <!-- ===== BARRES DE PROGRESSION ===== -->
+            <div class="exp-progress-bars">
+
+              <!-- Couverture -->
+              <div class="exp-prog-row">
+                <div class="exp-prog-header">
+                  <span class="exp-prog-label">📦 Couverture livraison</span>
+                  <span class="exp-prog-value"
+                    [style.color]="expeditionCouverturePct >= 80 ? '#34d399' : expeditionCouverturePct >= 50 ? '#fbbf24' : '#f87171'">
+                    {{ expeditionCouverturePct }}%
+                  </span>
+                </div>
+                <div class="exp-prog-track">
+                  <div class="exp-prog-fill" [style.width.%]="expeditionCouverturePct"
+                    [class.fill-good]="expeditionCouverturePct >= 80"
+                    [class.fill-warn]="expeditionCouverturePct >= 50 && expeditionCouverturePct < 80"
+                    [class.fill-bad]="expeditionCouverturePct < 50">
+                  </div>
+                </div>
+                <div class="exp-prog-hint">{{ expeditionFunnel.livres | number }} fichiers livrés sur {{
+                  expeditionFunnel.recus | number }} reçus</div>
+              </div>
+
+              <!-- Taux ACK -->
+              <div class="exp-prog-row">
+                <div class="exp-prog-header">
+                  <span class="exp-prog-label">✅ Taux de confirmation ACK</span>
+                  <span class="exp-prog-value"
+                    [style.color]="expeditionAckPct >= 80 ? '#34d399' : expeditionAckPct >= 50 ? '#fbbf24' : '#f87171'">
+                    {{ expeditionAckPct }}%
+                  </span>
+                </div>
+                <div class="exp-prog-track">
+                  <div class="exp-prog-fill" [style.width.%]="expeditionAckPct"
+                    [class.fill-good]="expeditionAckPct >= 80"
+                    [class.fill-warn]="expeditionAckPct >= 50 && expeditionAckPct < 80"
+                    [class.fill-bad]="expeditionAckPct < 50">
+                  </div>
+                </div>
+                <div class="exp-prog-hint">{{ expeditionFunnel.ackConfirmes | number }} confirmés · {{
+                  expeditionAckAttendu | number }} attendus</div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- COLONNE DROITE : 4 KPI Cards + Mini Timeline                 -->
+        <!-- ============================================================ -->
+        <div class="exp-right-col">
+
+          <!-- ===== 4 KPI CARDS ===== -->
+          <div class="exp-kpi-grid">
+
+            <!-- KPI 1 : Fichiers Livrés -->
+            <div class="exp-kpi-card exp-kpi-violet">
+              <div class="exp-kpi-icon">📦</div>
+              <div class="exp-kpi-body">
+                <div class="exp-kpi-value">{{ expeditionFunnel.livres | number }}</div>
+                <div class="exp-kpi-label">Fichiers livrés</div>
               </div>
             </div>
 
-            <!-- TIMELINE CHART (Global only) -->
-            <div class="chart-container" style="margin-top: 0; padding: 5px 0 0 0; border: none; box-shadow: none; background: transparent; height: 160px;" *ngIf="expeditionChartLoaded && !selectedExpContrat">
-              <apx-chart 
-                [series]="expeditionChartOptions.series"
-                [chart]="expeditionChartOptions.chart"
-                [xaxis]="expeditionChartOptions.xaxis"
-                [yaxis]="expeditionChartOptions.yaxis"
-                [stroke]="expeditionChartOptions.stroke"
-                [colors]="expeditionChartOptions.colors"
-                [fill]="expeditionChartOptions.fill"
-                [dataLabels]="expeditionChartOptions.dataLabels"
-                [grid]="expeditionChartOptions.grid"
-                [tooltip]="expeditionChartOptions.tooltip">
+            <!-- KPI 2 : Total Livraisons -->
+            <div class="exp-kpi-card exp-kpi-indigo">
+              <div class="exp-kpi-icon">📤</div>
+              <div class="exp-kpi-body">
+                <div class="exp-kpi-value">{{ expeditionFunnel.livraisons | number }}</div>
+                <div class="exp-kpi-label">Livraisons</div>
+              </div>
+            </div>
+
+            <!-- KPI 3 : Taux ACK -->
+            <div class="exp-kpi-card" [class.exp-kpi-green]="expeditionAckPct >= 80"
+              [class.exp-kpi-amber]="expeditionAckPct >= 50 && expeditionAckPct < 80"
+              [class.exp-kpi-red]="expeditionAckPct < 50">
+              <div class="exp-kpi-icon">✅</div>
+              <div class="exp-kpi-body">
+                <div class="exp-kpi-value">{{ expeditionAckPct }}%</div>
+                <div class="exp-kpi-label">Taux ACK</div>
+              </div>
+            </div>
+
+            <!-- KPI 4 : ACK Manquants (ALERTE) -->
+            <div class="exp-kpi-card exp-kpi-danger" [class.exp-kpi-pulse]="expeditionAckManquants > 0">
+              <div class="exp-kpi-icon">{{ expeditionAckManquants > 0 ? '🚨' : '🟢' }}</div>
+              <div class="exp-kpi-body">
+                <div class="exp-kpi-value" [style.color]="expeditionAckManquants > 0 ? '#f87171' : '#34d399'">
+                  {{ expeditionAckManquants | number }}
+                </div>
+                <div class="exp-kpi-label">ACK manquants</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ===== MINI TIMELINE ===== -->
+          <div class="exp-mini-timeline">
+            <div class="exp-mt-header">
+              <span class="exp-mt-title">📈 Activité des livraisons</span>
+              <div class="ack-health-badge" [class.badge-success]="expeditionAckPct >= 80"
+                [class.badge-warning]="expeditionAckPct >= 50 && expeditionAckPct < 80"
+                [class.badge-error]="expeditionAckPct < 50">
+                <span class="health-dot"
+                  [style.background]="expeditionAckPct >= 80 ? '#10b981' : (expeditionAckPct >= 50 ? '#f59e0b' : '#ef4444')">
+                </span>
+                ACK {{ expeditionAckPct }}%
+              </div>
+            </div>
+
+            <div class="chart-container"
+              style="margin:0;padding:0;border:none;box-shadow:none;background:transparent;height:140px;"
+              *ngIf="expeditionChartLoaded">
+              <apx-chart [series]="expeditionChartOptions.series" [chart]="expeditionChartOptions.chart"
+                [xaxis]="expeditionChartOptions.xaxis" [yaxis]="expeditionChartOptions.yaxis"
+                [stroke]="expeditionChartOptions.stroke" [colors]="expeditionChartOptions.colors"
+                [fill]="expeditionChartOptions.fill" [dataLabels]="expeditionChartOptions.dataLabels"
+                [grid]="expeditionChartOptions.grid" [tooltip]="expeditionChartOptions.tooltip"
+                [legend]="expeditionChartOptions.legend">
               </apx-chart>
             </div>
-            <div class="chart-container loading" *ngIf="!expeditionChartLoaded && !selectedExpContrat" style="display:flex; justify-content:center; align-items:center; height: 160px; color:#94a3b8; margin-top:0; border: none; background: transparent;">
-              Chargement de la chronologie...
+            <div *ngIf="!expeditionChartLoaded"
+              style="display:flex;align-items:center;justify-content:center;height:140px;color:#94a3b8;font-size:12px;">
+              Chargement du graphique...
             </div>
-
-            <!-- Custom Interactive Delivery Flow Visualizer (Only when filtered) -->
-            <div *ngIf="selectedExpContrat" class="route-visualizer exp-flow-visualizer" style="margin-bottom: 5px;">
-              <!-- GAUCHE : Fichiers Reçus -->
-              <div class="rv-node exp-node">
-                <span class="rv-icon">📥</span>
-                <span class="rv-name">REÇUS</span>
-                <span style="font-size: 11px; color: #c084fc; font-weight: 700;">{{ expeditionFunnel.recus | number }}</span>
-              </div>
-              
-              <div class="rv-path exp-path">
-                 <div class="rv-line exp-line"></div>
-                 <div class="rv-packet packet-1 exp-packet"></div>
-                 <div class="rv-packet packet-2 exp-packet"></div>
-                 <div class="rv-badge purple" title="Taux de livraison">{{ expeditionCouverturePct }}% Livrés</div>
-              </div>
-
-              <!-- MILIEU : Fichiers Livrés & Livraisons -->
-              <div class="rv-node exp-node middle-node">
-                <span class="rv-icon">📤</span>
-                <span class="rv-name">LIVRÉS</span>
-                <span style="font-size: 11px; color: #c084fc; font-weight: 700; text-align: center;">{{ expeditionFunnel.livres | number }} <span style="font-size: 9px; color:#94a3b8; display:block;">({{ expeditionFunnel.livraisons | number }} envois)</span></span>
-              </div>
-
-              <div class="rv-path exp-path">
-                 <div class="rv-line exp-line"></div>
-                 <div class="rv-packet packet-3 exp-packet"></div>
-                 <div class="rv-badge" [class.success]="expeditionAckPct >= 80" [class.warn]="expeditionAckPct < 80" title="Taux ACK">
-                    ACK: {{ expeditionAckPct }}%
-                 </div>
-              </div>
-
-              <!-- DROITE : ACK Confirmés -->
-              <div class="rv-node exp-node">
-                <span class="rv-icon">✅</span>
-                <span class="rv-name">CONFIRMÉS</span>
-                <span style="font-size: 11px; color: #c084fc; font-weight: 700;">{{ expeditionFunnel.ackConfirmes | number }}</span>
-              </div>
-            </div>
-
           </div>
 
-          <!-- Dynamic Status Insight (Bottom text area) -->
-          <div class="ai-insight exp-insight" [class.active]="true" style="border-color: rgba(139, 92, 246, 0.2); background: rgba(139, 92, 246, 0.04); margin-top: 5px; width: 100%;">
-             <span class="ai-icon" style="color: #c084fc;">✨</span>
-             <span style="font-size: 13px; color: #cbd5e1; line-height: 1.4;">
-               <strong>Bilan Expéditions :</strong> 
-               <span *ngIf="!selectedExpContrat">
-                 Sur l'ensemble des partenaires, la couverture de livraison atteint <strong>{{ expeditionCouverturePct }}%</strong>, avec <strong>{{ expeditionAckPct }}%</strong> d'accusés de réception confirmés.
-               </span>
-               <span *ngIf="selectedExpContrat">
-                 Pour le contrat <strong>{{ selectedExpContrat }}</strong>, la couverture est de <strong>{{ expeditionCouverturePct }}%</strong> ({{ expeditionFunnel.livres }} dossiers livrés sur {{ expeditionFunnel.recus }} reçus) avec un taux d'ACK de <strong>{{ expeditionAckPct }}%</strong>.
-               </span>
-             </span>
+          <!-- ===== Filtre Contrat rapide + toggle ACK ===== -->
+          <div class="exp-quick-filters">
+            <div class="exp-contrat-chips">
+              <div class="exp-contrat-chip" *ngFor="let c of expeditionContrats"
+                [class.selected]="selectedExpContrat === c" (click)="selectExpContrat(c)">
+                <span class="exp-chip-icon">📋</span>
+                <span class="exp-chip-name">{{ c }}</span>
+                <span class="exp-chip-arrow" *ngIf="selectedExpContrat === c">✓</span>
+              </div>
+              <div *ngIf="expeditionContrats.length === 0" style="color:#94a3b8;font-size:12px;">Aucun contrat</div>
+            </div>
+            <div class="exp-ack-toggle" (click)="toggleExpAckOnly()">
+              <div class="exp-toggle-track" [class.on]="expeditionAckOnly">
+                <div class="exp-toggle-thumb"></div>
+              </div>
+              <span class="exp-toggle-label">ACK requis uniquement</span>
+            </div>
           </div>
 
         </div>
 
-        <!-- COLONNE DROITE : Filtres Contrats -->
-        <div class="phase-side-widget exp-side">
-          <h4 class="widget-title exp-widget-title">Contrats (Filtres)</h4>
-          <p class="widget-subtitle">Cliquer pour isoler un partenaire</p>
-
-          <div class="top-list exp-contrat-list">
-            <div class="exp-contrat-chip"
-                 *ngFor="let c of expeditionContrats"
-                 [class.selected]="selectedExpContrat === c"
-                 (click)="selectExpContrat(c)">
-              <span class="exp-chip-icon">📋</span>
-              <span class="exp-chip-name">{{ c }}</span>
-              <span class="exp-chip-arrow" *ngIf="selectedExpContrat === c">✓</span>
-            </div>
-            <div *ngIf="expeditionContrats.length === 0" style="color:#94a3b8;font-size:12px;text-align:center;padding:10px;">
-              Aucun contrat disponible
-            </div>
-          </div>
-
-          <div class="exp-ack-toggle" (click)="toggleExpAckOnly()">
-            <div class="exp-toggle-track" [class.on]="expeditionAckOnly">
-              <div class="exp-toggle-thumb"></div>
-            </div>
-            <span class="exp-toggle-label">ACK requis uniquement</span>
-          </div>
-        </div>
 
       </div>
+
     </div>
-
-  </div>
-
-</div>
-

@@ -6,7 +6,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { AiChatService } from '../../services/ai-chat.service';
 import { ThemeService } from '../../services/theme';
 import { finalize } from 'rxjs';
- 
+
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -20,7 +20,7 @@ import {
   ApexLegend,
   ApexMarkers
 } from 'ng-apexcharts';
- 
+
 export type ChartOptions = {
   series: ApexAxisChartSeries;
   chart: ApexChart;
@@ -35,7 +35,7 @@ export type ChartOptions = {
   legend: ApexLegend;
   markers: ApexMarkers;
 };
- 
+
 export interface PerformanceLatency {
   fileInId: number;
   contract: string;
@@ -47,14 +47,14 @@ export interface PerformanceLatency {
   sendingDateAck: string;
   ackExpected: number;
   status: string;
-  
+
   // Champs calculés côté client
   t1: number;
   t2: number;
   t3: number;
   isBreached: boolean;
 }
- 
+
 @Component({
   selector: 'app-performance',
   standalone: true,
@@ -66,7 +66,7 @@ export class PerformanceComponent implements OnInit {
   private http = inject(HttpClient);
   private aiService = inject(AiChatService);
   public themeService = inject(ThemeService);
- 
+
   constructor() {
     effect(() => {
       // Détecter les changements de theme
@@ -79,7 +79,7 @@ export class PerformanceComponent implements OnInit {
 
   // Mode d'affichage: 'business' | 'noc'
   public viewMode: 'business' | 'noc' = 'noc';
-  
+
   // Niveau d'audit actif
   public activePreset: string = 'silver';
 
@@ -137,6 +137,68 @@ export class PerformanceComponent implements OnInit {
     return this.pipelineLatencies.length;
   }
 
+  // ===== WIDGET GRAPHIQUES : Filtres locaux =====
+  public chartsContractFilter: string = '';
+  public showViolationsOnly: boolean = false;
+
+  public get chartLatencies(): PerformanceLatency[] {
+    return this.filteredLatencies.filter(f => {
+      if (this.chartsContractFilter && f.contract !== this.chartsContractFilter) return false;
+      if (this.showViolationsOnly && !f.isBreached) return false;
+      return true;
+    });
+  }
+
+  // Indicateurs de détection calculés sur chartLatencies
+  public get detectedAnomaliesCount(): number {
+    const slaTotal = this.t2SlaSec + this.t3SlaMin * 60;
+    return this.chartLatencies.filter(f =>
+      (f.t2 + (f.ackExpected === 1 ? f.t3 : 0)) > slaTotal
+    ).length;
+  }
+
+  public get activeContractTitle(): string {
+    return this.chartsContractFilter || 'Tous les Contrats';
+  }
+
+  public get activeContractSubtitle(): string {
+    if (!this.chartsContractFilter) {
+      return 'Sélectionner pour filtrer';
+    }
+    const contractFiles = this.filteredLatencies.filter(f => f.contract === this.chartsContractFilter);
+    const total = contractFiles.length;
+    if (total === 0) return 'Aucune donnée';
+    const breached = contractFiles.filter(f => f.isBreached).length;
+    const compliant = total - breached;
+    const rate = parseFloat((compliant * 100 / total).toFixed(1));
+    return `${compliant}/${total} conformes (${rate}% SLA)`;
+  }
+
+  public get mainBottleneckStep(): string {
+    const b1 = this.chartLatencies.filter(f => f.t1 > this.t1SlaSec).length;
+    const b2 = this.chartLatencies.filter(f => f.t2 > this.t2SlaSec).length;
+    const b3 = this.chartLatencies.filter(f => f.ackExpected === 1 && f.t3 > this.t3SlaMin * 60).length;
+    if (b2 >= b3 && b2 >= b1) return 'Traitement EAI';
+    if (b3 >= b2 && b3 >= b1) return 'Attente partenaire';
+    return 'Intégration';
+  }
+
+  public get chartContractsList(): string[] {
+    const set = new Set<string>();
+    this.filteredLatencies.forEach(f => { if (f.contract) set.add(f.contract); });
+    return Array.from(set).sort();
+  }
+
+  public onChartsFilterChange(): void {
+    this.renderCharts();
+  }
+
+  public clearChartsFilter(): void {
+    this.chartsContractFilter = '';
+    this.showViolationsOnly = false;
+    this.renderCharts();
+  }
+
   // Info popovers (cartes "i")
   public activeWidget: string | null = null;
   public popoverPos: { top: number; left: number } | null = null;
@@ -176,6 +238,27 @@ export class PerformanceComponent implements OnInit {
       what: 'Identifie à quelle étape du cycle de vie (Intégration, Traitement EAI, Attente partenaire) les fichiers sont les plus lents et dépasse leur SLA.',
       how: 'Pour chaque étape, on compte les fichiers dont le temps mesuré (T1, T2 ou T3) dépasse le seuil défini. La barre bicolore montre la proportion conforme (vert) vs hors délais (rouge). Le Top5 liste les 5 fichiers les plus lents sur l\'étape sélectionnée.',
       action: 'Cliquer sur une étape pour filtrer le journal en bas. Utiliser la recherche par ID pour isoler un flux précis dans les statistiques.'
+    },
+    anomaliesCharts: {
+      icon: '🔬',
+      title: 'Détection des Anomalies & Contrats à Risque',
+      what: 'Permet de repérer visuellement les incidents de latence chronologiques et de classer vos clients selon leur respect des engagements de service.',
+      how: 'Le Scatter plot montre chaque fichier (vert = conforme, rouge = hors SLA) pour détecter les pics. Le Bar chart empilé classe les contrats du plus pénalisé au plus stable (avec le % d\'erreurs sur le libellé) et affiche le temps de traitement moyen par étape.',
+      action: 'Cliquer sur une barre de contrat pour filtrer les deux graphiques sur ce client. Utiliser le filtre "Violations seulement" pour isoler les anomalies.'
+    },
+    scatterChartInfo: {
+      icon: '📍',
+      title: 'Carte des Anomalies de Latence',
+      what: 'Affiche le temps de traitement total de chaque fichier sous forme de nuage de points chronologique.',
+      how: 'Les points au-dessus de la ligne pointillée rouge représentent les fichiers hors SLA (délai dépassé). Vert = conforme, Rouge = hors délais.',
+      action: 'Identifiez visuellement les pics ou les heures de congestion système critiques.'
+    },
+    barChartInfo: {
+      icon: '📊',
+      title: 'Classement des Contrats',
+      what: 'Classe vos clients par taux de violations SLA (du pire au meilleur) et décompose leur temps de traitement moyen par étape.',
+      how: 'Les barres empilées montrent la durée moyenne de l\'Intégration (bleu), du Traitement EAI (vert) et de l\'Attente partenaire (jaune).',
+      action: 'Cliquez sur une barre pour filtrer le reste du dashboard et les graphiques sur ce contrat spécifique.'
     }
   };
 
@@ -252,7 +335,7 @@ export class PerformanceComponent implements OnInit {
 
   public fetchData(): void {
     let url = 'http://localhost:8080/api/performance/latencies';
-    
+
     // Ajout des filtres de date pour l'API si spécifiés
     const params: string[] = [];
     if (this.startDate) params.push(`from=${this.startDate}T00:00:00`);
@@ -362,8 +445,8 @@ export class PerformanceComponent implements OnInit {
     });
 
     this.totalCount = this.filteredLatencies.length;
-    this.complianceRate = this.totalCount > 0 
-      ? parseFloat(((this.totalCount - this.breachedCount) * 100 / this.totalCount).toFixed(1)) 
+    this.complianceRate = this.totalCount > 0
+      ? parseFloat(((this.totalCount - this.breachedCount) * 100 / this.totalCount).toFixed(1))
       : 100;
 
     this.avgT1 = this.totalCount > 0 ? sumT1 / this.totalCount : 0;
@@ -391,8 +474,8 @@ export class PerformanceComponent implements OnInit {
     const pid = this.pipelineSearchId.trim().toLowerCase();
     this.pipelineLatencies = pid
       ? this.filteredLatencies.filter(item =>
-          item.fileInId.toString().indexOf(pid) !== -1
-        )
+        item.fileInId.toString().indexOf(pid) !== -1
+      )
       : this.filteredLatencies;
 
     this.computePipelineStats();
@@ -623,9 +706,9 @@ export class PerformanceComponent implements OnInit {
 
     // N'ajouter la note SLA que si la question concerne explicitement les SLAs, retards ou violations
     const lower = queryText.toLowerCase();
-    const needsSla = lower.includes('sla') || lower.includes('retard') || lower.includes('violation') || 
-                      lower.includes('depass') || lower.includes('breach') || lower.includes('seuil') || 
-                      lower.includes('conforme') || lower.includes('penalite');
+    const needsSla = lower.includes('sla') || lower.includes('retard') || lower.includes('violation') ||
+      lower.includes('depass') || lower.includes('breach') || lower.includes('seuil') ||
+      lower.includes('conforme') || lower.includes('penalite');
 
     const contextualizedQuestion = needsSla
       ? `${queryText} (Note: Seuil cible T2 = ${this.t2SlaSec}s, Seuil cible T3 = ${this.t3SlaMin * 60}s).`
@@ -655,7 +738,7 @@ export class PerformanceComponent implements OnInit {
 Le système affiche un taux de conformité de **${this.complianceRate}%** sur **${this.totalCount} fichiers analysés**, dont **${this.breachedCount} hors délais**.
 
 **2. Analyse des Goulots d'Étranglement :**
-* ${causeT3 ? `🔴 **Attente partenaire** : La latence d'acquittement externe moyenne de **${(this.avgT3/60).toFixed(1)} min** dépasse votre seuil de **${this.t3SlaMin} min**.` : `💚 **Attente partenaire** : La latence d'acquittement externe reste sous contrôle.`}
+* ${causeT3 ? `🔴 **Attente partenaire** : La latence d'acquittement externe moyenne de **${(this.avgT3 / 60).toFixed(1)} min** dépasse votre seuil de **${this.t3SlaMin} min**.` : `💚 **Attente partenaire** : La latence d'acquittement externe reste sous contrôle.`}
 * ${causeT2 ? `🔴 **Traitement interne** : Le moteur EAI sature avec une latence moyenne de **${this.avgT2.toFixed(1)}s**, supérieure à votre cible de **${this.t2SlaSec}s**.` : `💚 **Traitement interne** : Les performances du moteur logique EAI sont stables.`}
 
 **3. Client Critique Identifié :**
@@ -666,9 +749,9 @@ Le contrat **"${worstContract}"** est la source la plus importante de dérives a
 2. **Optimisation** : Inspecter le serveur FTP du client **"${worstContract}"** qui engorge la file d'attente.`;
   }
 
-  // Rendu des graphiques avec ApexCharts
+  // Rendu des graphiques — Version diagnostic (anomalies colorées + tri par violations)
   private renderCharts(): void {
-    if (this.filteredLatencies.length === 0) {
+    if (this.chartLatencies.length === 0 && this.filteredLatencies.length === 0) {
       this.chartsLoaded = false;
       return;
     }
@@ -677,127 +760,158 @@ Le contrat **"${worstContract}"** est la source la plus importante de dérives a
     const labelColor = isDark ? '#8892b0' : '#475569';
     const gridColor = isDark ? '#1e293b' : '#e2e8f0';
     const tooltipTheme = isDark ? 'dark' : 'light';
-    const scatterColor = isDark ? '#00f2fe' : '#0891b2';
+    const slaTotal = this.t2SlaSec + this.t3SlaMin * 60;
 
-    // 1. SCATTER PLOT
-    // Extraction des points (T2 et T3)
-    const scatterData: { x: number; y: number }[] = [];
-    // Limiter aux 200 dernières transactions pour de meilleures performances graphiques
-    const recentLatencies = this.filteredLatencies.slice(-200);
-    recentLatencies.forEach((item, index) => {
-      scatterData.push({
-        x: index + 1,
-        y: parseFloat((item.t2 + (item.ackExpected === 1 ? item.t3 : 0)).toFixed(1))
-      });
+    // ─── 1. SCATTER PLOT — Carte des anomalies ───────────────────────────────
+    // Deux séries : conformes (vert) et violations (rouge) — max 500 fichiers
+    const source = this.chartLatencies.slice(-500);
+    const conformData: { x: number; y: number }[] = [];
+    const breachData: { x: number; y: number }[] = [];
+
+    source.forEach((item, index) => {
+      const latTotal = parseFloat((item.t2 + (item.ackExpected === 1 ? item.t3 : 0)).toFixed(1));
+      const point = { x: index + 1, y: latTotal };
+      if (latTotal > slaTotal) breachData.push(point);
+      else conformData.push(point);
     });
 
     this.scatterChartOptions = {
-      series: [{
-        name: 'Latence Totale (sec)',
-        data: scatterData
-      }],
+      series: [
+        { name: '✓ Conforme', data: conformData },
+        { name: '⚠ Hors délais', data: breachData }
+      ],
       chart: {
-        height: 250,
+        height: 260,
         type: 'scatter',
         zoom: { enabled: true, type: 'xy' },
         background: 'transparent',
         toolbar: { show: false }
       },
-      colors: [scatterColor],
+      colors: ['#10b981', '#ef4444'],
       xaxis: {
         tickAmount: 10,
-        title: { text: 'Transactions (Chronologique)', style: { color: labelColor } },
+        title: { text: 'Fichiers (chronologique)', style: { color: labelColor } },
         labels: { style: { colors: labelColor } }
       },
       yaxis: {
-        title: { text: 'Temps (secondes)', style: { color: labelColor } },
-        labels: { style: { colors: labelColor } }
+        title: { text: 'Latence totale (secondes)', style: { color: labelColor } },
+        labels: { style: { colors: labelColor } },
+        // Ligne de référence SLA
+        plotLines: [{
+          value: slaTotal, width: 2, color: '#ef4444', dashArray: 4,
+          label: { text: `Seuil SLA (${slaTotal}s)`, style: { color: '#ef4444' } }
+        }]
       },
-      grid: {
-        borderColor: gridColor,
-        strokeDashArray: 4
+      annotations: {
+        yaxis: [{
+          y: slaTotal,
+          borderColor: '#ef4444',
+          borderWidth: 2,
+          strokeDashArray: 5,
+          label: {
+            text: `Seuil SLA : ${slaTotal}s`,
+            style: { color: '#fff', background: '#ef4444', fontSize: '11px' },
+            position: 'right'
+          }
+        }]
       },
+      grid: { borderColor: gridColor, strokeDashArray: 4 },
       markers: {
-        size: 6,
+        size: 5,
         strokeColors: isDark ? '#0f172a' : '#ffffff',
-        hover: { size: 8 }
+        hover: { size: 7 }
       },
+      legend: { position: 'top', labels: { colors: labelColor } },
       tooltip: {
         theme: tooltipTheme,
-        x: { formatter: (val: number) => `Transaction #${val}` }
+        x: { formatter: (val: number) => `Fichier #${val}` },
+        y: { formatter: (val: number) => `${val}s (seuil : ${slaTotal}s)` }
       }
     };
 
-    // 2. STACKED BAR CHART
-    // Agréger la latence moyenne par contrat (Top 7 contrats pour rester lisible)
-    const contractStatsMap = new Map<string, { t1: number, t2: number, t3: number, count: number }>();
-    this.filteredLatencies.forEach(item => {
-      const contractKey = item.contract || 'Sans contrat';
-      const stats = contractStatsMap.get(contractKey) || { t1: 0, t2: 0, t3: 0, count: 0 };
-      stats.t1 += item.t1;
-      stats.t2 += item.t2;
-      stats.t3 += item.t3;
-      stats.count++;
-      contractStatsMap.set(contractKey, stats);
+    // ─── 2. BAR CHART — Classement par taux de violation (Décomposition T1/T2/T3) ──
+    // Tous les contrats, triés par % violations (pire en premier), avec décomposition des latences moyennes
+    const contractStatsMap = new Map<string, { breached: number; total: number; pct: number; t1: number; t2: number; t3: number }>();
+    this.chartLatencies.forEach(item => {
+      const key = item.contract || 'Sans contrat';
+      const s = contractStatsMap.get(key) || { breached: 0, total: 0, pct: 0, t1: 0, t2: 0, t3: 0 };
+      s.total++;
+      if (item.isBreached) s.breached++;
+      s.t1 += item.t1;
+      s.t2 += item.t2;
+      s.t3 += item.ackExpected === 1 ? item.t3 : 0;
+      s.pct = s.breached / s.total;
+      contractStatsMap.set(key, s);
     });
 
-    const contractsLabels: string[] = [];
-    const avgT1Series: number[] = [];
-    const avgT2Series: number[] = [];
-    const avgT3Series: number[] = [];
+    const sorted = Array.from(contractStatsMap.entries())
+      .sort((a, b) => b[1].pct - a[1].pct); // tri par % violations décroissant
 
-    // Trier par count et limiter à 7 contrats
-    Array.from(contractStatsMap.entries())
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 7)
-      .forEach(([key, val]) => {
-        contractsLabels.push(key);
-        avgT1Series.push(parseFloat((val.t1 / val.count).toFixed(1)));
-        avgT2Series.push(parseFloat((val.t2 / val.count).toFixed(1)));
-        avgT3Series.push(parseFloat((val.t3 / val.count).toFixed(1)));
-      });
+    const contractsLabels = sorted.map(([k, v]) => `${k} (${(v.pct * 100).toFixed(0)}% SLA)`);
+    const originalContractNames = sorted.map(([k]) => k);
+    const avgT1Series = sorted.map(([, v]) => parseFloat((v.t1 / v.total).toFixed(1)));
+    const avgT2Series = sorted.map(([, v]) => parseFloat((v.t2 / v.total).toFixed(1)));
+    const avgT3Series = sorted.map(([, v]) => parseFloat((v.t3 / v.total).toFixed(1)));
+
+    // Hauteur dynamique selon nombre de contrats (min 220px, 34px par contrat)
+    const barHeight = Math.max(220, contractsLabels.length * 34);
 
     this.barChartOptions = {
       series: [
         { name: 'Intégration (sec)', data: avgT1Series },
-        { name: 'Traitement (sec)', data: avgT2Series },
+        { name: 'Traitement EAI (sec)', data: avgT2Series },
         { name: 'Attente partenaire (sec)', data: avgT3Series }
       ],
       chart: {
         type: 'bar',
-        height: 250,
+        height: barHeight,
         stacked: true,
         background: 'transparent',
-        toolbar: { show: false }
+        toolbar: { show: false },
+        events: {
+          dataPointSelection: (_e: any, _chart: any, opts: any) => {
+            const contract = originalContractNames[opts.dataPointIndex];
+            if (contract && contract !== 'Sans contrat') {
+              this.chartsContractFilter = this.chartsContractFilter === contract ? '' : contract;
+              this.renderCharts();
+            }
+          }
+        }
       },
       colors: isDark ? ['#3b82f6', '#10b981', '#f59e0b'] : ['#2563eb', '#0d9488', '#d97706'],
       plotOptions: {
         bar: {
           horizontal: true,
-          barHeight: '60%'
+          barHeight: '65%'
         }
       },
       xaxis: {
         categories: contractsLabels,
+        title: { text: 'Temps moyen de traitement (secondes)', style: { color: labelColor } },
         labels: { style: { colors: labelColor } }
       },
       yaxis: {
         labels: { style: { colors: labelColor } }
       },
+      grid: { borderColor: gridColor },
+      tooltip: {
+        theme: tooltipTheme,
+        shared: true,
+        intersect: false,
+        y: {
+          formatter: (val: number) => `${val}s`
+        }
+      },
       legend: {
         position: 'bottom',
         labels: { colors: labelColor }
-      },
-      grid: {
-        borderColor: gridColor
-      },
-      tooltip: {
-        theme: tooltipTheme
       }
     };
 
     this.chartsLoaded = true;
   }
+
+
 
   public trackByFileId(index: number, item: PerformanceLatency): number {
     return item.fileInId;

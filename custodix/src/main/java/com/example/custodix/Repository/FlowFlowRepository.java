@@ -45,7 +45,16 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
   @Query("SELECT f.type, COUNT(f) FROM FlowFlow f GROUP BY f.type")
   List<Object[]> countByRealType();
 
-  // HOUR
+  // HOUR (tous statuts — pour l'Overview)
+  @Query(value = """
+      SELECT TRUNC(CREATIONDATE_, 'HH24') AS bucket, COUNT(*) AS total, 'ALL' as category
+      FROM UCUSTOI0.FLOW_FLOW
+      GROUP BY TRUNC(CREATIONDATE_, 'HH24')
+      ORDER BY bucket
+      """, nativeQuery = true)
+  List<Object[]> timelineAllHour();
+
+  // HOUR (avec status)
   @Query(value = """
       SELECT TRUNC(CREATIONDATE_, 'HH24') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
@@ -69,7 +78,16 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
       @Param("sender") String sender,
       @Param("receiver") String receiver);
 
-  // DAY
+  // DAY (tous statuts — pour l'Overview)
+  @Query(value = """
+      SELECT TRUNC(CREATIONDATE_, 'DD') AS bucket, COUNT(*) AS total, 'ALL' as category
+      FROM UCUSTOI0.FLOW_FLOW
+      GROUP BY TRUNC(CREATIONDATE_, 'DD')
+      ORDER BY bucket
+      """, nativeQuery = true)
+  List<Object[]> timelineAllDay();
+
+  // DAY (avec status)
   @Query(value = """
       SELECT TRUNC(CREATIONDATE_, 'DD') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
@@ -93,7 +111,16 @@ public interface FlowFlowRepository extends JpaRepository<FlowFlow, Long> {
       @Param("sender") String sender,
       @Param("receiver") String receiver);
 
-  // MONTH
+  // MONTH (tous statuts — pour l'Overview)
+  @Query(value = """
+      SELECT TRUNC(CREATIONDATE_, 'MM') AS bucket, COUNT(*) AS total, 'ALL' as category
+      FROM UCUSTOI0.FLOW_FLOW
+      GROUP BY TRUNC(CREATIONDATE_, 'MM')
+      ORDER BY bucket
+      """, nativeQuery = true)
+  List<Object[]> timelineAllMonth();
+
+  // MONTH (avec status)
   @Query(value = """
       SELECT TRUNC(CREATIONDATE_, 'MM') AS bucket, COUNT(*) AS total, SENDER_IDENTIFIER_ as category
       FROM UCUSTOI0.FLOW_FLOW
