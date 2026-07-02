@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "custodix-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "custodix-dashboard", "start"],
+      "port": 4200
+    }
+  ]
+}

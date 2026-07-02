@@ -20,5 +20,5 @@ def format_answer_endpoint(req: FormatRequest):
     """
     Reçoit les résultats finaux de la DB (Oracle) et fait parler Llama 3 pour créer une vraie réponse naturelle pour l'utilisateur.
     """
-    final_answer = rag_service.format_answer(req.question, req.query, req.results)
+    final_answer = rag_service.format_answer(req.question, req.query, req.results, req.total_count)
     return FormatResponse(answer=final_answer)

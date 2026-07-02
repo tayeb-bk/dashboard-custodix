@@ -78,12 +78,25 @@ export class ChatCustodixaiComponent {
       });
   }
 
-  // Permet au chat de défiler vers le bas quand un message arrive
+  // Vrai si le résultat est une seule valeur scalaire (ex: un simple COUNT(*))
+  isSingleValueResult(msg: ChatMessage): boolean {
+    return !!msg.columns && !!msg.results
+      && msg.columns.length === 1
+      && msg.results.length === 1;
+  }
+
+  // Permet au chat de défiler vers le bas quand un message arrive.
+  // On attend deux frames de rendu (au lieu d'un délai fixe) pour être sûr que
+  // le navigateur a bien fini d'afficher le contenu (ex: un gros tableau de résultats)
+  // avant de calculer la position de fin — un setTimeout fixe arrivait trop tôt sur
+  // les longues réponses et laissait l'utilisateur finir le scroll à la main.
   private scrollToBottom(): void {
-    setTimeout(() => {
-      try {
-        this.myScrollContainer.nativeElement.scrollTop = this.myScrollContainer.nativeElement.scrollHeight;
-      } catch (err) {}
-    }, 100);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          this.myScrollContainer.nativeElement.scrollTop = this.myScrollContainer.nativeElement.scrollHeight;
+        } catch (err) {}
+      });
+    });
   }
 }

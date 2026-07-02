@@ -1,3 +1,11 @@
+:host {
+  /* Sans ceci, l'élément hôte reste "inline" par défaut et casse toute la
+     chaîne height:100% ci-dessous (.ai-chat-page / .chat-container / .chat-messages),
+     ce qui empêche le scroll interne de se déclencher. */
+  display: block;
+  height: 100%;
+}
+
 .ai-chat-page {
   padding: 1.5rem;
   height: 100%; /* S'adapte à la zone .content (qui a un padding-bottom) */
@@ -204,6 +212,20 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-card);
+  margin-top: 0.25rem;
+}
+
+.single-value-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
   margin-top: 0.25rem;
 }
 

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { TraceabilityService } from '../../services/traceability.service';
 
 import { NgApexchartsModule } from 'ng-apexcharts';
 import {
@@ -114,17 +115,158 @@ export class OverviewComponent implements OnInit {
   public perfProactiveRiskCount: number = 0;
   public Math = Math;
 
+  // ===== Tour de bienvenue (première visite) =====
+  public showPerfTour: boolean = false;
+  public perfTourStep: number = 0;
+  public perfTourSteps: { title: string; text: string }[] = [
+    { title: 'Taux de conformité', text: 'Ce pourcentage indique si vos fichiers respectent les délais promis (SLA).' },
+    { title: 'Les 3 orbites', text: 'Chaque anneau suit une étape du traitement (T1, T2, T3). Une orbite rapide et verte tourne dans les temps. Plus elle ralentit et rougit, plus le retard est important.' },
+    { title: 'Boutons T1 / T2 / T3', text: 'Cliquez sur une orbite pour voir le détail de cette étape : délai moyen, seuil cible, et le pire cas concret.' },
+    { title: 'Top contrats à risque', text: 'Ces contrats cumulent le plus de dépassements de délai — à traiter en priorité.' }
+  ];
+  private perfTourStorageKey = 'custodix_perf_tour_seen';
+
+  // ===== PHASE 5 : TRAÇABILITÉ (Cas critique + file d'attente) =====
+  public traceAckManquants: any[] = [];
+  public traceCriticalCase: any = null;
+  public traceQueueNext: any[] = [];
+  public traceQueueRemaining: number = 0;
+  public traceLoaded: boolean = false;
+  public traceContratsList: string[] = [];
+  public selectedTraceContrat: string | null = null;
+  public traceSelectedDetail: any = null;
+  public isLoadingTraceDetail: boolean = false;
+
   private baseUrl = 'http://localhost:8080/api/filein';
   private flowUrl = 'http://localhost:8080/api/flows';
   private expeditionUrl = 'http://localhost:8080/api/expedition';
 
-  constructor(private router: Router, private http: HttpClient) { }
+  constructor(private router: Router, private http: HttpClient, private traceabilityService: TraceabilityService) { }
 
   ngOnInit() {
     this.loadRealData();
     this.loadProcessingData();
     this.loadExpeditionData();
     this.loadPerformanceData();
+    this.loadTraceAckManquants();
+  }
+
+  // ===== PHASE 5 : TRAÇABILITÉ =====
+  loadTraceAckManquants(): void {
+    const url = `${this.expeditionUrl}/journal?view=livraisons&preset=ack_manquant&ackOnly=true&page=0&size=50`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        const rows = (res?.content || []) as any[];
+        this.traceAckManquants = [...rows].sort((a, b) => {
+          const dA = a.dateEnvoi ? new Date(a.dateEnvoi).getTime() : 0;
+          const dB = b.dateEnvoi ? new Date(b.dateEnvoi).getTime() : 0;
+          return dA - dB;
+        });
+        this.traceContratsList = Array.from(
+          new Set(this.traceAckManquants.map(r => r.contrat).filter(c => !!c))
+        ).slice(0, 6);
+        this.recalculateTraceCriticalAndQueue();
+        this.traceLoaded = true;
+      },
+      error: () => {
+        this.traceAckManquants = [];
+        this.traceContratsList = [];
+        this.recalculateTraceCriticalAndQueue();
+        this.traceLoaded = true;
+      }
+    });
+  }
+
+  recalculateTraceCriticalAndQueue(): void {
+    const filtered = this.selectedTraceContrat
+      ? this.traceAckManquants.filter(r => r.contrat === this.selectedTraceContrat)
+      : this.traceAckManquants;
+    this.traceCriticalCase = filtered[0] || null;
+    this.traceQueueNext = filtered.slice(1, 3);
+    this.traceQueueRemaining = Math.max(0, filtered.length - 3);
+  }
+
+  selectTraceContrat(contrat: string): void {
+    this.selectedTraceContrat = this.selectedTraceContrat === contrat ? null : contrat;
+    this.recalculateTraceCriticalAndQueue();
+  }
+
+  formatElapsed(dateEnvoi: string | null | undefined): string {
+    if (!dateEnvoi) return '—';
+    const elapsedMs = Date.now() - new Date(dateEnvoi).getTime();
+    if (elapsedMs < 0) return '—';
+    const totalMinutes = Math.floor(elapsedMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}min`;
+    return `${hours}h${minutes.toString().padStart(2, '0')}min`;
+  }
+
+  // Ouvre le détail directement dans le widget (pas de navigation)
+  openTraceFile(fileInId: number): void {
+    this.isLoadingTraceDetail = true;
+    this.traceSelectedDetail = null;
+    this.traceabilityService.getTraceabilityDetails(fileInId).subscribe({
+      next: (res) => {
+        this.traceSelectedDetail = res;
+        this.isLoadingTraceDetail = false;
+      },
+      error: () => {
+        this.isLoadingTraceDetail = false;
+      }
+    });
+  }
+
+  closeTraceDetail(): void {
+    this.traceSelectedDetail = null;
+  }
+
+  // Navigation volontaire vers la page complète, depuis le panneau de détail
+  viewTraceInFullPage(fileInId: number): void {
+    this.router.navigate(['/dashboard/traceability'], { queryParams: { fileId: fileInId } });
+  }
+
+  countTraceAck(status: string): number {
+    if (!this.traceSelectedDetail || !this.traceSelectedDetail.expeditions) return 0;
+    return this.traceSelectedDetail.expeditions.filter((e: any) => {
+      const s = e.ackStatus ? e.ackStatus.toUpperCase() : '';
+      return s === status.toUpperCase();
+    }).length;
+  }
+
+  computeTraceHealth(): { level: string; label: string; icon: string } {
+    if (!this.traceSelectedDetail) return { level: 'info', label: 'Inconnu', icon: '⚪' };
+    const flowStatus = this.traceSelectedDetail.flowStatus;
+    const expeditions = this.traceSelectedDetail.expeditions || [];
+
+    if (['InTechnicalError', 'Blocked', 'Rejected'].includes(flowStatus)) {
+      return { level: 'danger', label: 'Erreur Technique', icon: '🔴' };
+    }
+
+    let hasNack = false;
+    let hasMissing = false;
+    let hasAck = false;
+    for (const exp of expeditions) {
+      if (exp.ackStatus === 'NACK') hasNack = true;
+      if (exp.ackStatus === 'MISSING') hasMissing = true;
+      if (exp.ackStatus === 'ACK') hasAck = true;
+    }
+
+    if (hasNack) return { level: 'danger', label: 'Rejeté (NACK)', icon: '🔴' };
+    if (hasMissing) return { level: 'warning', label: 'En attente (MISSING)', icon: '🟡' };
+    if (hasAck || flowStatus === 'Processed' || flowStatus === 'Sent' || flowStatus === 'Acked') {
+      return { level: 'success', label: 'Opérationnel (ACK)', icon: '🟢' };
+    }
+    return { level: 'info', label: 'En cours', icon: '🔵' };
+  }
+
+  getTraceStatusColor(status: string): string {
+    if (!status) return '#94a3b8';
+    const s = status.toUpperCase();
+    if (['PROCESSED', 'SENT', 'ACKED', 'ACK', 'OK', 'DELIVERED'].includes(s)) return '#34d399';
+    if (['INTECHNICALERROR', 'BLOCKED', 'REJECTED', 'NACK', 'ERROR', 'FAILED'].includes(s)) return '#f87171';
+    if (['MISSING', 'WAITING', 'PENDING'].includes(s)) return '#fbbf24';
+    return '#94a3b8';
   }
 
   loadRealData() {
@@ -578,12 +720,43 @@ export class OverviewComponent implements OnInit {
         this.processPerfData();
         this.calculatePerfMetrics();
         this.performanceLoaded = true;
+        this.checkPerfTourFirstVisit();
       },
       error: (err) => {
         console.error("Erreur performance:", err);
         this.performanceLoaded = true;
       }
     });
+  }
+
+  // ===== Tour de bienvenue (première visite) =====
+  checkPerfTourFirstVisit(): void {
+    if (!localStorage.getItem(this.perfTourStorageKey)) {
+      this.perfTourStep = 0;
+      this.showPerfTour = true;
+    }
+  }
+
+  startPerfTour(): void {
+    this.perfTourStep = 0;
+    this.showPerfTour = true;
+  }
+
+  nextPerfTourStep(): void {
+    if (this.perfTourStep < this.perfTourSteps.length - 1) {
+      this.perfTourStep++;
+    } else {
+      this.closePerfTour();
+    }
+  }
+
+  skipPerfTour(): void {
+    this.closePerfTour();
+  }
+
+  private closePerfTour(): void {
+    this.showPerfTour = false;
+    localStorage.setItem(this.perfTourStorageKey, '1');
   }
 
   extractPerfContracts() {
@@ -654,8 +827,9 @@ export class OverviewComponent implements OnInit {
 
   calculatePerfMetrics() {
     const filtered = this.perfProcessedData.filter(item => {
-      if (this.selectedPerfContract && item.contract !== this.selectedPerfContract) return false;
-      return true;
+      if (!this.selectedPerfContract) return true;
+      const c = item.contract || 'Inconnu';
+      return c === this.selectedPerfContract;
     });
 
     let breachedCount = 0;

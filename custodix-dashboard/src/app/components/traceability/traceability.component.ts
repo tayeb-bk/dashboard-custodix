@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TraceabilityService } from '../../services/traceability.service';
 import { FlowFileInService } from '../../services/flow-filein.service';
 
@@ -39,6 +40,7 @@ export class TraceabilityComponent implements OnInit {
   constructor(
     private traceabilityService: TraceabilityService,
     private fileInService: FlowFileInService,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -46,6 +48,11 @@ export class TraceabilityComponent implements OnInit {
     this.loadFilterOptions();
     this.loadPinned();
     this.search(true);
+
+    const fileId = this.route.snapshot.queryParamMap.get('fileId');
+    if (fileId) {
+      this.selectTrace(Number(fileId));
+    }
   }
 
   // Charge les contrats et workflows pour alimenter les listes déroulantes de filtres

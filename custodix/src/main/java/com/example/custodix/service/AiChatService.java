@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class AiChatService {
@@ -25,6 +26,14 @@ public class AiChatService {
     // Mots-clés SQL dangereux — seules les requêtes SELECT sont autorisées
     private static final Set<String> DANGEROUS_KEYWORDS = Set.of(
             "DROP", "DELETE", "UPDATE", "INSERT", "TRUNCATE", "ALTER", "CREATE", "MERGE"
+    );
+
+    // Un mot-clé dangereux ne doit compter que comme mot entier (\b = frontière de mot),
+    // jamais comme simple sous-chaîne — sinon une colonne bien réelle comme UPDATEDATE_
+    // (qui contient "UPDATE") ou CREATIONDATE_ déclenche un faux positif et bloque à tort
+    // une requête SELECT parfaitement sûre.
+    private static final Pattern DANGEROUS_KEYWORDS_PATTERN = Pattern.compile(
+            "\\b(" + String.join("|", DANGEROUS_KEYWORDS) + ")\\b"
     );
 
     @Value("${ai.python.url:http://localhost:8000}")
@@ -72,15 +81,16 @@ public class AiChatService {
             // Cas B : L'IA a généré du SQL
             // ── Étape 2 : Validation sécurité ───────────────────────────────
             String upperSql = generatedSql.toUpperCase();
-            for (String keyword : DANGEROUS_KEYWORDS) {
-                if (upperSql.contains(keyword)) {
-                    log.warn("SQL dangereux bloqué : {}", generatedSql);
-                    return AiChatResponseDTO.failure(generatedSql,
-                            "Requête refusée : opération non autorisée.");
-                }
+            if (DANGEROUS_KEYWORDS_PATTERN.matcher(upperSql).find()) {
+                log.warn("SQL dangereux bloqué : {}", generatedSql);
+                return AiChatResponseDTO.failure(generatedSql,
+                        "Requête refusée : opération non autorisée.");
             }
 
-            if (!upperSql.startsWith("SELECT")) {
+            // "WITH ... SELECT" (CTE Oracle standard) est une lecture seule légitime au même
+            // titre qu'un SELECT direct — le filtre de mots-clés dangereux ci-dessus reste
+            // la vraie barrière de sécurité, ce contrôle ne fait que confirmer l'intention.
+            if (!upperSql.startsWith("SELECT") && !upperSql.startsWith("WITH")) {
                 return AiChatResponseDTO.failure(generatedSql,
                         "Seules les requêtes SELECT sont autorisées.");
             }
@@ -98,11 +108,19 @@ public class AiChatService {
             log.info("Résultats obtenus : {} ligne(s)", rows.size());
 
             // ── Étape 4 : Formatage Inteligent (2nd appel Python) ───────────
+            // On limite l'échantillon envoyé au LLM pour la synthèse humaine (le tableau
+            // complet renvoyé à Angular, lui, reste intact via `rows` plus bas).
+            int maxRowsForSummary = 15;
+            List<Map<String, Object>> rowsForSummary = rows.size() > maxRowsForSummary
+                    ? rows.subList(0, maxRowsForSummary)
+                    : rows;
+
             String endpointFormat = pythonBaseUrl + "/api/format-answer";
             Map<String, Object> formatPayload = Map.of(
                     "question", request.getQuestion(),
                     "query", cleanJdbcSql,
-                    "results", rows
+                    "results", rowsForSummary,
+                    "total_count", rows.size()
             );
             
             com.example.custodix.dto.PythonFormatResponseDTO formatResponse = restTemplate.postForObject(
@@ -122,9 +140,11 @@ public class AiChatService {
             return AiChatResponseDTO.failure(generatedSql,
                     "Le serveur IA Python est injoignable. Vérifiez qu'il tourne sur le port 8000.");
         } catch (Exception e) {
+            // Le detail technique (grammaire SQL, nom de colonne invalide, etc.) reste dans les
+            // logs serveur pour le debogage, mais n'est jamais expose tel quel a l'utilisateur.
             log.error("Erreur lors de l'exécution du SQL : {}", e.getMessage());
             return AiChatResponseDTO.failure(generatedSql,
-                    "Erreur d'exécution SQL : " + e.getMessage());
+                    "Je n'ai pas réussi à récupérer cette information. Pouvez-vous reformuler votre question ?");
         }
     }
 }

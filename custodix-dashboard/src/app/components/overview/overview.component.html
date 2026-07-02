@@ -567,3 +567,286 @@
       </div>
 
     </div>
+
+    <!-- PHASE 4 : PERFORMANCE & SLA (Système d'Orbites) -->
+    <div class="phase-card phase-performance">
+      <div class="phase-header">
+        <div class="phase-title-wrap">
+          <span class="phase-step phase-step-amber">Phase 4</span>
+          <h2 class="phase-title">Performance &amp; SLA</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="perf-tour-trigger" (click)="startPerfTour()" title="Revoir le guide de ce widget">?</button>
+          <button class="btn-investigate btn-amber" (click)="navigateTo('/dashboard/performance')">
+            Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="phase-body" *ngIf="!performanceLoaded"
+        style="display:flex; align-items:center; justify-content:center; height:200px; color:#94a3b8;">
+        Chargement des indicateurs de performance...
+      </div>
+
+      <div class="phase-body" *ngIf="performanceLoaded">
+
+        <!-- COLONNE GAUCHE : Objectif + Orbites -->
+        <div class="phase-main-metric" style="justify-content: space-between; gap: 15px;">
+
+          <!-- Objectif Métier -->
+          <div class="functional-objective" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.15);">
+            <div class="obj-icon-wrap" style="background: rgba(245, 158, 11, 0.1);"><span class="obj-icon" style="color: #fbbf24;">⏱️</span></div>
+            <div class="obj-text">
+              <strong style="color: #fbbf24;">Respect des Engagements SLA</strong>
+              <p>Suivi des délais d'intégration (T1), de traitement (T2) et d'acquittement partenaire (T3).</p>
+            </div>
+          </div>
+
+          <!-- Panneau Orbites -->
+          <div class="orbit-panel">
+            <div class="orbit-kpi-row" [class.tour-target-active]="showPerfTour && perfTourStep === 0">
+              <div>
+                <div class="orbit-kpi-value"
+                  [style.color]="perfComplianceRate >= 90 ? '#34d399' : perfComplianceRate >= 75 ? '#fbbf24' : '#f87171'">
+                  {{ perfComplianceRate }}%
+                </div>
+                <div class="orbit-kpi-label">Taux de conformité{{ selectedPerfContract ? ' · ' + selectedPerfContract : '' }}</div>
+              </div>
+              <div class="orbit-alert-badge" *ngIf="perfProactiveRiskCount > 0">
+                <span class="alert-dot"></span>{{ perfProactiveRiskCount }} alerte(s) proactive(s)
+              </div>
+            </div>
+
+            <div class="orbit-visual" [class.tour-target-active]="showPerfTour && perfTourStep === 1">
+              <svg viewBox="0 0 300 200" class="orbit-svg">
+                <circle cx="150" cy="100" r="34" class="orbit-track"></circle>
+                <circle cx="150" cy="100" r="58" class="orbit-track"></circle>
+                <circle cx="150" cy="100" r="82" class="orbit-track"></circle>
+                <g class="orbit-rotator" [style.animationDuration]="getOrbitSpeed('t1')">
+                  <circle cx="184" cy="100" r="5" [attr.fill]="getOrbitColor('t1')"></circle>
+                </g>
+                <g class="orbit-rotator" [style.animationDuration]="getOrbitSpeed('t2')">
+                  <circle cx="208" cy="100" r="5" [attr.fill]="getOrbitColor('t2')"></circle>
+                </g>
+                <g class="orbit-rotator" [style.animationDuration]="getOrbitSpeed('t3')">
+                  <circle cx="232" cy="100" r="5" [attr.fill]="getOrbitColor('t3')"></circle>
+                </g>
+                <circle cx="150" cy="100" r="20" class="orbit-hub"></circle>
+                <text x="150" y="104" text-anchor="middle" class="orbit-hub-text">EAI</text>
+              </svg>
+            </div>
+
+            <div class="orbit-steps" [class.tour-target-active]="showPerfTour && perfTourStep === 2">
+              <button class="orbit-step-btn" [class.active]="selectedPerfStep === 't1'"
+                [style.borderColor]="getOrbitColor('t1')" (click)="selectPerfStep('t1')">
+                <span class="step-dot" [style.background]="getOrbitColor('t1')"></span>T1 · Intégration
+              </button>
+              <button class="orbit-step-btn" [class.active]="selectedPerfStep === 't2'"
+                [style.borderColor]="getOrbitColor('t2')" (click)="selectPerfStep('t2')">
+                <span class="step-dot" [style.background]="getOrbitColor('t2')"></span>T2 · Traitement
+              </button>
+              <button class="orbit-step-btn" [class.active]="selectedPerfStep === 't3'"
+                [style.borderColor]="getOrbitColor('t3')" (click)="selectPerfStep('t3')">
+                <span class="step-dot" [style.background]="getOrbitColor('t3')"></span>T3 · Acquittement
+              </button>
+            </div>
+
+            <div class="orbit-focus-panel" *ngIf="selectedPerfStep !== 'all'">
+              <div class="focus-title">{{ focusStepName }}</div>
+              <div class="focus-row"><span>Moyenne actuelle</span><span>{{ focusStepAvg }}</span></div>
+              <div class="focus-row"><span>Seuil cible</span><span>{{ focusStepTarget }}</span></div>
+              <div class="focus-row"><span>Conformité</span><span>{{ focusStepCompliance }}%</span></div>
+              <div class="focus-row"><span>Pire cas</span><span>{{ focusStepMaxContract }} ({{ focusStepMaxDelay }})</span></div>
+            </div>
+            <div class="orbit-focus-hint" *ngIf="selectedPerfStep === 'all'">
+              Cliquez sur une orbite (T1, T2 ou T3) pour afficher le détail de l'étape.
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COLONNE DROITE : Top Contrats à Risque -->
+        <div class="phase-side-widget" [class.tour-target-active]="showPerfTour && perfTourStep === 3">
+          <h4 class="widget-title">Top Contrats à Risque</h4>
+          <div class="top-list">
+            <div class="top-item risk-item" *ngFor="let c of perfTopRiskContracts"
+              [class.selected]="selectedPerfContract === c.name" (click)="selectPerfContract(c.name)">
+              <span class="top-name">{{ c.name }}</span>
+              <span class="top-val" style="background: rgba(248, 113, 113, 0.15); color: #f87171;">{{ c.breaches }}</span>
+            </div>
+            <div *ngIf="perfTopRiskContracts.length === 0"
+              style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+              Aucune violation détectée
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===== TOUR DE BIENVENUE (première visite) ===== -->
+      <div class="tour-callout" *ngIf="showPerfTour" [ngClass]="'tour-callout-step-' + perfTourStep">
+        <div class="tour-callout-title">{{ perfTourSteps[perfTourStep].title }}</div>
+        <div class="tour-callout-text">{{ perfTourSteps[perfTourStep].text }}</div>
+        <div class="tour-callout-footer">
+          <div class="tour-callout-dots">
+            <span class="tour-callout-dot" *ngFor="let s of perfTourSteps; let i = index"
+              [class.active]="i === perfTourStep"></span>
+          </div>
+          <div class="tour-callout-actions">
+            <button class="tour-btn-skip" (click)="skipPerfTour()">Passer</button>
+            <button class="tour-btn-next" (click)="nextPerfTourStep()">{{ perfTourStep ===
+              perfTourSteps.length - 1 ? 'Terminé' : 'Suivant' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 5 : TRAÇABILITÉ (Poste d'investigation) -->
+    <div class="phase-card phase-tracability">
+      <div class="phase-header">
+        <div class="phase-title-wrap">
+          <span class="phase-step phase-step-cyan">Phase 5</span>
+          <h2 class="phase-title">Traçabilité</h2>
+        </div>
+        <button class="btn-investigate btn-cyan-alt" (click)="navigateTo('/dashboard/traceability')">
+          Investiguer <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="phase-body" *ngIf="!traceLoaded"
+        style="display:flex; align-items:center; justify-content:center; height:200px; color:#94a3b8;">
+        Analyse des dossiers en attente d'accusé de réception...
+      </div>
+
+      <div class="phase-body" *ngIf="traceLoaded">
+
+        <ng-container *ngIf="!traceSelectedDetail && !isLoadingTraceDetail">
+
+          <!-- COLONNE GAUCHE : Objectif + Filtre + Cas critique -->
+          <div class="phase-main-metric" style="justify-content: space-between; gap: 15px;">
+
+            <!-- Objectif Métier -->
+            <div class="functional-objective" style="background: rgba(34, 211, 238, 0.05); border-color: rgba(34, 211, 238, 0.15);">
+              <div class="obj-icon-wrap" style="background: rgba(34, 211, 238, 0.1);"><span class="obj-icon" style="color: #67e8f9;">🔎</span></div>
+              <div class="obj-text">
+                <strong style="color: #67e8f9;">Retrouver un Fichier Précis</strong>
+                <p>Repère automatiquement les dossiers qui ont besoin d'une investigation, sans rien chercher vous-même.</p>
+              </div>
+            </div>
+
+            <!-- Filtre par contrat -->
+            <div class="trace-contrat-chips" *ngIf="traceContratsList.length > 0">
+              <div class="trace-contrat-chip" *ngFor="let c of traceContratsList"
+                [class.selected]="selectedTraceContrat === c" (click)="selectTraceContrat(c)">
+                <span>{{ c }}</span>
+                <span class="chip-check" *ngIf="selectedTraceContrat === c">✓</span>
+              </div>
+            </div>
+
+            <!-- Cas le plus critique -->
+            <div class="trace-critical-block" *ngIf="traceCriticalCase">
+              <div class="trace-critical-label">Cas le plus critique en ce moment</div>
+              <div class="trace-critical-card">
+                <div class="trace-critical-header">
+                  <span class="trace-critical-icon">🚨</span>
+                  <span class="trace-critical-name">{{ traceCriticalCase.contrat || ('Fichier #' + traceCriticalCase.fileInId) }}</span>
+                </div>
+                <p class="trace-critical-text">
+                  Fichier #{{ traceCriticalCase.fileInId }} — aucun ACK reçu depuis {{ formatElapsed(traceCriticalCase.dateEnvoi) }}.
+                </p>
+                <button class="trace-critical-btn" (click)="openTraceFile(traceCriticalCase.fileInId)">Ouvrir ce dossier</button>
+              </div>
+            </div>
+
+            <div class="trace-empty-state" *ngIf="!traceCriticalCase">
+              <span style="font-size: 20px;">✅</span>
+              <p>Aucun ACK en attente — tout est à jour.</p>
+            </div>
+
+          </div>
+
+          <!-- COLONNE DROITE : Ensuite dans la file -->
+          <div class="phase-side-widget">
+            <h4 class="widget-title">Ensuite dans la File</h4>
+            <div class="top-list">
+              <div class="top-item trace-queue-item" *ngFor="let q of traceQueueNext" (click)="openTraceFile(q.fileInId)">
+                <span class="trace-dot" style="background: #fbbf24;"></span>
+                <span class="top-name">{{ q.contrat || ('#' + q.fileInId) }}</span>
+                <span class="top-val" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">{{ formatElapsed(q.dateEnvoi) }}</span>
+              </div>
+              <div *ngIf="traceQueueNext.length === 0 && traceCriticalCase"
+                style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+                Aucun autre dossier en attente.
+              </div>
+              <div *ngIf="!traceCriticalCase"
+                style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+                Rien à signaler pour le moment.
+              </div>
+              <div class="trace-queue-remaining" *ngIf="traceQueueRemaining > 0">
+                et {{ traceQueueRemaining }} autre(s) dossier(s) en attente
+              </div>
+            </div>
+          </div>
+
+        </ng-container>
+
+        <!-- PANNEAU DÉTAIL INLINE (remplace les 2 colonnes, sans navigation) -->
+        <div class="trace-detail-panel" style="grid-column: 1 / -1;" *ngIf="isLoadingTraceDetail">
+          Chargement du dossier...
+        </div>
+
+        <div class="trace-detail-panel" style="grid-column: 1 / -1;" *ngIf="traceSelectedDetail && !isLoadingTraceDetail">
+          <div class="trace-detail-header">
+            <span class="trace-detail-hint">Détail ouvert directement ici, sans changer de page</span>
+            <span class="trace-detail-close" (click)="closeTraceDetail()">✕</span>
+          </div>
+
+          <div class="trace-detail-identity">
+            <div class="trace-detail-file-label">Fichier en cours d'audit</div>
+            <div class="trace-detail-file-name">{{ traceSelectedDetail.fileName || ('Fichier #' + traceSelectedDetail.fileInId) }}</div>
+            <div class="trace-detail-grid">
+              <div><span class="trace-detail-key">ID Réception</span><span class="trace-detail-val">#{{ traceSelectedDetail.fileInId }}</span></div>
+              <div><span class="trace-detail-key">Contrat SLA</span><span class="trace-detail-val">{{ traceSelectedDetail.contract || '—' }}</span></div>
+              <div><span class="trace-detail-key">Workflow</span><span class="trace-detail-val">{{ traceSelectedDetail.workflow || '—' }}</span></div>
+              <div><span class="trace-detail-key">Date réception</span><span class="trace-detail-val">{{ traceSelectedDetail.receivingDate | date:'dd/MM HH:mm' }}</span></div>
+            </div>
+          </div>
+
+          <div class="trace-detail-health" [ngClass]="'health-' + computeTraceHealth().level">
+            <span class="trace-health-icon">{{ computeTraceHealth().icon }}</span>
+            <div class="trace-health-info">
+              <span class="trace-health-label">Santé globale du cycle</span>
+              <span class="trace-health-value">{{ computeTraceHealth().label }}</span>
+            </div>
+            <div class="trace-health-pills">
+              <span class="trace-health-pill pill-ok">{{ countTraceAck('ACK') }} ACK</span>
+              <span class="trace-health-pill pill-warning">{{ countTraceAck('MISSING') }} MISSING</span>
+              <span class="trace-health-pill pill-danger">{{ countTraceAck('NACK') }} NACK</span>
+            </div>
+          </div>
+
+          <div class="trace-detail-expeditions" *ngIf="traceSelectedDetail.expeditions?.length > 0">
+            <div class="trace-detail-subtitle">Expéditions</div>
+            <div class="trace-expedition-row" *ngFor="let exp of traceSelectedDetail.expeditions">
+              <span>Destination {{ exp.destination || '—' }}</span>
+              <span class="trace-expedition-status" [ngClass]="'status-' + (exp.ackStatus || 'MISSING').toLowerCase()">
+                {{ exp.ackStatus === 'ACK' ? 'Confirmé' : exp.ackStatus === 'NACK' ? 'Rejeté (NACK)' : 'En attente ACK' }}
+              </span>
+            </div>
+          </div>
+
+          <a class="trace-view-full-link" (click)="viewTraceInFullPage(traceSelectedDetail.fileInId)">Voir le dossier complet →</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

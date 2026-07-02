@@ -44,8 +44,13 @@
             {{ msg.text }}
           </div>
 
+          <!-- Résultat scalaire unique (1 ligne, 1 colonne) : juste la valeur, sans nom de fonction SQL -->
+          <div class="single-value-card" *ngIf="isSingleValueResult(msg)">
+            {{ msg.results![0][msg.columns![0]] }}
+          </div>
+
           <!-- S'il y a des résultats sous forme de tableau (liste) -->
-          <div class="results-table-container" *ngIf="msg.columns && msg.results && msg.results.length > 0">
+          <div class="results-table-container" *ngIf="msg.columns && msg.results && msg.results.length > 0 && !isSingleValueResult(msg)">
             <table class="results-table">
               <thead>
                 <tr>
