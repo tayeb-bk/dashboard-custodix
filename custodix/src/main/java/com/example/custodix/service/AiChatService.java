@@ -98,8 +98,32 @@ public class AiChatService {
             // Nettoyage Oracle JDBC : enlever les points-virgules finaux
             String cleanJdbcSql = generatedSql.replaceAll(";+\\s*$", "");
 
-            // ── Étape 3 : Exécution Oracle ──────────────────────────────────
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(cleanJdbcSql);
+            // ── Étape 3 : Exécution Oracle, avec UN essai de correction en cas d'échec ──
+            List<Map<String, Object>> rows;
+            try {
+                rows = jdbcTemplate.queryForList(cleanJdbcSql);
+            } catch (Exception sqlEx) {
+                log.warn("Échec d'exécution du SQL généré, tentative de correction : {}", sqlEx.getMessage());
+                String fixedSql = requestSqlFix(request.getQuestion(), cleanJdbcSql, sqlEx.getMessage());
+
+                if (fixedSql == null || fixedSql.isBlank() || isUnsafeSql(fixedSql)) {
+                    log.warn("Correction indisponible ou jugée non sûre, abandon.");
+                    return AiChatResponseDTO.failure(generatedSql,
+                            "Je n'ai pas réussi à récupérer cette information. Pouvez-vous reformuler votre question ?");
+                }
+
+                String cleanFixedSql = fixedSql.replaceAll(";+\\s*$", "");
+                try {
+                    rows = jdbcTemplate.queryForList(cleanFixedSql);
+                    log.info("Correction réussie, nouvelle requête exécutée avec succès.");
+                    cleanJdbcSql = cleanFixedSql;
+                    generatedSql = fixedSql;
+                } catch (Exception secondEx) {
+                    log.error("La tentative de correction a également échoué : {}", secondEx.getMessage());
+                    return AiChatResponseDTO.failure(generatedSql,
+                            "Je n'ai pas réussi à récupérer cette information. Pouvez-vous reformuler votre question ?");
+                }
+            }
 
             List<String> columns = rows.isEmpty()
                     ? List.of()
@@ -146,5 +170,43 @@ public class AiChatService {
             return AiChatResponseDTO.failure(generatedSql,
                     "Je n'ai pas réussi à récupérer cette information. Pouvez-vous reformuler votre question ?");
         }
+    }
+
+    /**
+     * Demande au microservice Python de corriger un SQL qui a échoué à l'exécution,
+     * en lui donnant la question d'origine, le SQL fautif et le message d'erreur Oracle
+     * exact. Retourne null si l'appel échoue (le retry est alors abandonné proprement).
+     */
+    private String requestSqlFix(String question, String faultySql, String errorMessage) {
+        try {
+            String endpointFix = pythonBaseUrl + "/api/fix-sql";
+            Map<String, Object> fixPayload = Map.of(
+                    "question", question,
+                    "sql", faultySql,
+                    "error", errorMessage != null ? errorMessage : "Erreur SQL inconnue"
+            );
+            PythonSqlResponseDTO fixResponse = restTemplate.postForObject(
+                    endpointFix,
+                    fixPayload,
+                    PythonSqlResponseDTO.class
+            );
+            return (fixResponse != null) ? fixResponse.getSqlQuery() : null;
+        } catch (Exception e) {
+            log.error("Échec de l'appel de correction SQL : {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Reprend les mêmes contrôles de sécurité que la validation initiale (mots-clés
+     * dangereux + préfixe SELECT/WITH), pour re-valider un SQL corrigé avant de
+     * l'exécuter une seconde fois.
+     */
+    private boolean isUnsafeSql(String sql) {
+        String upper = sql.toUpperCase();
+        if (DANGEROUS_KEYWORDS_PATTERN.matcher(upper).find()) {
+            return true;
+        }
+        return !upper.startsWith("SELECT") && !upper.startsWith("WITH");
     }
 }

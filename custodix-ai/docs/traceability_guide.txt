@@ -1,0 +1,60 @@
+DOCUMENTATION - ÉCRAN TRAÇABILITÉ (PHASE 5 - ENQUÊTE UNITAIRE MULTI-TABLES)
+
+RÉSUMÉ DU DASHBOARD DE LA TRAÇABILITÉ :
+La page de Traçabilité comporte au total 7 zones/widgets qui sont :
+- WIDGET 1 : Console de Recherche (Recherche libre par nom de fichier ou ID, filtres Contrat/Workflow, résultats paginés)
+- WIDGET SANTÉ GLOBALE DU CYCLE : Badge de statut de santé calculé sur l'ensemble du parcours du fichier sélectionné
+- WIDGET 2 : Master Stepper / Timeline d'Audit Unitaire (Étapes du cycle de vie du fichier sélectionné)
+- WIDGET 3 : Pipeline de Vie (Visualisation dynamique multi-flux : réception → traitement → expéditions → confirmations)
+- WIDGET 4 : Chronogramme (Terminal Logs d'Audit, journal chronologique détaillé de l'enquête)
+- WIDGET 5 : Diagnostic Latences (SLA) (Analyse des temps d'intégration/traitement/attente ACK pour ce fichier précis)
+- Matrice d'État des Expéditions (Tableau des livraisons du fichier avec leur statut d'accusé de réception individuel)
+- WIDGET 6 : Pinboard de Surveillance (Fichiers épinglés par l'utilisateur pour suivi manuel, stocké localement dans le navigateur)
+
+1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
+La phase de Traçabilité (Phase 5) est l'outil d'enquête unitaire de la plateforme Custodix EAI. Contrairement aux autres phases qui donnent une vue agrégée (statistiques, volumes), la Traçabilité reconstruit l'arbre complet du parcours d'UN SEUL fichier précis, de sa réception (FLOW_FILEIN) jusqu'à toutes ses livraisons (FLOW_FILEOUT) et leurs accusés de réception (FLOW_INCOMINGACKNOWLEGEMENT), en passant par son flux logique de traitement (FLOW_FLOW). Elle sert à répondre à la question "que s'est-il passé exactement pour ce fichier ?" lors d'une réclamation client ou d'une investigation d'incident.
+
+2. MAPPING DES COLONNES ET JOINTURES (Pour les requêtes SQL) :
+- Recherche (liste) : fi.ID_, fi.INITIATIONFILE_ (nom fichier), fi.SENDINGDATE_ (date réception), fi.PASSEDCONTRACTIDENTIFIER_ (contrat), fi.WORKFLOWID_ (workflow), ff.STATUS_ (statut du flux) — recherche libre sur INITIATIONFILE_ (LIKE, insensible à la casse) ou correspondance exacte sur ID_.
+- Détail Réception + Traitement : jointure FLOW_FILEIN (fi) LEFT JOIN FLOW_FLOW (ff) ON ff.ID_ = fi.ID_ — ramène en plus ff.ROUTE_ROUTEID_ (route), ff.FLOWTYPE_NAME_ (type de flux), ff.AMOUNT1_ (montant), ff.SENDER_IDENTIFIER_ / ff.RECEIVER_IDENTIFIER_ (émetteur/destinataire), ff.CREATIONDATE_ / ff.UPDATEDATE_ (dates du flux logique).
+- Détail Expéditions : jointure FLOW_FILEOUT (fo) LEFT JOIN FLOW_FLOW (ff) ON ff.ID_ = fo.ID_ LEFT JOIN FLOW_INCOMINGACKNOWLEGEMENT (ack) ON ack.ACKEDFILEOUT_ID_ = fo.ID_, filtrée par fo.FILEIN_ID_ = l'ID du fichier reçu — ramène fo.DESTINATIONINFO_ID_ (destination), fo.USEDADDRESS_ (adresse), ack.ACKNOWLEDGEMENTTYPE_, ack.FILEOUTSENDINGDATE_, ack.ERRORCODE_, ack.ERRORREASON_.
+- Un même fichier reçu peut avoir plusieurs lignes d'expédition (une par destination), chacune avec son propre statut d'accusé de réception.
+
+3. CLASSIFICATION DES STATUTS D'ACCUSÉ DE RÉCEPTION (ackStatus, calculé côté application, PAS une colonne SQL) :
+- ACK : L'accusé reçu a pour type "ACK" ou "OK" — livraison confirmée avec succès.
+- NACK : L'accusé reçu a un type différent de ACK/OK (accusé négatif ou erreur signalée par le destinataire).
+- MISSING : Aucun accusé n'a encore été reçu pour cette expédition (ack.ACKNOWLEDGEMENTTYPE_ est NULL) — en attente.
+
+4. DESCRIPTION DÉTAILLÉE DES WIDGETS :
+
+WIDGET 1 : Console de Recherche
+- Rôle : Point d'entrée de l'enquête. Recherche libre par nom de fichier ou par identifiant exact, combinable avec des filtres Contrat et Workflow, résultats affichés en liste paginée cliquable pour ouvrir le détail complet.
+
+WIDGET SANTÉ GLOBALE DU CYCLE
+- Rôle : Badge de synthèse visuelle (icône + libellé) résumant en un coup d'œil l'état du fichier sélectionné : Erreur Technique (rouge, si le flux est InTechnicalError/Blocked/Rejected), Rejeté-NACK (rouge, si au moins une expédition a un accusé négatif), En attente-MISSING (orange, si au moins une expédition attend encore son accusé), Opérationnel-ACK (vert, si au moins une expédition est confirmée ou le flux est Processed/Sent/Acked), En cours (bleu, cas par défaut).
+- Priorité de calcul : Erreur technique > NACK > MISSING > ACK > En cours (l'ordre dans lequel les conditions sont testées, la première qui correspond l'emporte).
+
+WIDGET 2 : Master Stepper / Timeline d'Audit Unitaire
+- Rôle : Représentation séquentielle des grandes étapes du cycle de vie du fichier sélectionné (Réception → Traitement → Expédition → Accusé), pour visualiser rapidement à quelle étape le fichier se trouve ou s'est arrêté.
+
+WIDGET 3 : Pipeline de Vie (Flux & Confirmations Réelles)
+- Rôle : Visualisation dynamique qui s'adapte au nombre réel d'expéditions du fichier (un fichier peut avoir 0, 1 ou plusieurs livraisons), affichant pour chacune son statut de flux et son statut d'accusé.
+
+WIDGET 4 : Chronogramme (Terminal Logs d'Audit)
+- Rôle : Journal chronologique façon terminal technique, listant dans l'ordre les événements datés du fichier (réception, création du flux, mise à jour, expédition(s), accusé(s)) pour reconstituer précisément la séquence temporelle de l'incident ou du parcours normal.
+
+WIDGET 5 : Diagnostic Latences (SLA)
+- Rôle : Calcule pour ce fichier précis le temps d'intégration (réception → création du flux) et le temps de traitement interne (création → mise à jour du flux), ainsi que le temps d'attente de chaque accusé de réception (mise à jour du flux → réception de l'ACK). Un code couleur SLA classe chaque durée d'attente d'ACK : normale (moins de 30 minutes), avertissement (30 minutes à 1 heure), critique (plus d'1 heure).
+
+Matrice d'État des Expéditions
+- Rôle : Tableau listant chaque livraison (expédition) du fichier avec sa destination, son statut de flux, son statut d'accusé (ACK/NACK/MISSING), et le détail de l'erreur le cas échéant (code + raison).
+
+WIDGET 6 : Pinboard de Surveillance
+- Rôle : Permet à l'utilisateur d'épingler manuellement des fichiers d'intérêt (via une icône sur chaque ligne de résultat) pour les retrouver rapidement dans un panneau dédié, sans avoir à refaire une recherche. Stocké uniquement dans le navigateur local de l'utilisateur (localStorage), pas en base de données côté serveur — la liste des fichiers épinglés est donc propre à chaque poste/navigateur.
+
+5. TERMES MÉTIER CLÉS DE LA TRAÇABILITÉ :
+- Enquête unitaire : Analyse détaillée du parcours d'un seul fichier précis, par opposition aux vues agrégées/statistiques des autres phases.
+- ACK / NACK / MISSING : Les 3 états possibles d'un accusé de réception pour une expédition donnée — confirmé, rejeté, ou en attente.
+- Pinboard : Tableau de suivi personnel où l'utilisateur épingle des fichiers surveillés manuellement, sauvegardé localement dans le navigateur.
+- Santé globale du cycle : Indicateur de synthèse (icône colorée) résumant l'état d'un fichier en croisant son statut de flux et le statut de toutes ses expéditions.
+- Chronogramme : Vue de type journal technique listant tous les événements datés d'un fichier dans l'ordre chronologique, utile pour l'analyse forensique d'un incident.

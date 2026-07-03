@@ -105,6 +105,40 @@ Question de l'utilisateur : {question}
 Génère la requête SQL dans un bloc markdown complet (```sql ... ```) :"""
 
 # ============================================================
+# PROMPT DE CORRECTION - Boucle de correction sur échec d'exécution.
+# Reprend EXACTEMENT le même contexte que _SQL_PROMPT (schémas certifiés +
+# exemples pertinents), en ajoutant le SQL fautif et l'erreur Oracle exacte.
+# Volontairement PAS un prompt allégé : l'IA doit se recorriger avec les
+# mêmes garde-fous qu'à la génération initiale, pas "à l'aveugle".
+# ============================================================
+_SQL_FIX_PROMPT = """Tu es Custodix AI, un expert de base de données Oracle 21c.
+Une requête SQL que tu as générée pour répondre à une question a échoué à l'exécution.
+Corrige UNIQUEMENT le problème signalé par l'erreur Oracle ci-dessous, sans changer le
+raisonnement général de la requête ni ajouter d'éléments non nécessaires.
+Ta réponse doit être UNIQUEMENT un bloc markdown SQL corrigé, sans aucune explication ni
+point-virgule (;).
+
+RÈGLES ORACLE :
+- Schéma propriétaire : UCUSTOI0. Préfixe TOUJOURS les tables avec le schéma.
+- CRITIQUE : une colonne n'existe que dans SA table (voir schémas certifiés ci-dessous) —
+  vérifie bien quel alias de table possède chaque colonne que tu utilises.
+
+{schemas}
+
+EXEMPLES PERTINENTS POUR CETTE QUESTION (mêmes exemples que lors de la génération initiale) :
+{examples}
+
+Question originale de l'utilisateur : {question}
+
+Requête SQL fautive :
+{faulty_sql}
+
+Message d'erreur exact renvoyé par Oracle :
+{error_message}
+
+Génère la requête SQL corrigée dans un bloc markdown complet (```sql ... ```) :"""
+
+# ============================================================
 # BANQUE D'EXEMPLES SQL - Etape 2 du RAG.
 # Chaque exemple est indexé par similarité (Mode 3, séparé du Mode 2
 # documentaire) : seuls les 2-3 exemples les plus proches de la question
@@ -368,22 +402,48 @@ Réponse :"""
         # On n'ajoute PAS de ```sql dans le prompt pour que le LLM génère le bloc complet lui-même
         full_prompt = _SQL_PROMPT.format(schemas=_CERTIFIED_SCHEMAS, examples=examples_block, question=question)
         response = self.llm.invoke(full_prompt)
+        return self._extract_sql_from_llm_response(response)
 
+    # ----------------------------------------------------------
+    # CORRECTION SQL (boucle de correction sur échec d'exécution)
+    # Réutilise EXACTEMENT le même contexte que la génération initiale
+    # (schéma certifié + exemples pertinents) — pas une correction "à
+    # l'aveugle" basée uniquement sur le message d'erreur. Reste sur le
+    # modèle complet (self.llm), jamais le modèle léger, car c'est une
+    # étape critique pour la justesse du résultat.
+    # ----------------------------------------------------------
+    def fix_sql_query(self, question: str, faulty_sql: str, error_message: str) -> str:
+        examples_block = self._get_relevant_examples(question)
+        full_prompt = _SQL_FIX_PROMPT.format(
+            schemas=_CERTIFIED_SCHEMAS,
+            examples=examples_block,
+            question=question,
+            faulty_sql=faulty_sql,
+            error_message=error_message
+        )
+        response = self.llm.invoke(full_prompt)
+        return self._extract_sql_from_llm_response(response)
+
+    def _extract_sql_from_llm_response(self, response: str) -> str:
+        """Logique d'extraction partagée entre la génération initiale et la correction :
+        extrait le bloc SQL d'un markdown ```sql...```, avec repli sur une extraction brute
+        si le LLM n'a pas respecté le format demandé."""
         # Extraire le bloc SQL d'un markdown ```sql...```
         sql_match = re.search(r"```[sS][qQ][lL]?(.*?)```", response, re.DOTALL)
         if sql_match:
             sql = sql_match.group(1).replace(";", "").strip()
             return self._strip_leading_sql_comments(sql)
 
-        # Fallback : extraire le SELECT brut et supprimer tous les artefacts markdown résiduels
-        sql_keywords = ["SELECT ", "FROM ", "WHERE "]
-        if any(kw in response.upper() for kw in sql_keywords):
-            start_idx = response.upper().find("SELECT ")
-            if start_idx >= 0:
-                sql = response[start_idx:].split(";")[0]
-                # Supprimer les backticks résiduels (``` ou `)
-                sql = re.sub(r"`+", "", sql).strip()
-                return sql
+        # Fallback : extraire le SELECT (ou WITH) brut et supprimer les artefacts markdown résiduels
+        upper_response = response.upper()
+        start_idx = upper_response.find("SELECT ")
+        if start_idx < 0:
+            start_idx = upper_response.find("WITH ")
+        if start_idx >= 0:
+            sql = response[start_idx:].split(";")[0]
+            # Supprimer les backticks résiduels (``` ou `)
+            sql = re.sub(r"`+", "", sql).strip()
+            return sql
 
         return None
 

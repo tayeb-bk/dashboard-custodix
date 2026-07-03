@@ -1,0 +1,69 @@
+DOCUMENTATION - ÉCRAN EXPÉDITION (PHASE 3 - TABLE : FLOW_FILEOUT)
+
+RÉSUMÉ DU DASHBOARD DE L'EXPÉDITION :
+La page d'Expédition comporte au total 7 widgets qui sont :
+- WIDGET 1 : Les 4 cartes KPI Hero (Livraisons enregistrées, Couverture Pipeline, Taux de Confirmation ACK, Destinations Actives)
+- WIDGET 2 : Le Pipeline permanent (Funnel à 4 paliers : Reçus → Livrés → Livraisons → Confirmés)
+- WIDGET 3 : Mini Timeline des Livraisons (Activité récente avec indicateur de santé ACK)
+- WIDGET 4 : Filtres rapides (Contrat, bascule "ACK requis uniquement")
+- WIDGET 5 : Canaux de Sortie (Répartition par destination technique)
+- WIDGET 6 : Intelligence ACK (Top partenaires avec ACK manquants, vieillissement des ACK absents)
+- WIDGET 7 : Journal d'Expédition Paginé (Table détaillée avec filtres et presets ACK)
+
+1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
+La phase d'Expédition (Phase 3) est le point de sortie physique des fichiers traités vers leurs systèmes destinataires. Chaque ligne de la table FLOW_FILEOUT représente une livraison individuelle : un même fichier reçu (FLOW_FILEIN) peut produire plusieurs livraisons s'il est envoyé vers plusieurs destinations. Cette phase gère aussi la collecte des accusés de réception (ACK) réseau pour les livraisons qui en exigent un. La table principale de cette phase est UCUSTOI0.FLOW_FILEOUT.
+
+2. MAPPING DES COLONNES DE LA TABLE FLOW_FILEOUT (Pour les requêtes SQL) :
+- Identifiant unique de la livraison : colonne ID_
+- Identifiant du fichier reçu lié (FLOW_FILEIN.ID_) : colonne FILEIN_ID_
+- Identifiant du fichier physique : colonne FILE_ID_
+- Identifiant du canal de destination technique (PAS le contrat SLA partenaire) : colonne DESTINATIONINFO_ID_
+- Indique si un accusé de réception est attendu (1) ou non (0) : colonne ACKEXPECTED_
+- Adresse de livraison utilisée : colonne USEDADDRESS_
+
+Table liée UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT (accusés de réception) :
+- ID_ : identifiant unique de l'accusé
+- ACKEDFILEOUT_ID_ : identifiant de la livraison accusée (FLOW_FILEOUT.ID_)
+- FILEOUTSENDINGDATE_ : date/heure d'acquittement (colonne VARCHAR2, pas une vraie date)
+- ACKNOWLEDGEMENTTYPE_ : type d'accusé (ex: ACK, NACK)
+
+3. EXEMPLES DE REQUÊTES SQL VALIDES SUR FLOW_FILEOUT :
+- Nombre total de livraisons : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEOUT
+- Nombre de fichiers distincts effectivement livrés (compte chaque fichier une seule fois) : SELECT COUNT(DISTINCT FILEIN_ID_) FROM UCUSTOI0.FLOW_FILEOUT
+- Livraisons en attente d'accusé de réception : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEOUT fo WHERE fo.ACKEXPECTED_ = 1 AND NOT EXISTS (SELECT 1 FROM UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT ack WHERE ack.ACKEDFILEOUT_ID_ = fo.ID_)
+- Nombre de canaux de destination actifs : SELECT COUNT(DISTINCT DESTINATIONINFO_ID_) FROM UCUSTOI0.FLOW_FILEOUT
+- Fichiers reçus sans aucune livraison (non livrés) : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FILEIN fi WHERE NOT EXISTS (SELECT 1 FROM UCUSTOI0.FLOW_FILEOUT fo WHERE fo.FILEIN_ID_ = fi.ID_)
+
+4. DESCRIPTION DÉTAILLÉE DES WIDGETS :
+
+WIDGET 1 : Cartes KPI Hero
+- Livraisons enregistrées : Nombre total de livraisons (une ligne FLOW_FILEOUT = un envoi vers une destination). Un même fichier reçu peut générer plusieurs livraisons.
+- Couverture Pipeline : Pourcentage de fichiers reçus ayant eu au moins une livraison. Seuils : vert ≥ 80% (optimal), orange 50-79% (acceptable), rouge < 50% (à investiguer).
+- Taux de Confirmation ACK : Parmi les livraisons avec accusé attendu (ACKEXPECTED_=1), pourcentage ayant reçu confirmation. La majorité des livraisons sont "fire and forget" (aucun accusé requis).
+- Destinations Actives : Nombre de canaux de sortie technique différents ayant reçu au moins une livraison sur la période.
+
+WIDGET 2 : Pipeline permanent (Funnel)
+- Rôle : Visualise le parcours Reçus → Livrés → Livraisons → Confirmés, recalculé selon les filtres actifs.
+- Distinction clé : "Fichier livré" = un dossier reçu compté une seule fois s'il est parti au moins une fois. "Livraison" = un envoi physique, potentiellement plusieurs par fichier livré. Un total de livraisons supérieur au nombre de fichiers livrés est normal, pas une erreur.
+
+WIDGET 3 : Mini Timeline des Livraisons
+- Rôle : Activité récente des livraisons avec un badge de santé basé sur le taux de confirmation ACK (vert ≥80%, orange 50-79%, rouge <50%).
+
+WIDGET 4 : Filtres rapides
+- Rôle : Isoler un contrat précis via des puces cliquables, ou basculer l'affichage pour ne montrer que les livraisons nécessitant un accusé de réception.
+
+WIDGET 5 : Canaux de Sortie
+- Rôle : Détaille le volume de livraisons par destination technique (DESTINATIONINFO_ID_), qui est un canal de sortie (connecteur, répertoire...) et non le contrat SLA du partenaire.
+
+WIDGET 6 : Intelligence ACK
+- Rôle : Détecte rapidement les partenaires qui cumulent le plus de livraisons sans accusé de réception reçu, et permet d'analyser le vieillissement de ces ACK manquants (moins de 24h, 2-7 jours, 8-30 jours, plus de 30 jours) pour prioriser les relances.
+
+WIDGET 7 : Journal d'Expédition Paginé
+- Rôle : Table détaillée, une ligne par livraison, avec vues "livraisons" ou "non livré" (fichiers reçus jamais expédiés), et des filtres préconfigurés (ack_confirme, ack_manquant) en plus des filtres classiques (contrat, dates, destination).
+
+5. TERMES MÉTIER CLÉS DE L'EXPÉDITION :
+- Fire and forget : Mode d'envoi où aucun accusé de réception n'est attendu du destinataire — la majorité des livraisons fonctionnent ainsi.
+- ACK (Accusé de réception) : Confirmation réseau qu'un partenaire a bien reçu une livraison, enregistrée dans FLOW_INCOMINGACKNOWLEGEMENT.
+- NACK : Un accusé négatif, signalant un problème de réception côté destinataire.
+- Couverture Pipeline : Indicateur de complétude du cycle Réception → Expédition, mesurant si les fichiers reçus finissent bien par être livrés.
+- Canal de destination : Le point de sortie technique d'une livraison (DESTINATIONINFO_ID_), à ne pas confondre avec le contrat SLA du partenaire commercial (qui, lui, est rattaché au fichier reçu via PASSEDCONTRACTIDENTIFIER_ sur FLOW_FILEIN).

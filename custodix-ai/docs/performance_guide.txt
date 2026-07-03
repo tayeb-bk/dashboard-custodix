@@ -1,0 +1,59 @@
+DOCUMENTATION - ÉCRAN PERFORMANCE (PHASE 4 - LATENCES BOUT-EN-BOUT MULTI-TABLES)
+
+RÉSUMÉ DU DASHBOARD DE LA PERFORMANCE :
+La page de Performance comporte au total 6 widgets qui sont :
+- WIDGET 1 : Les cartes KPI (Taux de conformité, Volume analysé, Temps de cycle total, Seuils d'évaluation actifs)
+- WIDGET 2 : Sélecteur de Niveau d'Exigence SLA (3 profils : Or, Argent, Bronze)
+- WIDGET 3 : Analyse des Goulots d'Étranglement (Barres Intégration / Traitement EAI / Attente partenaire + Top 5 par étape)
+- WIDGET 4 : Graphiques de Répartition (Nuage de points des violations, Barres de conformité par contrat)
+- WIDGET 5 : Assistant IA de Diagnostic (Synthèse automatique du contrat le plus pénalisant + recommandations)
+- WIDGET 6 : Journal détaillé paginé (Table des fichiers avec T1/T2/T3 individuels et filtres)
+
+1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
+La phase de Performance (Phase 4) ne correspond à aucune table unique : c'est une vue transversale qui mesure la latence bout-en-bout de chaque fichier en croisant 4 tables du cycle de vie (Réception, Traitement, Expédition, Accusé de réception). Elle découpe le parcours d'un fichier en 3 étapes chronométrées (T1, T2, T3) et compare chacune à un seuil contractuel (SLA) pour déterminer si le fichier a été traité "à temps" ou "hors délais". Aucune table ne s'appelle "Performance" dans la base ; les données proviennent d'une requête qui joint UCUSTOI0.FLOW_FILEIN, UCUSTOI0.FLOW_FLOW, UCUSTOI0.FLOW_FILEOUT et UCUSTOI0.FLOW_INCOMINGACKNOWLEGEMENT.
+
+2. MAPPING DES COLONNES ET CALCUL DES 3 ÉTAPES (T1/T2/T3) :
+- T1 (Intégration) : durée entre la réception du fichier (FLOW_FILEIN.SENDINGDATE_) et sa création en flux logique (FLOW_FLOW.CREATIONDATE_). Mesure la rapidité d'ingestion du fichier brut.
+- T2 (Traitement EAI) : durée entre la création du flux (FLOW_FLOW.CREATIONDATE_) et sa dernière mise à jour (FLOW_FLOW.UPDATEDATE_). Mesure le temps de traitement interne (routage, règles métier).
+- T3 (Attente partenaire) : durée entre la mise à jour du flux (FLOW_FLOW.UPDATEDATE_) et la réception effective de l'accusé (FLOW_INCOMINGACKNOWLEGEMENT.FILEOUTSENDINGDATE_). Uniquement pertinent si un accusé est attendu (FLOW_FILEOUT.ACKEXPECTED_ = 1) ; si aucun accusé n'est encore arrivé, T3 est calculé jusqu'à l'instant présent (attente toujours en cours).
+- Colonnes clés jointes : PASSEDCONTRACTIDENTIFIER_ (contrat), WORKFLOWID_ (workflow), PRIORITY_ (priorité du fichier), STATUS_ (statut du flux au moment de la mesure).
+- Un fichier est "hors délais" (isBreached = true) dès qu'AU MOINS UNE des 3 étapes dépasse son seuil.
+
+3. LES 3 NIVEAUX D'EXIGENCE SLA (Seuils prédéfinis) :
+- Niveau OR (le plus strict) : Intégration ≤ 2 secondes, Traitement EAI ≤ 30 secondes, Attente partenaire ≤ 5 minutes.
+- Niveau ARGENT (standard, sélectionné par défaut) : Intégration ≤ 5 secondes, Traitement EAI ≤ 120 secondes (2 minutes), Attente partenaire ≤ 15 minutes.
+- Niveau BRONZE (le plus souple) : Intégration ≤ 10 secondes, Traitement EAI ≤ 600 secondes (10 minutes), Attente partenaire ≤ 60 minutes.
+- Ces seuils ne sont PAS stockés en base de données : ce sont des constantes métier appliquées côté application pour auditer les mêmes données sous différents niveaux d'exigence contractuelle.
+
+4. DESCRIPTION DÉTAILLÉE DES WIDGETS :
+
+WIDGET 1 : Cartes KPI
+- Taux de conformité : Pourcentage de fichiers dont les 3 étapes respectent le seuil actif. Calcul : (Total − Hors délais) × 100 ÷ Total.
+- Volume analysé : Nombre total de fichiers pris en compte après application des filtres (Contrat, Workflow, Dates).
+- Temps de cycle total : Moyenne de (T1 + T2 + T3) sur l'échantillon filtré, exprimée en secondes/minutes.
+- Seuils d'évaluation : Rappelle les 3 valeurs (T1/T2/T3) du niveau SLA actuellement sélectionné.
+
+WIDGET 2 : Sélecteur de Niveau d'Exigence (Or / Argent / Bronze)
+- Rôle : Change instantanément les seuils appliqués à l'ensemble des widgets, pour simuler l'impact d'un changement de contrat de service sur la même donnée réelle, sans aucun appel base de données supplémentaire.
+
+WIDGET 3 : Analyse des Goulots d'Étranglement
+- Rôle : Pour chacune des 3 étapes (Intégration, Traitement EAI, Attente partenaire), affiche une barre bicolore (vert = conforme, rouge = hors délais) et identifie l'étape la plus problématique (mainBottleneckStep = l'étape avec le plus grand nombre de dépassements).
+- Top 5 : Liste les 5 fichiers les plus lents sur l'étape sélectionnée, cliquable pour filtrer le journal détaillé.
+- Recherche par ID : Permet d'isoler un fichier précis (pipelineSearchId) dans cette analyse.
+
+WIDGET 4 : Graphiques de Répartition
+- Nuage de points des violations : Visualise chaque fichier hors délais selon son étape en dépassement.
+- Barres de conformité par contrat : Classement des contrats par pourcentage de conformité SLA, avec possibilité de cliquer sur un contrat pour filtrer l'ensemble de la vue graphique.
+
+WIDGET 5 : Assistant IA de Diagnostic
+- Rôle : Génère automatiquement (ou via l'IA Custodix) une synthèse identifiant le contrat le plus pénalisant (celui qui cumule le plus de violations SLA) et propose 2 recommandations types : renégociation du seuil contractuel ou investigation technique côté partenaire (ex: serveur FTP engorgé).
+
+WIDGET 6 : Journal détaillé paginé
+- Rôle : Table listant chaque fichier avec ses 3 temps mesurés individuellement (T1, T2, T3), son statut de conformité, et des filtres combinables (Contrat, Workflow, Dates, recherche libre).
+
+5. TERMES MÉTIER CLÉS DE LA PERFORMANCE :
+- SLA (Service Level Agreement) : Engagement contractuel de délai de traitement entre Custodix et un partenaire, décliné ici en 3 niveaux (Or, Argent, Bronze).
+- T1/T2/T3 : Les 3 segments chronométrés du cycle de vie d'un fichier — Intégration, Traitement EAI, Attente partenaire — chacun comparé à son propre seuil.
+- Hors délais (Breach) : Un fichier dont au moins une étape (T1, T2 ou T3) dépasse le seuil du niveau SLA actif.
+- Goulot d'étranglement : L'étape (parmi T1/T2/T3) qui concentre le plus grand nombre de dépassements de seuil, révélant où se situe le principal problème de performance de la chaîne.
+- Attente partenaire : Le temps entre la fin du traitement interne et la réception effective d'un accusé de réception du destinataire ; reste "en cours" (non figé) tant qu'aucun accusé n'est arrivé.

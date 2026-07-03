@@ -15,3 +15,11 @@ class FormatRequest(BaseModel):
 
 class FormatResponse(BaseModel):
     answer: str
+
+class FixSqlRequest(BaseModel):
+    question: str
+    sql: str
+    error: str
+
+class FixSqlResponse(BaseModel):
+    sql_query: str

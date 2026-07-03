@@ -1,0 +1,75 @@
+DOCUMENTATION - ÉCRAN TRAITEMENT (PHASE 2 - TABLE : FLOW_FLOW)
+
+RÉSUMÉ DU DASHBOARD DU TRAITEMENT :
+La page de Traitement comporte au total 6 widgets qui sont :
+- WIDGET 1 : Les 4 cartes KPI métier (Total Flux, Flux Bloqués, Taux d'Erreur, Lead Time Moyen)
+- WIDGET 2 : Évolution des Flux (Chronologie filtrable par statut, expéditeur, granularité et dates)
+- WIDGET 3 : Volume par Statut (Graphique en anneau avec détail des statuts secondaires regroupés sous "Autre")
+- WIDGET 4 : Top 5 Routes Interactives (Classement des chemins émetteur/destinataire, avec 3 modes : Volume, Erreurs, Délai)
+- WIDGET 5 : Performance Opérationnelle & Respect SLA (Courbe du délai moyen quotidien, avec seuil contractuel)
+- WIDGET 6 : Répartition par Type de Flux (Treemap) et Tableau des Flux avec Score IA de criticité
+
+1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
+La phase de Traitement (Phase 2) est le moteur logique de la plateforme Custodix EAI. Elle prend en charge le routage, la traduction de formats (ex: SWIFT MT/MX) et l'application des règles métier sur chaque flux, après sa réception et avant son expédition. C'est la seule phase qui centralise le statut réel du flux (STATUS_) et permet de savoir si un flux est en cours, terminé, bloqué ou en erreur. La table principale de cette phase est UCUSTOI0.FLOW_FLOW.
+
+2. MAPPING DES COLONNES DE LA TABLE FLOW_FLOW (Pour les requêtes SQL) :
+- Identifiant unique du flux : colonne ID_
+- Statut réel du flux (JAMAIS une valeur inventée, voir la liste certifiée) : colonne STATUS_
+- Nom de classe technique interne (PAS un statut métier) : colonne TYPE_ (JAMAIS utilisée pour filtrer par "statut")
+- Nom du type de flux métier (ex: FT_MT502, GENERALI_MT535_FT) : colonne FLOWTYPE_NAME_
+- Date de création du flux : colonne CREATIONDATE_
+- Date de dernière mise à jour : colonne UPDATEDATE_ (sert à calculer le lead time / la latence T2)
+- Identifiant de l'émetteur : colonne SENDER_IDENTIFIER_
+- Identifiant du destinataire : colonne RECEIVER_IDENTIFIER_
+- Identifiant de la route (chemin émetteur/destinataire) : colonne ROUTE_ROUTEID_
+- Montants financiers associés : colonnes AMOUNT1_, AMOUNT2_, AMOUNT3_, AMOUNT4_
+- Commentaire libre (souvent renseigné en cas d'anomalie) : colonne COMMENT_
+- Identifiant de la dernière erreur rencontrée : colonne LASTERROR_ID_ (non-null si le flux a eu une erreur)
+- Origine du blocage si le flux est bloqué : colonne BLOCKINGORIGIN_
+- Étape actuelle / étape suivante du traitement : colonnes ACTUALSTEP_ / NEXTSTEP_
+
+3. LES VRAIES VALEURS DE STATUS_ (CRITIQUE - ne jamais en inventer d'autres) :
+Sent, Processed, Blocked, NoContractFound, Init, WaitToBeSent, Initial, InTechnicalError, InitiationError, SentAndWaitingAck, SubWorkflowInProcess, SubWorkflowInTechnicalError, InProcess, Initiated, Acked, WaitProcessing, InitiationFailed, InBusinessError, Nacked, Rejected, PutInQueueFailed, MarkedForSuspension, Canceled, WaitAction.
+Statuts considérés comme des erreurs techniques ou des rejets : InTechnicalError, Rejected, Blocked.
+
+4. EXEMPLES DE REQUÊTES SQL VALIDES SUR FLOW_FLOW :
+- Compter les flux bloqués : SELECT COUNT(*) FROM UCUSTOI0.FLOW_FLOW WHERE STATUS_ = 'Blocked'
+- Taux d'erreur global : SELECT ROUND(SUM(CASE WHEN STATUS_ IN ('InTechnicalError','Blocked','Rejected') THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) FROM UCUSTOI0.FLOW_FLOW
+- Lead time moyen en minutes : SELECT AVG((CAST(UPDATEDATE_ AS DATE) - CAST(CREATIONDATE_ AS DATE)) * 24 * 60) FROM UCUSTOI0.FLOW_FLOW WHERE UPDATEDATE_ IS NOT NULL
+- Top routes par volume : SELECT SENDER_IDENTIFIER_, RECEIVER_IDENTIFIER_, COUNT(*) AS TOTAL FROM UCUSTOI0.FLOW_FLOW GROUP BY SENDER_IDENTIFIER_, RECEIVER_IDENTIFIER_ ORDER BY TOTAL DESC FETCH FIRST 5 ROWS ONLY
+- Répartition par type de flux métier : SELECT FLOWTYPE_NAME_, COUNT(*) FROM UCUSTOI0.FLOW_FLOW GROUP BY FLOWTYPE_NAME_ ORDER BY COUNT(*) DESC
+
+5. DESCRIPTION DÉTAILLÉE DES WIDGETS :
+
+WIDGET 1 : Cartes KPI métier
+- Total Flux : Nombre total de flux enregistrés dans la base, tous statuts confondus. Sert de référence de volume.
+- Flux Bloqués : Flux actuellement dans un état critique nécessitant une intervention humaine (InTechnicalError, Blocked, Rejected, InBusinessError, InitiationError, InitiationFailed, Nacked). Si supérieur à 0, une action est requise.
+- Taux d'Erreur : Pourcentage de flux en erreur par rapport au volume total. Seuil vert ≤ 5%, orange 5-15%, rouge > 15% (anomalie systémique).
+- Lead Time Moyen : Temps moyen entre la création et la mise à jour d'un flux (temps de traitement bout-en-bout). SLA fixé à 30 minutes ; au-delà, la plateforme ne respecte plus son engagement.
+
+WIDGET 2 : Évolution des Flux (Chronologie)
+- Rôle : Affiche la dynamique d'apparition des flux pour un statut précis sur la période sélectionnée, avec filtres Statut, Expéditeur, Granularité (heure/jour/mois) et dates.
+- Utilisation : Cliquer sur un segment du graphique "Volume par Statut" change le statut analysé ici, pour repérer par exemple des pics d'erreurs.
+
+WIDGET 3 : Volume par Statut
+- Rôle : Répartition du volume global des flux selon leur état actuel de traitement, avec regroupement des statuts mineurs sous "Autre" pour lisibilité.
+- Utilisation : Cliquer sur un segment filtre la chronologie ; cliquer sur "Autre" détaille les statuts regroupés.
+
+WIDGET 4 : Top 5 Routes (Interactif)
+- Rôle : Identification des 5 routes (chemins émetteur/destinataire) les plus actives ou critiques, selon 3 modes : Volume (routes les plus chargées), Erreurs (routes avec le plus de problèmes techniques ou métier), Délai (goulots d'étranglement, routes les plus lentes).
+- Utilisation : Cliquer sur une route filtre instantanément la chronologie sur ce chemin précis.
+
+WIDGET 5 : Performance Opérationnelle & Respect SLA
+- Rôle : Analyse de la réactivité bout-en-bout de la plateforme (délai moyen de traitement quotidien), avec une ligne de référence à 30 minutes représentant l'engagement contractuel de qualité (SLA).
+- Utilisation : Un délai stable sous la ligne SLA est signe d'une infrastructure saine ; un dépassement doit être investigué.
+
+WIDGET 6 : Répartition par Type de Flux (Treemap) et Tableau des Flux
+- Rôle du Treemap : Analyse volumétrique des flux financiers regroupés par leur nature technique (FlowType), pour détecter une suractivité inhabituelle sur un canal.
+- Rôle du Tableau : Liste paginée et filtrable (Statut, Score IA, Type, Flow Type, dates) de tous les flux, avec un Score IA de criticité calculé sur 100 points selon la situation technique (erreurs), le temps de blocage (plus de 24h) et l'impact métier (type de message financier sensible, ex: FT_MT502, GENERALI_MT535_FT). Trois niveaux : CRITIQUE, VIGILANCE, OK. Un panneau de détail affiche la décomposition exacte du score et les informations complètes du flux sélectionné.
+
+6. TERMES MÉTIER CLÉS DU TRAITEMENT :
+- Lead Time : Temps écoulé entre la création et la clôture (mise à jour finale) d'un flux — indicateur clé de réactivité de la plateforme.
+- Route : Chemin logique entre un émetteur (SENDER_IDENTIFIER_) et un destinataire (RECEIVER_IDENTIFIER_), identifié par ROUTE_ROUTEID_.
+- Score IA de criticité : Note sur 100 calculée automatiquement par Custodix AI pour prioriser les flux à investiguer en premier, en combinant statut, ancienneté et sensibilité du type de message.
+- FlowType : Nature technique du message financier traité (ex: messages SWIFT MT ou MX), différente du statut de traitement.
+- Type technique (colonne TYPE_) : Nom de classe Java interne (ex: com.vermeg.xchanger.ref.flow.FileOut) qui indique l'origine technique de l'enregistrement, à ne jamais confondre avec un statut métier.

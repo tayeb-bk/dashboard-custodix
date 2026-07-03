@@ -1,0 +1,56 @@
+services:
+  oracle-db:
+    image: gvenzl/oracle-xe:21-slim
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_SYS_PASSWORD:-ChangeMe_Docker123}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./docker/oracle/init/01-import.sh:/container-entrypoint-initdb.d/01-import.sh:ro
+      - C:/import/expdp_P19CUSI1_UCUSTOI0_20250422.dmp:/dumps/ucustoi0.dmp:ro
+    ports:
+      - "1522:1521"   # acces optionnel depuis Windows (SQL Developer...), sans conflit avec l'Oracle local sur 1521
+      - "8080:8080"   # custodix (Spring Boot) - publie ici car les autres services partagent ce reseau
+      - "8000:8000"   # custodix-ai (FastAPI)
+      - "4200:80"     # custodix-dashboard (nginx)
+    healthcheck:
+      test: ["CMD", "/opt/oracle/healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 60s
+
+  ollama:
+    image: ollama/ollama:0.30.7
+    network_mode: "service:oracle-db"
+    depends_on:
+      - oracle-db
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./docker/ollama/init/pull-models.sh:/docker-init/pull-models.sh:ro
+    entrypoint: ["sh", "/docker-init/pull-models.sh"]
+
+  custodix-backend:
+    build: ./custodix
+    network_mode: "service:oracle-db"
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+
+  custodix-ai:
+    build: ./custodix-ai
+    network_mode: "service:oracle-db"
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+  custodix-dashboard:
+    build: ./custodix-dashboard
+    network_mode: "service:oracle-db"
+    depends_on:
+      - custodix-backend
+
+volumes:
+  oracle_data:
+  ollama_data:
