@@ -7,7 +7,7 @@ La page de Traitement comporte au total 6 widgets qui sont :
 - WIDGET 3 : Volume par Statut (Graphique en anneau avec détail des statuts secondaires regroupés sous "Autre")
 - WIDGET 4 : Top 5 Routes Interactives (Classement des chemins émetteur/destinataire, avec 3 modes : Volume, Erreurs, Délai)
 - WIDGET 5 : Performance Opérationnelle & Respect SLA (Courbe du délai moyen quotidien, avec seuil contractuel)
-- WIDGET 6 : Répartition par Type de Flux (Treemap) et Tableau des Flux avec Score IA de criticité
+- WIDGET 6 : Répartition par Type de Flux (Treemap) et Tableau des Flux avec Score de criticité
 
 1. RÔLE GLOBAL DANS LE CYCLE DE VIE :
 La phase de Traitement (Phase 2) est le moteur logique de la plateforme Custodix EAI. Elle prend en charge le routage, la traduction de formats (ex: SWIFT MT/MX) et l'application des règles métier sur chaque flux, après sa réception et avant son expédition. C'est la seule phase qui centralise le statut réel du flux (STATUS_) et permet de savoir si un flux est en cours, terminé, bloqué ou en erreur. La table principale de cette phase est UCUSTOI0.FLOW_FLOW.
@@ -65,11 +65,11 @@ WIDGET 5 : Performance Opérationnelle & Respect SLA
 
 WIDGET 6 : Répartition par Type de Flux (Treemap) et Tableau des Flux
 - Rôle du Treemap : Analyse volumétrique des flux financiers regroupés par leur nature technique (FlowType), pour détecter une suractivité inhabituelle sur un canal.
-- Rôle du Tableau : Liste paginée et filtrable (Statut, Score IA, Type, Flow Type, dates) de tous les flux, avec un Score IA de criticité calculé sur 100 points selon la situation technique (erreurs), le temps de blocage (plus de 24h) et l'impact métier (type de message financier sensible, ex: FT_MT502, GENERALI_MT535_FT). Trois niveaux : CRITIQUE, VIGILANCE, OK. Un panneau de détail affiche la décomposition exacte du score et les informations complètes du flux sélectionné.
+- Rôle du Tableau : Liste paginée et filtrable (Statut, Score de criticité, Type, Flow Type, dates) de tous les flux, avec un Score de criticité calculé sur 100 points selon une formule fixe (pas une IA) : la situation technique (erreurs), le temps de blocage (plus de 24h) et l'impact métier (type de message financier sensible, ex: FT_MT502, GENERALI_MT535_FT). Trois niveaux : CRITIQUE, VIGILANCE, OK. Un panneau de détail affiche la décomposition exacte du score et les informations complètes du flux sélectionné.
 
 6. TERMES MÉTIER CLÉS DU TRAITEMENT :
 - Lead Time : Temps écoulé entre la création et la clôture (mise à jour finale) d'un flux — indicateur clé de réactivité de la plateforme.
 - Route : Chemin logique entre un émetteur (SENDER_IDENTIFIER_) et un destinataire (RECEIVER_IDENTIFIER_), identifié par ROUTE_ROUTEID_.
-- Score IA de criticité : Note sur 100 calculée automatiquement par Custodix AI pour prioriser les flux à investiguer en premier, en combinant statut, ancienneté et sensibilité du type de message.
+- Score de criticité : Note sur 100 calculée par une formule fixe (statut, ancienneté, sensibilité du type de message) pour prioriser les flux à investiguer en premier — ce n'est pas une intelligence artificielle, juste un calcul automatique à règles prédéfinies.
 - FlowType : Nature technique du message financier traité (ex: messages SWIFT MT ou MX), différente du statut de traitement.
 - Type technique (colonne TYPE_) : Nom de classe Java interne (ex: com.vermeg.xchanger.ref.flow.FileOut) qui indique l'origine technique de l'enregistrement, à ne jamais confondre avec un statut métier.

@@ -23,7 +23,8 @@ import { NonPassiveWheelDirective } from '../overview/non-passive-wheel.directiv
 
 const SLA_THRESHOLD_MIN = 30;
 
-// Règles du scoring IA (exportées pour affichage dans la carte détail)
+// Règles du score de criticité — formule déterministe à points fixes, aucun
+// appel IA/LLM (exportées pour affichage dans la carte détail)
 export const SCORING_RULES: Array<{ label: string; statuses: string[]; flowTypes?: string[]; points: number; description: string }> = [
   {
     label: 'Statut critique',
@@ -88,7 +89,7 @@ export class FlowFlowComponent implements OnInit {
       icon: '🚨',
       what: 'Nombre de flux actuellement en état critique ou bloqué nécessitant une intervention humaine immédiate.',
       how: 'Somme des flux dont le statut est : InTechnicalError, Blocked, Rejected, InBusinessError, InitiationError, InitiationFailed, Nacked.',
-      action: 'Si ce chiffre est supérieur à 0, une action urgente est requise. Cliquez sur Score IA dans le tableau pour identifier les flux concernés.'
+      action: 'Si ce chiffre est supérieur à 0, une action urgente est requise. Cliquez sur Score de criticité dans le tableau pour identifier les flux concernés.'
     },
     taux: {
       title: 'Taux d’Erreur',
@@ -851,7 +852,7 @@ export class FlowFlowComponent implements OnInit {
     this.selectedFlowScore = null;
   }
 
-  // ===== IA Scoring =====
+  // ===== Score de criticité (formule déterministe, pas d'IA) =====
   getCriticalityScore(flow: any): { score: number; label: string; level: string } {
     const result = this.getCriticalityScoreDetailed(flow);
     return { score: result.score, label: result.label, level: result.level };

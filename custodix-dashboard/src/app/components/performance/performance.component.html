@@ -286,7 +286,11 @@
             <strong>📄 Résultat pour l'ID "{{ pipelineSearchId }}"</strong>
             <span class="results-count">{{ searchedFiles.length }} flux trouvé(s)</span>
           </div>
-          <div class="result-file-card" *ngFor="let f of searchedFiles">
+          <p class="pipeline-search-hint warn" *ngIf="searchedFiles.length > 20">
+            Trop de résultats pour les afficher tous ({{ searchedFiles.length }}) — affinez votre recherche pour un
+            identifiant plus précis. Affichage des 20 premiers :
+          </p>
+          <div class="result-file-card" *ngFor="let f of searchedFilesDisplay">
             <div class="result-file-id">#{{ f.fileInId }}
               <span class="result-global-badge" [ngClass]="f.isBreached ? 'badge-danger' : 'badge-success'">
                 {{ f.isBreached ? 'Hors délais' : 'Conforme' }}
@@ -476,52 +480,26 @@
       </div>
     </div>
 
-    <!-- IA COPILOTE DE DIAGNOSTIC & CONVERSATION -->
+    <!-- ASSISTANT DE COCKPIT : diagnostic automatique + guide + chat libre -->
     <section class="ai-card glass-card">
       <div class="ai-header-layout">
-        <h2>🤖 CUSTODIX AI : ASSISTANT DE COCKPIT</h2>
-        <div class="ai-header-buttons">
-          <button class="btn btn-preset" (click)="askPreset('Quels contrats ont le plus de violations ?')">Contrats
-            critiques</button>
-          <button class="btn btn-preset" (click)="askPreset('Montre les latences moyennes par contrat')">Latences
-            moyennes</button>
-          <button class="btn btn-ai" [disabled]="isAnalyzing" (click)="generateAiDiagnostic()">
-            {{ isAnalyzing ? 'Audit...' : 'Audit SLA Global' }}
-          </button>
-        </div>
+        <h2>Assistant de cockpit</h2>
       </div>
 
-      <div class="ai-content-box">
-        <div *ngIf="isAnalyzing" class="ai-loader">
-          <span class="pulse-ring"></span>
-          <p>L'IA analyse les données de performance et prépare la réponse...</p>
-        </div>
+      <!-- Diagnostic automatique : jamais d'appel IA, toujours a jour -->
+      <div class="diag-panel" [innerHTML]="diagnosticReportHtml"></div>
 
-        <div *ngIf="!isAnalyzing && !aiDiagnostic" class="ai-placeholder">
-          <p>Posez une question sur les performances ou lancez l'audit global ci-dessus.</p>
-          <div class="ai-examples">
-            <span>Suggestions :</span>
-            <ul>
-              <li><a
-                  (click)="userAiQuery = 'Combien de fichiers dans la table FLOW_FLOW aujourd\'hui ?'; askAi()">"Combien
-                  de fichiers dans la table FLOW_FLOW aujourd'hui ?"</a></li>
-              <li><a (click)="userAiQuery = 'Affiche les 5 derniers flux en erreur'; askAi()">"Affiche les 5 derniers
-                  flux en erreur"</a></li>
-            </ul>
-          </div>
+      <!-- Guide de decouverte : questions/reponses fixes, garanties exactes -->
+      <div class="guide-panel">
+        <p class="diag-section-title">Comprendre cette page</p>
+        <div class="guide-question-row">
+          <button class="btn btn-guide-nav" (click)="prevGuideQuestion()" aria-label="Question précédente">‹</button>
+          <p class="guide-question" (click)="revealGuideAnswer()">{{ diagnosticGuide[guideIndex].question }}</p>
+          <button class="btn btn-guide-nav" (click)="nextGuideQuestion()" aria-label="Question suivante">›</button>
         </div>
-
-        <div *ngIf="!isAnalyzing && aiDiagnostic" class="ai-result markdown-content" [innerHTML]="aiDiagnostic">
-        </div>
-      </div>
-
-      <div class="ai-chat-input-wrapper">
-        <input type="text" [(ngModel)]="userAiQuery" (keyup.enter)="askAi()"
-          placeholder="Posez une question en langage naturel (ex: Combien de flux aujourd'hui ?)..."
-          class="form-input ai-input-field" [disabled]="isAnalyzing">
-        <button class="btn btn-ai send-chat-btn" [disabled]="isAnalyzing || !userAiQuery" (click)="askAi()">
-          Poser à l'IA
-        </button>
+        <p *ngIf="showGuideAnswer" class="guide-answer">{{ diagnosticGuide[guideIndex].answer }}</p>
+        <button *ngIf="!showGuideAnswer" class="btn btn-preset guide-reveal-btn" (click)="revealGuideAnswer()">Voir
+          la réponse</button>
       </div>
     </section>
   </div>

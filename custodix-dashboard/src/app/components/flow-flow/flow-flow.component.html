@@ -556,14 +556,14 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- ===== TABLEAU FLUX — SCORING IA + FILTRES COMPLETS ===== -->
+    <!-- ===== TABLEAU FLUX — SCORE DE CRITICITÉ + FILTRES COMPLETS ===== -->
     <!-- ===================================================================== -->
     <div class="table-section">
 
       <!-- En-tête du tableau -->
       <div class="table-section-header">
         <div class="table-title-group">
-          <h2 class="section-title">Flux — Score IA de criticité</h2>
+          <h2 class="section-title">Flux — Score de criticité</h2>
           <span class="record-total">{{ tableTotalElements | number }} flux au total</span>
         </div>
       </div>
@@ -579,7 +579,7 @@
         </div>
 
         <div class="table-filter-group">
-          <label class="filter-label">Score IA</label>
+          <label class="filter-label">Score de criticité</label>
           <select [(ngModel)]="tableFilterScore" class="filter-select">
             <option value="">Tous</option>
             <option value="critique">🔴 CRITIQUE</option>
@@ -633,7 +633,7 @@
             <tr>
               <th>ID</th>
               <th>Statut</th>
-              <th>Score IA</th>
+              <th>Score de criticité</th>
               <th>Type</th>
               <th>Flow Type</th>
               <th>Expéditeur</th>
@@ -715,7 +715,7 @@
       <button class="detail-close" (click)="closeDetail()">✕</button>
     </div>
 
-    <!-- Score IA en grand -->
+    <!-- Score de criticité en grand -->
     <div class="detail-score-banner" [class.banner-critique]="selectedFlowScore.level === 'critique'"
       [class.banner-vigilance]="selectedFlowScore.level === 'vigilance'"
       [class.banner-ok]="selectedFlowScore.level === 'ok'">
@@ -724,7 +724,7 @@
           {{ selectedFlowScore.level === 'critique' ? '🔴' : selectedFlowScore.level === 'vigilance' ? '🟡' : '🟢' }}
         </span>
         <div>
-          <div class="detail-score-label">Score IA : {{ selectedFlowScore.score }} / 100 pts</div>
+          <div class="detail-score-label">Score de criticité : {{ selectedFlowScore.score }} / 100 pts</div>
           <div class="detail-score-level">Niveau {{ selectedFlowScore.label }}</div>
         </div>
       </div>
@@ -742,8 +742,9 @@
     <div class="detail-section">
       <h4 class="detail-section-title">📐 Calcul du Score</h4>
       <p style="font-size: 12px; color: #64748b; margin-top: -8px; margin-bottom: 16px; line-height: 1.4;">
-        L'IA évalue la criticité d'un flux sur une échelle de 100 points en analysant sa situation technique (erreurs),
-        son temps de traitement (bloqué > 24h) et son impact métier (type de message sensible).
+        Ce score donne une première vision rapide de la criticité d'un flux, sans avoir à interpréter vous-même chaque
+        statut technique un par un. Il est calculé sur une échelle de 100 points selon des règles fixes : la situation
+        technique (erreurs), le temps de blocage (plus de 24h) et l'impact métier (type de message sensible).
       </p>
       <div class="score-rules">
         <div *ngFor="let rule of selectedFlowScore.breakdown" class="score-rule" [class.rule-applied]="rule.applied"

@@ -3,9 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { AiChatService } from '../../services/ai-chat.service';
 import { ThemeService } from '../../services/theme';
-import { finalize } from 'rxjs';
 
 import {
   ApexAxisChartSeries,
@@ -64,7 +62,6 @@ export interface PerformanceLatency {
 })
 export class PerformanceComponent implements OnInit {
   private http = inject(HttpClient);
-  private aiService = inject(AiChatService);
   public themeService = inject(ThemeService);
 
   constructor() {
@@ -294,10 +291,62 @@ export class PerformanceComponent implements OnInit {
   public expandedFileId: number | null = null;
   public subDeliveries: any[] = [];
 
-  // IA Copilot
-  public isAnalyzing: boolean = false;
-  public aiDiagnostic: string = '';
-  public userAiQuery: string = '';
+  // Guide de découverte : questions/réponses fixes, rédigées à l'avance,
+  // jamais générées par l'IA — garanties exactes, affichées une par une.
+  public diagnosticGuide: { question: string; answer: string }[] = [
+    {
+      question: 'À quoi sert cette page Performance ?',
+      answer: 'Cette page permet de vérifier si les fichiers financiers sont traités dans les délais promis aux partenaires, du moment où ils arrivent jusqu\'à leur confirmation finale — et surtout de repérer rapidement où ça bloque quand ce n\'est pas le cas.'
+    },
+    {
+      question: 'Que signifie le taux de conformité ?',
+      answer: 'C\'est la proportion de fichiers qui ont respecté tous les délais attendus. Un taux élevé signifie que la chaîne de traitement tient ses engagements ; un taux qui baisse signale un problème à investiguer avant qu\'il ne s\'aggrave.'
+    },
+    {
+      question: 'Que représente le volume analysé ?',
+      answer: 'C\'est le nombre de fichiers pris en compte dans l\'analyse actuelle, selon les filtres choisis (contrat, workflow, dates) — ça permet de savoir sur quelle base repose le diagnostic affiché.'
+    },
+    {
+      question: 'Qu\'est-ce que le temps de cycle total ?',
+      answer: 'C\'est la durée moyenne complète du parcours d\'un fichier, de son arrivée jusqu\'à sa confirmation finale — un indicateur global de la réactivité de la plateforme.'
+    },
+    {
+      question: 'À quoi servent les seuils d\'évaluation ?',
+      answer: 'Ce sont les délais maximums attendus à chaque étape du parcours d\'un fichier. Ils permettent de définir ce qui est considéré comme "à temps" ou "en retard", selon le niveau d\'exigence choisi.'
+    },
+    {
+      question: 'À quoi sert l\'analyse des goulots d\'étranglement ?',
+      answer: 'Elle identifie automatiquement laquelle des 3 étapes du parcours d\'un fichier (son arrivée, son traitement interne, ou l\'attente de confirmation du partenaire) est la plus souvent en retard — pour savoir précisément où concentrer les efforts, plutôt que de chercher au hasard.'
+    },
+    {
+      question: 'Pourquoi classer les contrats par conformité ?',
+      answer: 'Ça permet de voir immédiatement quels partenaires accumulent le plus de retards, pour prioriser les discussions ou les vérifications techniques avec les bons interlocuteurs en premier.'
+    },
+    {
+      question: 'À quoi sert le journal détaillé en bas de page ?',
+      answer: 'Il permet de retrouver, fichier par fichier, le détail exact de son parcours et de ses éventuels retards — utile quand un cas précis doit être vérifié ou justifié auprès d\'un partenaire.'
+    },
+    {
+      question: 'À quoi sert le nuage de points des violations ?',
+      answer: 'Il affiche chaque fichier en retard selon l\'étape responsable, pour repérer visuellement si les problèmes sont concentrés sur un point précis du parcours ou dispersés partout.'
+    }
+  ];
+  public guideIndex: number = 0;
+  public showGuideAnswer: boolean = false;
+
+  public nextGuideQuestion(): void {
+    this.guideIndex = (this.guideIndex + 1) % this.diagnosticGuide.length;
+    this.showGuideAnswer = false;
+  }
+
+  public prevGuideQuestion(): void {
+    this.guideIndex = (this.guideIndex - 1 + this.diagnosticGuide.length) % this.diagnosticGuide.length;
+    this.showGuideAnswer = false;
+  }
+
+  public revealGuideAnswer(): void {
+    this.showGuideAnswer = true;
+  }
 
   // Options graphiques ApexCharts
   public scatterChartOptions!: Partial<ChartOptions> | any;
@@ -461,7 +510,10 @@ export class PerformanceComponent implements OnInit {
     // puis recalcule les barres et le Top5 (sans toucher aux KPIs globaux)
     this.computePipelineView();
 
-    // 5. Rendu des graphiques
+    // 5. Diagnostic automatique (recalcule uniquement ici, pas a chaque frappe ailleurs)
+    this.updateDiagnosticReport();
+
+    // 6. Rendu des graphiques
     this.renderCharts();
   }
 
@@ -537,8 +589,18 @@ export class PerformanceComponent implements OnInit {
 
   // Recherche ID dans le pipeline : recompute SEULEMENT la vue pipeline
   // Les KPIs globaux, le journal et les graphiques ne sont PAS recalculés
+  //
+  // Debounce : sans lui, chaque touche tapee relance un filtre + 3 tris sur
+  // filteredLatencies (des dizaines de milliers de lignes possible) ; un ID
+  // partiel court (ex: "1") correspond a des milliers de lignes, d'ou le gel
+  // en tapant lettre par lettre (un ID complet colle ne declenche qu'un seul
+  // calcul, donc pas de blocage).
+  private pipelineSearchDebounce: ReturnType<typeof setTimeout> | undefined;
   public onPipelineSearchChange(): void {
-    this.computePipelineView();
+    clearTimeout(this.pipelineSearchDebounce);
+    this.pipelineSearchDebounce = setTimeout(() => {
+      this.computePipelineView();
+    }, 250);
   }
 
   public clearPipelineSearch(): void {
@@ -551,6 +613,15 @@ export class PerformanceComponent implements OnInit {
   public get searchedFiles(): PerformanceLatency[] {
     if (!this.pipelineSearchId.trim()) return [];
     return this.pipelineLatencies;
+  }
+
+  // Vue plafonnée pour l'affichage : un ID partiel court peut correspondre a
+  // des milliers de lignes ; sans limite, le *ngFor tente de creer des
+  // milliers de noeuds DOM d'un coup, ce qui bloque le navigateur ("page ne
+  // repond pas"). searchedFiles.length (le vrai total) reste inchange pour
+  // le compteur affiche a l'utilisateur.
+  public get searchedFilesDisplay(): PerformanceLatency[] {
+    return this.searchedFiles.slice(0, 20);
   }
 
   public get top5ForStep(): PerformanceLatency[] {
@@ -647,15 +718,25 @@ export class PerformanceComponent implements OnInit {
     }
   }
 
-  // Génération du rapport de audit par défaut
-  public generateAiDiagnostic(): void {
-    this.isAnalyzing = true;
-    this.aiDiagnostic = '';
+  // Diagnostic automatique — aucun appel IA, uniquement les vraies donnees deja
+  // calculees. Sans emoji, recommandation dynamique selon la vraie etape en
+  // cause (pas de texte fixe).
+  //
+  // Stocke dans une propriete normale (pas un getter) : un getter appele dans
+  // le template est reevalue par Angular a CHAQUE cycle de detection de
+  // changement, meme declenche par un champ sans rapport (ex: la recherche
+  // par ID du widget Goulots) — sur ~150 000 lignes, ce recalcul a chaque
+  // frappe saturait le thread et bloquait la page. Ici, le calcul ne se
+  // relance que depuis updateDiagnosticReport(), appelee uniquement quand les
+  // vraies donnees (filtres, niveau SLA) changent.
+  public diagnosticReportHtml: string = '';
 
+  private updateDiagnosticReport(): void {
     const contractBreachesMap = new Map<string, number>();
     this.filteredLatencies.forEach(x => {
       if (x.isBreached) {
-        contractBreachesMap.set(x.contract, (contractBreachesMap.get(x.contract) || 0) + 1);
+        const key = x.contract || 'Sans contrat';
+        contractBreachesMap.set(key, (contractBreachesMap.get(key) || 0) + 1);
       }
     });
 
@@ -668,85 +749,40 @@ export class PerformanceComponent implements OnInit {
       }
     });
 
-    const prompt = `Générer un rapport d'audit et de recommandations de performance pour Custodix.
-    Les statistiques actuelles sous les seuils SLA (Traitement max: ${this.t2SlaSec}s, ACK max: ${this.t3SlaMin}min) sont :
-    - Taux de conformité global: ${this.complianceRate}%
-    - Nombre de violations: ${this.breachedCount} sur ${this.totalCount} fichiers.
-    - Fichiers en infraction: ${this.breachedCount}.
-    - Latences moyennes: T1 (Intégration) = ${this.avgT1.toFixed(1)}s, T2 (Traitement) = ${this.avgT2.toFixed(1)}s, T3 (Acquittement) = ${this.avgT3.toFixed(1)}s.
-    - Contrat le plus pénalisant: ${worstContract} avec ${maxBreaches} violations.`;
+    const breachedT1 = this.filteredLatencies.filter(f => f.t1 > this.t1SlaSec).length;
+    const breachedT2 = this.filteredLatencies.filter(f => f.t2 > this.t2SlaSec).length;
+    const breachedT3 = this.filteredLatencies.filter(f => f.ackExpected === 1 && f.t3 > this.t3SlaMin * 60).length;
 
-    this.aiService.askQuestion({ question: prompt })
-      .pipe(finalize(() => this.isAnalyzing = false))
-      .subscribe({
-        next: (res) => {
-          let html = `<div class="ai-query-bubble"><strong>Audit Global :</strong> Configuration de SLA Actuelle</div>`;
-          html += `<div class="ai-answer-bubble"><p>${res.answer || this.getFallbackDiagnostic(worstContract, maxBreaches)}</p></div>`;
-          this.aiDiagnostic = html;
-        },
-        error: () => {
-          this.aiDiagnostic = `<div class="ai-query-bubble"><strong>Audit Global :</strong> Configuration de SLA Actuelle (Fallback)</div>` +
-            `<div class="ai-answer-bubble">${this.getFallbackDiagnostic(worstContract, maxBreaches)}</div>`;
-        }
-      });
-  }
+    let bottleneck: 't1' | 't2' | 't3' = 't2';
+    if (breachedT1 >= breachedT2 && breachedT1 >= breachedT3) bottleneck = 't1';
+    else if (breachedT3 >= breachedT2 && breachedT3 >= breachedT1) bottleneck = 't3';
 
-  public askPreset(preset: string): void {
-    this.userAiQuery = preset;
-    this.askAi();
-  }
+    const recommendations: Record<'t1' | 't2' | 't3', string> = {
+      t1: `Le goulot se situe à l'intégration des fichiers. Vérifier la capacité d'ingestion au moment de la réception, en particulier pour le contrat "${worstContract}".`,
+      t2: `Le goulot se situe dans le traitement interne (moteur EAI). Inspecter les règles de traitement et la charge du moteur logique, en particulier pour le contrat "${worstContract}".`,
+      t3: `Le goulot se situe à l'attente de confirmation du partenaire. Renégocier le délai contractuel avec "${worstContract}" ou vérifier la disponibilité de son serveur de réception.`
+    };
 
-  public askAi(): void {
-    if (!this.userAiQuery.trim()) return;
-    this.isAnalyzing = true;
-    this.aiDiagnostic = '';
+    const t1Ok = this.avgT1 <= this.t1SlaSec;
+    const t2Ok = this.avgT2 <= this.t2SlaSec;
+    const t3Ok = this.avgT3 <= (this.t3SlaMin * 60);
+    const label = (ok: boolean) => ok ? 'Stable' : 'Alerte';
 
-    const queryText = this.userAiQuery;
-    this.userAiQuery = '';
-
-    // N'ajouter la note SLA que si la question concerne explicitement les SLAs, retards ou violations
-    const lower = queryText.toLowerCase();
-    const needsSla = lower.includes('sla') || lower.includes('retard') || lower.includes('violation') ||
-      lower.includes('depass') || lower.includes('breach') || lower.includes('seuil') ||
-      lower.includes('conforme') || lower.includes('penalite');
-
-    const contextualizedQuestion = needsSla
-      ? `${queryText} (Note: Seuil cible T2 = ${this.t2SlaSec}s, Seuil cible T3 = ${this.t3SlaMin * 60}s).`
-      : queryText;
-
-    this.aiService.askQuestion({ question: contextualizedQuestion })
-      .pipe(finalize(() => this.isAnalyzing = false))
-      .subscribe({
-        next: (res) => {
-          let html = `<div class="ai-query-bubble"><strong>Question :</strong> ${queryText}</div>`;
-          html += `<div class="ai-answer-bubble"><p>${res.answer || "Aucune réponse rédigée n'a pu être générée."}</p></div>`;
-          this.aiDiagnostic = html;
-        },
-        error: (err) => {
-          this.aiDiagnostic = `<p class="text-danger">Erreur lors de l'appel de l'agent IA. Assurez-vous que le serveur Python tourne sur le port 8000. Détail : ${err.message || 'Inconnu'}</p>`;
-        }
-      });
-  }
-
-  private getFallbackDiagnostic(worstContract: string, maxBreaches: number): string {
-    const causeT3 = this.avgT3 > (this.t3SlaMin * 60);
-    const causeT2 = this.avgT2 > this.t2SlaSec;
-
-    return `### 📊 Rapport d'Audit Performance & SLA
-    
-**1. Synthèse Executive :**
-Le système affiche un taux de conformité de **${this.complianceRate}%** sur **${this.totalCount} fichiers analysés**, dont **${this.breachedCount} hors délais**.
-
-**2. Analyse des Goulots d'Étranglement :**
-* ${causeT3 ? `🔴 **Attente partenaire** : La latence d'acquittement externe moyenne de **${(this.avgT3 / 60).toFixed(1)} min** dépasse votre seuil de **${this.t3SlaMin} min**.` : `💚 **Attente partenaire** : La latence d'acquittement externe reste sous contrôle.`}
-* ${causeT2 ? `🔴 **Traitement interne** : Le moteur EAI sature avec une latence moyenne de **${this.avgT2.toFixed(1)}s**, supérieure à votre cible de **${this.t2SlaSec}s**.` : `💚 **Traitement interne** : Les performances du moteur logique EAI sont stables.`}
-
-**3. Client Critique Identifié :**
-Le contrat **"${worstContract}"** est la source la plus importante de dérives avec **${maxBreaches} violations** de contrats de service.
-
-**4. Actions Correctives Recommandées :**
-1. **Renégociation** : Proposer d'augmenter le SLA d'acquittement à 30 minutes pour le contrat **"${worstContract}"**.
-2. **Optimisation** : Inspecter le serveur FTP du client **"${worstContract}"** qui engorge la file d'attente.`;
+    this.diagnosticReportHtml = `
+      <div class="diag-kpis">
+        <div class="diag-kpi"><span class="diag-kpi-label">Taux de conformité</span><span class="diag-kpi-value">${this.complianceRate}%</span></div>
+        <div class="diag-kpi"><span class="diag-kpi-label">Fichiers analysés</span><span class="diag-kpi-value">${this.totalCount}</span></div>
+        <div class="diag-kpi"><span class="diag-kpi-label">Hors délais</span><span class="diag-kpi-value diag-danger">${this.breachedCount}</span></div>
+      </div>
+      <p class="diag-section-title">Analyse par étape</p>
+      <div class="diag-step ${t1Ok ? 'diag-ok' : 'diag-alert'}"><span>Intégration (T1)</span><span>${label(t1Ok)}</span></div>
+      <div class="diag-step ${t2Ok ? 'diag-ok' : 'diag-alert'}"><span>Traitement EAI (T2)</span><span>${label(t2Ok)}</span></div>
+      <div class="diag-step ${t3Ok ? 'diag-ok' : 'diag-alert'}"><span>Attente partenaire (T3)</span><span>${label(t3Ok)}</span></div>
+      <p class="diag-section-title">Contrat le plus pénalisant</p>
+      <div class="diag-contract"><span>${worstContract}</span><span>${maxBreaches} violations</span></div>
+      <p class="diag-section-title">Recommandation</p>
+      <p class="diag-recommendation">${recommendations[bottleneck]}</p>
+    `;
   }
 
   // Rendu des graphiques — Version diagnostic (anomalies colorées + tri par violations)

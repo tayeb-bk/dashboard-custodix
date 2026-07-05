@@ -848,82 +848,6 @@
   font-size: 0.85rem;
 }
 
-.ai-content-box {
-  min-height: 220px;
-  background: var(--panel-bg);
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  padding: 1rem;
-  box-sizing: border-box;
-}
-
-.ai-placeholder,
-.ai-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.ai-loader {
-  flex-direction: column;
-  gap: 1rem;
-  font-size: 0.8rem;
-}
-
-.pulse-ring {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--neon-cyan);
-  box-shadow: 0 0 15px var(--neon-cyan);
-  animation: pulse-ring 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse-ring {
-
-  0%,
-  100% {
-    transform: scale(0.65);
-    opacity: 0.3;
-  }
-
-  50% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-}
-
-.ai-result {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--text-primary);
-}
-
-.markdown-content h3 {
-  font-size: 0.9rem;
-  color: var(--neon-cyan);
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-}
-
-.markdown-content ul {
-  padding-left: 1rem;
-  margin: 0.5rem 0;
-}
-
-.markdown-content li {
-  margin-bottom: 0.25rem;
-}
-
-.markdown-content p {
-  margin: 0.5rem 0;
-}
-
 .journal-card {
   margin-bottom: 2rem;
 }
@@ -1060,71 +984,139 @@
   color: var(--text-primary);
 }
 
-.ai-header-buttons {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
+/* ===== DIAGNOSTIC AUTOMATIQUE (deterministe, sans IA) ===== */
+.diag-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.ai-chat-input-wrapper {
-  display: flex;
+/* Le contenu de .diag-panel est injecte via [innerHTML] : l'encapsulation
+   de style d'Angular ne l'atteint jamais, ::ng-deep est necessaire ici. */
+::ng-deep .diag-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
-  margin-top: 1.25rem;
-  border-top: 1px solid var(--card-border);
-  padding-top: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.ai-input-field {
-  flex: 1;
-  font-family: inherit;
-  font-size: 0.875rem;
+::ng-deep .diag-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--btn-preset-bg);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
 }
 
-.send-chat-btn {
-  white-space: nowrap;
-}
-
-.ai-examples {
-  margin-top: 1rem;
-  font-size: 0.8rem;
+::ng-deep .diag-kpi-label {
+  font-size: 0.7rem;
   color: var(--text-muted);
-  text-align: left;
-  width: 100%;
 }
 
-.ai-examples ul {
-  margin: 0.5rem 0 0 0;
-  padding-left: 1.2rem;
+::ng-deep .diag-kpi-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.ai-examples li {
+::ng-deep .diag-kpi-value.diag-danger {
+  color: #ef4444;
+}
+
+::ng-deep .diag-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0.75rem 0 0.5rem;
+}
+
+::ng-deep .diag-step,
+::ng-deep .diag-contract {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
   margin-bottom: 0.4rem;
 }
 
-.ai-examples a {
-  color: var(--neon-cyan);
-  text-decoration: underline;
-  cursor: pointer;
-  transition: color 0.2s;
+::ng-deep .diag-step.diag-ok {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
 }
 
-.ai-examples a:hover {
-  color: var(--neon-blue);
+::ng-deep .diag-step.diag-alert {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
-.ai-query-bubble {
-  background: var(--btn-mode-bg);
-  border-left: 3px solid var(--neon-blue);
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 0.75rem;
+::ng-deep .diag-contract {
+  background: var(--btn-preset-bg);
+  color: var(--text-primary);
+}
+
+::ng-deep .diag-recommendation {
   font-size: 0.85rem;
-}
-
-.ai-answer-bubble {
   line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ===== GUIDE DE DECOUVERTE (questions/reponses fixes) ===== */
+.guide-panel {
+  border-top: 1px solid var(--card-border);
+  padding-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.guide-question-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-question {
+  flex: 1;
+  margin: 0;
   font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-guide-nav {
+  background: var(--btn-preset-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.guide-answer {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.guide-reveal-btn {
+  display: block;
+  margin: 0.6rem auto 0;
 }
 
 /* ===== INFO BUTTON & POPOVER (cartes "i") ===== */
